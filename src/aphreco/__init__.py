@@ -1,4 +1,4 @@
-from .unit.base import Unit
+from aphreco.unit.base import Unit
 
 
 __version__ = "0.1.0"
