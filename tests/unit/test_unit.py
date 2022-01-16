@@ -1,5 +1,4 @@
 import aphreco as ap
-import pytest
 
 
 class TestUnit:
@@ -12,9 +11,11 @@ class TestUnit:
                 ap.Variable("c1"),
             ]
         )
+
         # print model structure as a tree in stdout
         unit.tree()
         out, err = capfd.readouterr()  # get stdout and stderr
+
         # check answer
         expected_out = "me:\n  y[c0]\n  y[c1]\n"
         expected_err = ""
