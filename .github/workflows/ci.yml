@@ -8,18 +8,16 @@ jobs:
   pytest:
     name: Run tests with pytest
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.10]
     steps:
       # checkout repository
       - name: Checkout
         uses: actions/checkout@v2
       # setup runtime
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
+          architecture: 'x64'
       # install
       - name: Install Dependencies
         run: |
