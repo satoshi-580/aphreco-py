@@ -1,4 +1,4 @@
-from .core import BaseComponent, Box, Edge, Var
+from .core import Box, EdgeC, EdgeR, Var
 from .unit import Unit
 
 __version__ = "0.1.0"

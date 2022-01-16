@@ -1,19 +1,22 @@
-from collections import deque
-from typing import Dict
+from collections import OrderedDict, deque
+from typing import Dict, Tuple
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
 
-ETYPES = {
-    "con": ItemType.CON,
-    "reg": ItemType.REG,
-}
 
-
-class Edge(BaseComponent):
-    def __init__(self, term: Dict[str, str], etype: str = "con"):
+class EdgeR(BaseComponent):
+    def __init__(self, beat: Tuple[str, str, str], term: Dict[str, str]):
+        """
+        term: Dict[lhs, rhs]
+            lhs indicates a dependent variable.
+            rhs is the difference of the corresponding lhs
+            at a discrete point (delta_lhs += rhs).
+        beat: Tuple(start, stop, step)
+        """
         self.term = term
-        self.type = etype
+        self.beat = beat
+        self._type = ItemType.REG
         self.name = term
 
     @property
@@ -21,13 +24,8 @@ class Edge(BaseComponent):
         return self._type
 
     @type.setter
-    def type(self, etype: str):
-        if etype not in ETYPES.keys():
-            raise ValueError(
-                f"invalid edge type: {etype} \
-                \netype must be chosen from {tuple(ETYPES.keys())}"
-            )
-        self._type = ETYPES[etype]
+    def type(self, etype: ItemType):
+        raise AttributeError("edge type is immutable.")
 
     @property
     def name(self):
@@ -57,12 +55,19 @@ class Edge(BaseComponent):
     def _print_tree(self, indent=""):
         print(f"{indent}{self}")
 
-    def _formulate(self, dict_ode, dict_rec):
+    def _formulate(
+        self,
+        dict_ode: Dict[str, str],
+        dict_rec: Dict[Tuple[str, str, str], Dict[str, str]],
+    ):
+        if self.beat not in dict_rec.keys():
+            dict_rec[self.beat] = OrderedDict()
+
         for key, term in self.term.items():
-            if key not in dict_ode.keys():
-                dict_ode[key] = term
+            if key not in dict_rec[self.beat].keys():
+                dict_rec[self.beat][key] = term
             else:
-                dict_ode[key] += f" + {term}"
+                dict_rec[self.beat][key] += f" + {term}"
         return dict_ode, dict_rec
 
     def _remove_by_name(self, dq_path: deque):

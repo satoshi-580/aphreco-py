@@ -32,4 +32,14 @@ NEW_FOOTER = """    ];
 ODE_HEADER = """  #[allow(unused_variables)]
   fn ode(&self, t: &f64, y: &[f64; LEN_Y], deriv_y: &mut [f64; LEN_Y]) {
 """
-ODE_FOOTER = """  }"""
+ODE_FOOTER = """  }
+
+"""
+
+
+REC_HEADER = """  #[allow(unused_variables)]
+  fn rec(&self, t: &f64, y: &[f64; LEN_Y], delta_y: &mut [f64; LEN_Y], act: &[bool; LEN_B]) {
+"""
+REC_FOOTER = """  }
+
+"""

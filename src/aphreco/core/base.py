@@ -16,7 +16,7 @@ class ItemType(enum.Flag):
     # Composite
     BOX = enum.auto()  # show inside
     BLACKBOX = enum.auto()  # hide inside if it has multiple type-Y objects
-    SUBMODEL = BOX | BLACKBOX
+    MODEL = BOX | BLACKBOX
 
 
 class BaseItem(abc.ABC):

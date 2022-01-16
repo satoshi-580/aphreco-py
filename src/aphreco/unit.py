@@ -5,14 +5,14 @@ from typing import Any, List, Optional, Set, Union
 import sympy
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseItem, BaseModel, Box, Edge
+from aphreco.core import BaseComponent, BaseItem, BaseModel, Box, EdgeC, EdgeR
 from aphreco.write import Writer
 
 
 class Unit:
     def __init__(self, name: str = ""):
         self.model = Box(name)
-        self.symbols: Set[Any] = set()
+        self.symbols: Set[str] = set()
         self.command = Command()
         self.writer = Writer()
 
@@ -32,7 +32,7 @@ class Unit:
             raise ValueError(f"invalid path: {path}")
         if not isinstance(model, BaseModel):
             raise ValueError(
-                f"invalid path: expected ItemType.SUBMODEL, found {model.type}."
+                f"invalid path: expected ItemType.MODEL, found {model.type}."
             )
 
         if not isinstance(items, list):
@@ -48,7 +48,7 @@ class Unit:
             if isinstance(item, BaseComponent):
                 new_symbol = item._get_symbol()
 
-                if isinstance(item, Edge):
+                if isinstance(item, (EdgeC, EdgeR)):
                     for new_sym in new_symbol:
                         s = str(new_sym)
                         self.check_symbols_used_in_edge(s)
@@ -100,16 +100,23 @@ class Unit:
         self.model._print_tree(indent="")
 
     def formulate(self):
+        # dict_ode: Dict[lhs, rhs]
+        # dict_rec: Dict[(start, stop, step), Dict[lhs, rhs]]
         dict_ode, dict_rec = self.model._formulate(OrderedDict(), OrderedDict())
 
+        # make ode
         str_ode = ""
         for lhs, rhs in dict_ode.items():
             eq = "deriv_" + lhs + " = " + str(sympy.sympify(rhs))
             str_ode += eq + "\n"
 
+        # make rec
         str_rec = ""
-        for lhs, rhs in dict_rec.items():
-            pass
+        for i, (beat, rec) in enumerate(dict_rec.items()):
+            str_rec += f"=== {i}: {beat} ===\n"
+            for lhs, rhs in rec.items():
+                eq = "  delta_" + lhs + " += " + str(sympy.sympify(rhs))
+                str_rec += eq + "\n"
 
         self.ode = str_ode[:-1]
         self.rec = str_rec[:-1]
@@ -117,7 +124,8 @@ class Unit:
     def write(self):
         main_code = self.writer.rs_main()
         ode_code = self.writer.rs_ode(self.ode)
-        model_code = self.writer.rs_sim_model(ode_code)
+        rec_code = self.writer.rs_rec(self.rec)
+        model_code = self.writer.rs_sim_model(ode_code, rec_code)
         rust_code = main_code + model_code
         file_name = "main.rs"
         with open(file_name, "w") as f:
