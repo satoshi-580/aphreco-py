@@ -136,7 +136,6 @@ mypy.ini
 .vscode
 
 # Test
-tests/
 examples/
 
 # Mac
