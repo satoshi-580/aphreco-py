@@ -118,7 +118,7 @@ class Unit:
         # assemble rec
         str_rec = ""
         for i, (beat, rec) in enumerate(dict_rec.items()):
-            str_rec += f"=== {i}: {beat} ===\n"
+            str_rec += f"=== {i}: {beat}\n"
             for lhs, rhs in rec.items():
                 eq = "delta_" + lhs + " += " + str(sympy.sympify(rhs))
                 str_rec += eq + "\n"
