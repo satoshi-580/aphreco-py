@@ -1,6 +1,5 @@
 from collections import deque
-from multiprocessing.sharedctypes import Value
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
