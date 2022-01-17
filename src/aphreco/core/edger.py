@@ -57,9 +57,10 @@ class EdgeR(BaseComponent):
 
     def _formulate(
         self,
-        dict_ode: Dict[str, str],
-        dict_rec: Dict[Tuple[str, str, str], Dict[str, str]],
+        eq_dicts: Dict[str, Dict],
     ):
+        dict_rec = eq_dicts["rec"]
+
         if self.beat not in dict_rec.keys():
             dict_rec[self.beat] = OrderedDict()
 
@@ -68,7 +69,9 @@ class EdgeR(BaseComponent):
                 dict_rec[self.beat][key] = term
             else:
                 dict_rec[self.beat][key] += f" + {term}"
-        return dict_ode, dict_rec
+
+        eq_dicts["rec"] = dict_rec
+        return eq_dicts
 
     def _remove_by_name(self, dq_path: deque):
         pass

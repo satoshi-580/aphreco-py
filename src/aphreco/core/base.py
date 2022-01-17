@@ -62,3 +62,7 @@ class BaseModel(BaseItem):
     @abc.abstractmethod
     def _add(self, item):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def _formulate(self, eq_dicts):
+        raise NotImplementedError

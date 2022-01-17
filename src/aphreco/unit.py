@@ -102,21 +102,29 @@ class Unit:
     def formulate(self):
         # dict_ode: Dict[lhs, rhs]
         # dict_rec: Dict[(start, stop, step), Dict[lhs, rhs]]
-        dict_ode, dict_rec = self.model._formulate(OrderedDict(), OrderedDict())
+        eq_dicts = self.model._formulate(
+            OrderedDict(ode=OrderedDict(), rec=OrderedDict(), cre=OrderedDict())
+        )
+        dict_ode = eq_dicts["ode"]
+        dict_rec = eq_dicts["rec"]
+        dict_cre = eq_dicts["cre"]
 
-        # make ode
+        # assemble ode
         str_ode = ""
         for lhs, rhs in dict_ode.items():
             eq = "deriv_" + lhs + " = " + str(sympy.sympify(rhs))
             str_ode += eq + "\n"
 
-        # make rec
+        # assemble rec
         str_rec = ""
         for i, (beat, rec) in enumerate(dict_rec.items()):
             str_rec += f"=== {i}: {beat} ===\n"
             for lhs, rhs in rec.items():
-                eq = "  delta_" + lhs + " += " + str(sympy.sympify(rhs))
+                eq = "delta_" + lhs + " += " + str(sympy.sympify(rhs))
                 str_rec += eq + "\n"
+
+        # assemble cre
+        str_cre = ""
 
         self.ode = str_ode[:-1]
         self.rec = str_rec[:-1]

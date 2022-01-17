@@ -47,13 +47,17 @@ class EdgeC(BaseComponent):
     def _print_tree(self, indent=""):
         print(f"{indent}{self}")
 
-    def _formulate(self, dict_ode, dict_rec):
+    def _formulate(self, eq_dict):
+        dict_ode = eq_dict["ode"]
+
         for key, term in self.term.items():
             if key not in dict_ode.keys():
                 dict_ode[key] = term
             else:
                 dict_ode[key] += f" + {term}"
-        return dict_ode, dict_rec
+
+        eq_dict["ode"] = dict_ode
+        return eq_dict
 
     def _remove_by_name(self, dq_path: deque):
         pass

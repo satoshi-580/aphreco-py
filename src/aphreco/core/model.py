@@ -87,10 +87,16 @@ class Box(BaseModel):
                     break
         return ans
 
-    def _formulate(self, dict_ode, dict_rec):
+    def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """
+        eq_dicts: Dict['ode': dict_ode, 'rec': dict_rec, 'cre': dict_cre]
+            dict_ode: Dict[lhs, rhs]
+            dict_rec: Dict[(start, stop, step): Dict[lhs, rhs]]
+            dict_cre: Dict[lhs, rhs]
+        """
         for _, item in self:
             if isinstance(item, (EdgeC, EdgeR)):
-                dict_ode, dict_rec = item._formulate(dict_ode, dict_rec)
+                eq_dicts = item._formulate(eq_dicts)
             elif isinstance(item, BaseModel):
-                item._formulate(dict_ode, dict_rec)
-        return dict_ode, dict_rec
+                eq_dicts = item._formulate(eq_dicts)
+        return eq_dicts
