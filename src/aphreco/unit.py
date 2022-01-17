@@ -143,13 +143,43 @@ class Unit:
         val_dicts = self.model._collect_values(
             OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
         )
-
         dict_y = val_dicts["y"]
         dict_p = val_dicts["p"]
         dict_x = val_dicts["x"]
-        print("y:", dict_y)
-        print("p:", dict_p)
-        print("x:", dict_x)
+
+        # assemble y
+        str_ini_y_with_replacement = ""
+        max_vallen = 0
+        for i, (name, value) in enumerate(dict_y.items()):
+            # '//' is a comment format in Rust lang.
+            str_ini_y_with_replacement += f"{value},***space***// y[{i}] {name}\n"
+            vallen = len(str(value))
+            max_vallen = vallen if max_vallen < vallen else max_vallen
+        str_ini_y = ""
+
+        for line in str_ini_y_with_replacement.splitlines():
+            vallen = line.find(",")
+            num_space = max_vallen - vallen + 1
+            str_ini_y += line.replace("***space***", " " * num_space) + "\n"
+
+        # assemble p
+        str_p_with_replacement = ""
+        max_vallen = 0
+        for i, (name, value) in enumerate(dict_p.items()):
+            # '//' is a comment format in Rust lang.
+            str_p_with_replacement += f"{value},***space***// p[{i}] {name}\n"
+            vallen = len(str(value))
+            max_vallen = vallen if max_vallen < vallen else max_vallen
+        str_p = ""
+
+        for line in str_p_with_replacement.splitlines():
+            vallen = line.find(",")
+            num_space = max_vallen - vallen + 1
+            str_p += line.replace("***space***", " " * num_space) + "\n"
+
+        self.ini_y = str_ini_y[:-1]
+        self.p = str_p[:-1]
+        self.dict_x = dict_x
 
     def write(self):
         main_code = self.writer.rs_main()
