@@ -100,8 +100,13 @@ class Unit:
         self.model._print_tree(indent="")
 
     def formulate(self):
-        # dict_ode: Dict[lhs, rhs]
-        # dict_rec: Dict[(start, stop, step), Dict[lhs, rhs]]
+        self.collect_equations()
+        self.collect_values()
+
+    def collect_equations(self):
+        # dict_ode: Dict[lhs('deriv_' not yet added), rhs]
+        # dict_rec: Dict[(start, stop, step), Dict[lhs('delta_' not yet added), rhs]]
+        # dict_cre: Dict[lhs, rhs]
         eq_dicts = self.model._formulate(
             OrderedDict(ode=OrderedDict(), rec=OrderedDict(), cre=OrderedDict())
         )
@@ -132,6 +137,12 @@ class Unit:
         self.ode = str_ode[:-1]
         self.rec = str_rec[:-1]
         self.cre = str_cre[:-1]
+
+    def collect_values(self):
+        str_ini_t = ""
+        self.ini_t = str_ini_t
+        str_ini_y = ""
+        self.ini_y = str_ini_y
 
     def write(self):
         main_code = self.writer.rs_main()
