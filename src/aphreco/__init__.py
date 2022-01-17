@@ -1,4 +1,4 @@
-from .core import Box, EdgeC, EdgeR, Var
+from .core import Beat, Box, EdgeC, EdgeR, P, Var, Y
 from .unit import Unit
 
 __version__ = "0.1.0"
