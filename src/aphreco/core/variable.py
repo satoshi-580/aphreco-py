@@ -20,7 +20,7 @@ class Var(BaseComponent):
         term: Optional[str] = None,
     ):
         self.name = name
-        self.value = value
+        self.value = float(value)
         self.type = vtype
 
         if term is None:
