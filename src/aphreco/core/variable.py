@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Optional, Tuple
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
@@ -11,9 +12,20 @@ VTYPES = {
 
 
 class Var(BaseComponent):
-    def __init__(self, name: str, vtype: str = "y", value: float = 0.0):
+    def __init__(
+        self,
+        name: str,
+        value: float = 0.0,
+        vtype: str = "y",
+        term: Optional[str] = None,
+    ):
         self.name = name
         self.type = vtype
+        if term is not None:
+            if self.type != ItemType.Y:
+                raise ValueError(
+                    f"cre term is only for a dependent variable: {self.type}"
+                )
 
     @property
     def type(self):
