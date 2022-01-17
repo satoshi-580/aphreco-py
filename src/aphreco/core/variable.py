@@ -15,11 +15,12 @@ class Var(BaseComponent):
     def __init__(
         self,
         name: str,
-        value: float = 0.0,
         vtype: str = "y",
+        value: float = 0.0,
         term: Optional[str] = None,
     ):
         self.name = name
+        self.value = value
         self.type = vtype
 
         if term is None:
@@ -64,7 +65,7 @@ class Var(BaseComponent):
     def _remove_by_name(self, dq_path: deque):
         pass
 
-    def _formulate(self, eq_dicts: Dict[str, Dict]):
+    def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
         if self.term is None:
             return eq_dicts
 
@@ -79,6 +80,30 @@ class Var(BaseComponent):
 
         eq_dicts["cre"] = dict_cre
         return eq_dicts
+
+    def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        if self.type == ItemType.Y:
+            dict_y = val_dicts["y"]
+            if self.name in dict_y.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_y[self.name] = self.value
+            val_dicts["y"] = dict_y
+
+        elif self.type == ItemType.P:
+            dict_p = val_dicts["p"]
+            if self.name in dict_p.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_p[self.name] = self.value
+            val_dicts["p"] = dict_p
+
+        elif self.type == ItemType.X:
+            dict_x = val_dicts["x"]
+            if self.name in dict_x.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_x[self.name] = self.value
+            val_dicts["x"] = dict_x
+
+        return val_dicts
 
 
 class Y(BaseComponent):

@@ -1,6 +1,6 @@
-from collections import OrderedDict, deque
+from collections import OrderedDict, _OrderedDictItemsView, deque
 from pathlib import Path
-from typing import Any, List, Optional, Set, Union
+from typing import List, Optional, Set, Union
 
 import sympy
 
@@ -10,11 +10,12 @@ from aphreco.write import Writer
 
 
 class Unit:
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "", ini_t: float = 0.0):
         self.model = Box(name)
         self.symbols: Set[str] = set()
         self.command = Command()
         self.writer = Writer()
+        self.ini_t = ini_t
 
     def add(
         self,
@@ -139,10 +140,16 @@ class Unit:
         self.cre = str_cre[:-1]
 
     def collect_values(self):
-        str_ini_t = ""
-        self.ini_t = str_ini_t
-        str_ini_y = ""
-        self.ini_y = str_ini_y
+        val_dicts = self.model._collect_values(
+            OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
+        )
+
+        dict_y = val_dicts["y"]
+        dict_p = val_dicts["p"]
+        dict_x = val_dicts["x"]
+        print("y:", dict_y)
+        print("p:", dict_p)
+        print("x:", dict_x)
 
     def write(self):
         main_code = self.writer.rs_main()

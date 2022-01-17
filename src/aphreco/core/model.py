@@ -94,10 +94,26 @@ class Box(BaseModel):
             dict_cre: Dict[lhs, rhs]
         """
         for _, item in self:
-            if isinstance(item, BaseEdge):
+            if isinstance(item, Var):
                 eq_dicts = item._formulate(eq_dicts)
-            elif isinstance(item, Var):
+            elif isinstance(item, BaseEdge):
                 eq_dicts = item._formulate(eq_dicts)
             elif isinstance(item, BaseModel):
                 eq_dicts = item._formulate(eq_dicts)
         return eq_dicts
+
+    def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """
+        val_dicts: Dict['y': dict_y, 'p': dict_p, 'x': dict_x]
+            dict_y: Dict[name, y0 (initial state value)]
+            dict_p: Dict[name, p (constant value)]
+            dict_x: Dict[name, x0 (initial value to be optimized)]
+        """
+        for _, item in self:
+            if isinstance(item, Var):
+                val_dicts = item._collect_values(val_dicts)
+            if isinstance(item, BaseEdge):
+                continue
+            elif isinstance(item, BaseModel):
+                val_dicts = item._collect_values(val_dicts)
+        return val_dicts
