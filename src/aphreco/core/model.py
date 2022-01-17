@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
+from operator import eq
 from typing import Dict, List, Optional, Union
 
 from .base import BaseEdge, BaseItem, BaseModel, ItemType
@@ -94,6 +95,8 @@ class Box(BaseModel):
         """
         for _, item in self:
             if isinstance(item, BaseEdge):
+                eq_dicts = item._formulate(eq_dicts)
+            elif isinstance(item, Var):
                 eq_dicts = item._formulate(eq_dicts)
             elif isinstance(item, BaseModel):
                 eq_dicts = item._formulate(eq_dicts)

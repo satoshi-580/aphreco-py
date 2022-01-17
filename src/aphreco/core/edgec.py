@@ -47,8 +47,8 @@ class EdgeC(BaseEdge):
     def _print_tree(self, indent=""):
         print(f"{indent}{self}")
 
-    def _formulate(self, eq_dict):
-        dict_ode = eq_dict["ode"]
+    def _formulate(self, eq_dicts):
+        dict_ode = eq_dicts["ode"]
 
         for key, term in self.term.items():
             if key not in dict_ode.keys():
@@ -56,8 +56,8 @@ class EdgeC(BaseEdge):
             else:
                 dict_ode[key] += f" + {term}"
 
-        eq_dict["ode"] = dict_ode
-        return eq_dict
+        eq_dicts["ode"] = dict_ode
+        return eq_dicts
 
     def _remove_by_name(self, dq_path: deque):
         pass

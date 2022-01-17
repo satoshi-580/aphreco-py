@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
@@ -21,11 +21,15 @@ class Var(BaseComponent):
     ):
         self.name = name
         self.type = vtype
-        if term is not None:
+
+        if term is None:
+            self.term = None
+        else:
             if self.type != ItemType.Y:
                 raise ValueError(
-                    f"cre term is only for a dependent variable: {self.type}"
+                    f"variable type must be 'y' when cre term is used: {self.type}"
                 )
+            self.term = term
 
     @property
     def type(self):
@@ -59,6 +63,22 @@ class Var(BaseComponent):
 
     def _remove_by_name(self, dq_path: deque):
         pass
+
+    def _formulate(self, eq_dicts: Dict[str, Dict]):
+        if self.term is None:
+            return eq_dicts
+
+        dict_cre = eq_dicts["cre"]
+
+        if self.name not in dict_cre.keys():
+            dict_cre[self.name] = self.term
+        else:
+            raise ValueError(
+                f"multiple CREs was found for a single variable '{self.name}'."
+            )
+
+        eq_dicts["cre"] = dict_cre
+        return eq_dicts
 
 
 class Y(BaseComponent):

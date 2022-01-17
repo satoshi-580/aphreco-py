@@ -125,9 +125,13 @@ class Unit:
 
         # assemble cre
         str_cre = ""
+        for lhs, rhs in dict_cre.items():
+            eq = lhs + " = " + str(sympy.sympify(rhs))
+            str_cre += eq + "\n"
 
         self.ode = str_ode[:-1]
         self.rec = str_rec[:-1]
+        self.cre = str_cre[:-1]
 
     def write(self):
         main_code = self.writer.rs_main()
