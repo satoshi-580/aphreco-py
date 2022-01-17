@@ -44,6 +44,10 @@ class EdgeR(BaseEdge):
 
     def _get_symbol(self):
         symbols = set()
+
+        for b in self.beat:
+            symbols.add(sympy.sympify(b))
+
         for k, term in self.term.items():
             symbols.add(sympy.sympify(k))
             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
