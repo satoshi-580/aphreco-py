@@ -1,5 +1,6 @@
 from collections import deque
-from typing import Dict, Optional, Tuple
+from multiprocessing.sharedctypes import Value
+from typing import Dict, Optional, Tuple, Union
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
@@ -99,3 +100,31 @@ class P(BaseComponent):
         bounds: Optional[Tuple[float, float]] = None,
     ):
         return Var(name=name, value=value, vtype="p", term=None)
+
+
+class Beat:
+    def __new__(
+        cls,
+        name: Tuple[str, str, str],
+        value: Tuple[float, float, float],
+    ):
+        if isinstance(name, (list, tuple)):
+            name_start = name[0]
+            name_stop = name[1]
+            name_interval = name[2]
+        else:
+            raise ValueError(
+                f"name must be string or tuple/list of three string objects."
+            )
+
+        if isinstance(value, (list, tuple)):
+            value_start = value[0]
+            value_stop = value[1]
+            value_interval = value[2]
+
+        beat = [
+            Var(name=name_start, value=value_start, vtype="p"),
+            Var(name=name_stop, value=value_stop, vtype="p"),
+            Var(name=name_interval, value=value_interval, vtype="p"),
+        ]
+        return beat
