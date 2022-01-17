@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
+from operator import eq
 from typing import Dict, List, Optional, Union
 
-from .base import BaseItem, BaseModel, ItemType
-from .edge import Edge
+from .base import BaseEdge, BaseItem, BaseModel, ItemType
 from .variable import Var
 
 MTYPES = {
@@ -64,7 +64,7 @@ class Box(BaseModel):
             return self.items[name]
         else:
             next_item = self.items[name]
-            if isinstance(next_item, (Var, Edge)):
+            if isinstance(next_item, (Var, BaseEdge)):
                 raise ValueError(f"item '{name}' is a component, not a model")
             elif isinstance(next_item, BaseModel):
                 return next_item._get_item(dq_path)
@@ -86,10 +86,34 @@ class Box(BaseModel):
                     break
         return ans
 
-    def _formulate(self, dict_ode, dict_rec):
+    def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
+        eq_dicts: Dict['ode': dict_ode, 'rec': dict_rec, 'cre': dict_cre]
+            dict_ode: Dict[lhs, rhs]
+            dict_rec: Dict[(start, stop, step): Dict[lhs, rhs]]
+            dict_cre: Dict[lhs, rhs]
+        """
         for _, item in self:
-            if isinstance(item, Edge):
-                dict_ode, dict_rec = item._formulate(dict_ode, dict_rec)
-            elif isinstance(item, BaseModel):
-                item._formulate(dict_ode, dict_rec)
-        return dict_ode, dict_rec
+            if isinstance(item, BaseModel):
+                eq_dicts = item._formulate(eq_dicts)
+            elif isinstance(item, Var):
+                eq_dicts = item._formulate(eq_dicts)
+            elif isinstance(item, BaseEdge):
+                eq_dicts = item._formulate(eq_dicts)
+        return eq_dicts
+
+    def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """Collect values of Var objects in a model by Depth-First Search.
+        val_dicts: Dict['y': dict_y, 'p': dict_p, 'x': dict_x]
+            dict_y: Dict[name, y0 (initial state value)]
+            dict_p: Dict[name, p (constant value)]
+            dict_x: Dict[name, x0 (initial value to be optimized)]
+        """
+        for _, item in self:
+            if isinstance(item, BaseModel):
+                val_dicts = item._collect_values(val_dicts)
+            elif isinstance(item, Var):
+                val_dicts = item._collect_values(val_dicts)
+            elif isinstance(item, BaseEdge):
+                continue
+        return val_dicts

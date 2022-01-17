@@ -1,20 +1,23 @@
-from collections import OrderedDict, deque
+from collections import deque
 from pathlib import Path
-from typing import Any, List, Optional, Set, Union
+from typing import List, Optional, Set, Union
 
 import sympy
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseItem, BaseModel, Box, Edge
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.pick import Picker
 from aphreco.write import Writer
 
 
 class Unit:
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "", ini_t: float = 0.0):
         self.model = Box(name)
-        self.symbols: Set[Any] = set()
+        self.symbols: Set[str] = set()
         self.command = Command()
         self.writer = Writer()
+        self.picker = Picker()
+        self.ini_t = ini_t
 
     def add(
         self,
@@ -32,7 +35,7 @@ class Unit:
             raise ValueError(f"invalid path: {path}")
         if not isinstance(model, BaseModel):
             raise ValueError(
-                f"invalid path: expected ItemType.SUBMODEL, found {model.type}."
+                f"invalid path: expected ItemType.MODEL, found {model.type}."
             )
 
         if not isinstance(items, list):
@@ -48,7 +51,7 @@ class Unit:
             if isinstance(item, BaseComponent):
                 new_symbol = item._get_symbol()
 
-                if isinstance(item, Edge):
+                if isinstance(item, BaseEdge):
                     for new_sym in new_symbol:
                         s = str(new_sym)
                         self.check_symbols_used_in_edge(s)
@@ -99,25 +102,23 @@ class Unit:
     def tree(self):
         self.model._print_tree(indent="")
 
-    def formulate(self):
-        dict_ode, dict_rec = self.model._formulate(OrderedDict(), OrderedDict())
-
-        str_ode = ""
-        for lhs, rhs in dict_ode.items():
-            eq = "deriv_" + lhs + " = " + str(sympy.sympify(rhs))
-            str_ode += eq + "\n"
-
-        str_rec = ""
-        for lhs, rhs in dict_rec.items():
-            pass
-
-        self.ode = str_ode[:-1]
-        self.rec = str_rec[:-1]
+    def pick(self):
+        # create
+        #   picker.ode: str
+        #   picker.rec: str
+        #   picker.cre: str
+        self.picker.collect_equations(self.model)
+        # create
+        #   picker.ini_y: str
+        #   picker.p: str
+        #   picker.ini_x: str
+        self.picker.collect_values(self.model)
 
     def write(self):
         main_code = self.writer.rs_main()
-        ode_code = self.writer.rs_ode(self.ode)
-        model_code = self.writer.rs_sim_model(ode_code)
+        ode_code = self.writer.rs_ode(self.picker.ode)
+        rec_code = self.writer.rs_rec(self.picker.rec)
+        model_code = self.writer.rs_sim_model(ode_code, rec_code)
         rust_code = main_code + model_code
         file_name = "main.rs"
         with open(file_name, "w") as f:

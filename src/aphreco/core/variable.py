@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Dict, Optional, Tuple
 
 import sympy
 from aphreco.core.base import BaseComponent, ItemType
@@ -11,9 +12,25 @@ VTYPES = {
 
 
 class Var(BaseComponent):
-    def __init__(self, name: str, vtype: str = "y", value: float = 0.0):
+    def __init__(
+        self,
+        name: str,
+        vtype: str = "y",
+        value: float = 0.0,
+        term: Optional[str] = None,
+    ):
         self.name = name
+        self.value = float(value)
         self.type = vtype
+
+        if term is None:
+            self.term = None
+        else:
+            if self.type != ItemType.Y:
+                raise ValueError(
+                    f"variable type must be 'y' when cre term is used: {self.type}"
+                )
+            self.term = term
 
     @property
     def type(self):
@@ -47,3 +64,91 @@ class Var(BaseComponent):
 
     def _remove_by_name(self, dq_path: deque):
         pass
+
+    def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        if self.term is None:
+            return eq_dicts
+
+        dict_cre = eq_dicts["cre"]
+
+        if self.name not in dict_cre.keys():
+            dict_cre[self.name] = self.term
+        else:
+            raise ValueError(
+                f"multiple CREs was found for a single variable '{self.name}'."
+            )
+
+        eq_dicts["cre"] = dict_cre
+        return eq_dicts
+
+    def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        if self.type == ItemType.Y:
+            dict_y = val_dicts["y"]
+            if self.name in dict_y.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_y[self.name] = self.value
+            val_dicts["y"] = dict_y
+
+        elif self.type == (ItemType.P or ItemType.X):
+            dict_p = val_dicts["p"]
+            if self.name in dict_p.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_p[self.name] = self.value
+            val_dicts["p"] = dict_p
+
+        if self.type == ItemType.X:
+            dict_x = val_dicts["x"]
+            if self.name in dict_x.keys():
+                raise ValueError(f"name duplication: {self.name}")
+            dict_x[self.name] = self.value
+            val_dicts["x"] = dict_x
+
+        return val_dicts
+
+
+class Y(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        term: Optional[str] = None,
+    ):
+        return Var(name=name, value=value, vtype="y", term=term)
+
+
+class P(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        bounds: Optional[Tuple[float, float]] = None,
+    ):
+        return Var(name=name, value=value, vtype="p", term=None)
+
+
+class Beat:
+    def __new__(
+        cls,
+        name: Tuple[str, str, str],
+        value: Tuple[float, float, float],
+    ):
+        if isinstance(name, (list, tuple)):
+            name_start = name[0]
+            name_stop = name[1]
+            name_interval = name[2]
+        else:
+            raise ValueError(
+                f"name must be string or tuple/list of three string objects."
+            )
+
+        if isinstance(value, (list, tuple)):
+            value_start = value[0]
+            value_stop = value[1]
+            value_interval = value[2]
+
+        beat = [
+            Var(name=name_start, value=value_start, vtype="p"),
+            Var(name=name_stop, value=value_stop, vtype="p"),
+            Var(name=name_interval, value=value_interval, vtype="p"),
+        ]
+        return beat

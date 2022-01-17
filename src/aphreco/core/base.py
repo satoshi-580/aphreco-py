@@ -16,7 +16,7 @@ class ItemType(enum.Flag):
     # Composite
     BOX = enum.auto()  # show inside
     BLACKBOX = enum.auto()  # hide inside if it has multiple type-Y objects
-    SUBMODEL = BOX | BLACKBOX
+    MODEL = BOX | BLACKBOX
 
 
 class BaseItem(abc.ABC):
@@ -50,6 +50,12 @@ class BaseComponent(BaseItem):
         raise NotImplementedError
 
 
+class BaseEdge(BaseComponent):
+    @abc.abstractmethod
+    def _formulate(self, eq_dicts):
+        raise NotImplementedError
+
+
 class BaseModel(BaseItem):
     @abc.abstractmethod
     def _get_item(self, dq_path):
@@ -61,4 +67,12 @@ class BaseModel(BaseItem):
 
     @abc.abstractmethod
     def _add(self, item):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _formulate(self, eq_dicts):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _collect_values(self, val_dicts):
         raise NotImplementedError
