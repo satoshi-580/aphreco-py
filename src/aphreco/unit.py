@@ -1,4 +1,4 @@
-from collections import OrderedDict, deque
+from collections import deque
 from pathlib import Path
 from typing import List, Optional, Set, Union
 
@@ -6,6 +6,7 @@ import sympy
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.pick import Picker
 from aphreco.write import Writer
 
 
@@ -15,6 +16,7 @@ class Unit:
         self.symbols: Set[str] = set()
         self.command = Command()
         self.writer = Writer()
+        self.picker = Picker()
         self.ini_t = ini_t
 
     def add(
@@ -100,91 +102,22 @@ class Unit:
     def tree(self):
         self.model._print_tree(indent="")
 
-    def formulate(self):
-        self.collect_equations()
-        self.collect_values()
-
-    def collect_equations(self):
-        # dict_ode: Dict[lhs('deriv_' not yet added), rhs]
-        # dict_rec: Dict[(start, stop, step), Dict[lhs('delta_' not yet added), rhs]]
-        # dict_cre: Dict[lhs, rhs]
-        eq_dicts = self.model._formulate(
-            OrderedDict(ode=OrderedDict(), rec=OrderedDict(), cre=OrderedDict())
-        )
-        dict_ode = eq_dicts["ode"]
-        dict_rec = eq_dicts["rec"]
-        dict_cre = eq_dicts["cre"]
-
-        # assemble ode
-        str_ode = ""
-        for lhs, rhs in dict_ode.items():
-            eq = "deriv_" + lhs + " = " + str(sympy.sympify(rhs))
-            str_ode += eq + "\n"
-
-        # assemble rec
-        str_rec = ""
-        for i, (beat, rec) in enumerate(dict_rec.items()):
-            str_rec += f"=== {i}: {beat}\n"
-            for lhs, rhs in rec.items():
-                eq = "delta_" + lhs + " += " + str(sympy.sympify(rhs))
-                str_rec += eq + "\n"
-
-        # assemble cre
-        str_cre = ""
-        for lhs, rhs in dict_cre.items():
-            eq = lhs + " = " + str(sympy.sympify(rhs))
-            str_cre += eq + "\n"
-
-        self.ode = str_ode[:-1]
-        self.rec = str_rec[:-1]
-        self.cre = str_cre[:-1]
-
-    def collect_values(self):
-        val_dicts = self.model._collect_values(
-            OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
-        )
-        dict_y = val_dicts["y"]
-        dict_p = val_dicts["p"]
-        dict_x = val_dicts["x"]
-
-        # assemble y
-        str_ini_y_with_replacement = ""
-        max_vallen = 0
-        for i, (name, value) in enumerate(dict_y.items()):
-            # '//' is a comment format in Rust lang.
-            str_ini_y_with_replacement += f"{value},***space***// y[{i}] {name}\n"
-            vallen = len(str(value))
-            max_vallen = vallen if max_vallen < vallen else max_vallen
-        str_ini_y = ""
-
-        for line in str_ini_y_with_replacement.splitlines():
-            vallen = line.find(",")
-            num_space = max_vallen - vallen + 1
-            str_ini_y += line.replace("***space***", " " * num_space) + "\n"
-
-        # assemble p
-        str_p_with_replacement = ""
-        max_vallen = 0
-        for i, (name, value) in enumerate(dict_p.items()):
-            # '//' is a comment format in Rust lang.
-            str_p_with_replacement += f"{value},***space***// p[{i}] {name}\n"
-            vallen = len(str(value))
-            max_vallen = vallen if max_vallen < vallen else max_vallen
-        str_p = ""
-
-        for line in str_p_with_replacement.splitlines():
-            vallen = line.find(",")
-            num_space = max_vallen - vallen + 1
-            str_p += line.replace("***space***", " " * num_space) + "\n"
-
-        self.ini_y = str_ini_y[:-1]
-        self.p = str_p[:-1]
-        self.dict_x = dict_x
+    def pick(self):
+        # create
+        #   picker.ode: str
+        #   picker.rec: str
+        #   picker.cre: str
+        self.picker.collect_equations(self.model)
+        # create
+        #   picker.ini_y: str
+        #   picker.p: str
+        #   picker.ini_x: str
+        self.picker.collect_values(self.model)
 
     def write(self):
         main_code = self.writer.rs_main()
-        ode_code = self.writer.rs_ode(self.ode)
-        rec_code = self.writer.rs_rec(self.rec)
+        ode_code = self.writer.rs_ode(self.picker.ode)
+        rec_code = self.writer.rs_rec(self.picker.rec)
         model_code = self.writer.rs_sim_model(ode_code, rec_code)
         rust_code = main_code + model_code
         file_name = "main.rs"
