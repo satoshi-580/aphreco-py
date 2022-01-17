@@ -59,3 +59,23 @@ class Var(BaseComponent):
 
     def _remove_by_name(self, dq_path: deque):
         pass
+
+
+class Y(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        term: Optional[str] = None,
+    ):
+        return Var(name=name, value=value, vtype="y", term=term)
+
+
+class P(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        bounds: Optional[Tuple[float, float]] = None,
+    ):
+        return Var(name=name, value=value, vtype="p", term=None)
