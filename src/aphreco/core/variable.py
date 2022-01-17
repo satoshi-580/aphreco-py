@@ -89,14 +89,14 @@ class Var(BaseComponent):
             dict_y[self.name] = self.value
             val_dicts["y"] = dict_y
 
-        elif self.type == ItemType.P:
+        elif self.type == (ItemType.P or ItemType.X):
             dict_p = val_dicts["p"]
             if self.name in dict_p.keys():
                 raise ValueError(f"name duplication: {self.name}")
             dict_p[self.name] = self.value
             val_dicts["p"] = dict_p
 
-        elif self.type == ItemType.X:
+        if self.type == ItemType.X:
             dict_x = val_dicts["x"]
             if self.name in dict_x.keys():
                 raise ValueError(f"name duplication: {self.name}")
