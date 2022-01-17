@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Set, Union
 import sympy
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseItem, BaseModel, Box, EdgeC, EdgeR
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.write import Writer
 
 
@@ -48,7 +48,7 @@ class Unit:
             if isinstance(item, BaseComponent):
                 new_symbol = item._get_symbol()
 
-                if isinstance(item, (EdgeC, EdgeR)):
+                if isinstance(item, BaseEdge):
                     for new_sym in new_symbol:
                         s = str(new_sym)
                         self.check_symbols_used_in_edge(s)

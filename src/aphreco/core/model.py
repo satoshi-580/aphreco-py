@@ -3,9 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict, deque
 from typing import Dict, List, Optional, Union
 
-from .base import BaseItem, BaseModel, ItemType
-from .edgec import EdgeC
-from .edger import EdgeR
+from .base import BaseEdge, BaseItem, BaseModel, ItemType
 from .variable import Var
 
 MTYPES = {
@@ -65,7 +63,7 @@ class Box(BaseModel):
             return self.items[name]
         else:
             next_item = self.items[name]
-            if isinstance(next_item, (Var, EdgeC, EdgeR)):
+            if isinstance(next_item, (Var, BaseEdge)):
                 raise ValueError(f"item '{name}' is a component, not a model")
             elif isinstance(next_item, BaseModel):
                 return next_item._get_item(dq_path)
@@ -95,7 +93,7 @@ class Box(BaseModel):
             dict_cre: Dict[lhs, rhs]
         """
         for _, item in self:
-            if isinstance(item, (EdgeC, EdgeR)):
+            if isinstance(item, BaseEdge):
                 eq_dicts = item._formulate(eq_dicts)
             elif isinstance(item, BaseModel):
                 eq_dicts = item._formulate(eq_dicts)

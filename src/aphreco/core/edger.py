@@ -2,10 +2,10 @@ from collections import OrderedDict, deque
 from typing import Dict, Tuple
 
 import sympy
-from aphreco.core.base import BaseComponent, ItemType
+from aphreco.core.base import BaseEdge, ItemType
 
 
-class EdgeR(BaseComponent):
+class EdgeR(BaseEdge):
     def __init__(self, beat: Tuple[str, str, str], term: Dict[str, str]):
         """
         term: Dict[lhs, rhs]

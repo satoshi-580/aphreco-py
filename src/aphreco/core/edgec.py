@@ -2,10 +2,10 @@ from collections import deque
 from typing import Dict
 
 import sympy
-from aphreco.core.base import BaseComponent, ItemType
+from aphreco.core.base import BaseEdge, ItemType
 
 
-class EdgeC(BaseComponent):
+class EdgeC(BaseEdge):
     def __init__(self, term: Dict[str, str]):
         self.term = term
         self._type = ItemType.CON

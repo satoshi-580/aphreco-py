@@ -50,6 +50,12 @@ class BaseComponent(BaseItem):
         raise NotImplementedError
 
 
+class BaseEdge(BaseComponent):
+    @abc.abstractmethod
+    def _formulate(self, eq_dicts):
+        raise NotImplementedError
+
+
 class BaseModel(BaseItem):
     @abc.abstractmethod
     def _get_item(self, dq_path):
