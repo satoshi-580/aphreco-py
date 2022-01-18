@@ -138,6 +138,27 @@ def write_fn_cond(picked_cond_reg: str):
     return header + body + footer
 
 
+BEAT_HEADER = """  #[allow(unused_variables)]
+  fn beat(&self,t: &f64, y: &[f64; LEN_Y]) -> [[Decimal; 3]; LEN_B] {
+"""
+BEAT_FOOTER = """  }
+
+"""
+
+
+def write_fn_beat(picked_beat: str):
+    header = BEAT_HEADER
+
+    indent = " " * 6
+    body = " " * 4 + "[\n"
+    for line in picked_beat.splitlines():
+        body += indent + line + "\n"
+    body += " " * 4 + "]\n"
+
+    footer = BEAT_FOOTER
+    return header + body + footer
+
+
 CRE_HEADER = """  #[allow(unused_variables)]
   fn cre(&self, t: &f64, y: &mut [f64; LEN_Y]) {
 """
