@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 import sympy
-
 from aphreco.core import BaseModel
 
 

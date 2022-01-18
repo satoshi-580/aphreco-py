@@ -2,12 +2,9 @@ from collections import deque
 from pathlib import Path
 from typing import List, Optional, Set, Union
 
-import sympy
-
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
-from aphreco.pick import Picker
-from aphreco.write import Writer
+from aphreco.write import Picker, Writer
 
 
 class Unit:
@@ -118,9 +115,9 @@ class Unit:
         #   picker.cre: str
         self.picker.collect_equations(self.model)
         # create
-        #   picker.ini_y: str
+        #   picker.y: str
         #   picker.p: str
-        #   picker.ini_x: str
+        #   picker.x: str
         self.picker.collect_values(self.model)
 
     def write(self):

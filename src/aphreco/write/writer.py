@@ -1,6 +1,5 @@
-from aphreco.pick import Picker
-
 from . import rsmain, rssim, rsuse
+from .picker import Picker
 
 
 class Writer:
@@ -29,7 +28,10 @@ class Writer:
         rust_code += self.simtrait
         return rust_code
 
-    def save(self, path):
+    def write_sim(self):
+        pass
+
+    def write_opt(self):
         pass
 
     def _write_sim_main(self):
@@ -62,3 +64,6 @@ class Writer:
         model_code = model_code[:-1] + "}\n"  # end impl
 
         self.simtrait = model_code
+
+    def save(self, path):
+        pass
