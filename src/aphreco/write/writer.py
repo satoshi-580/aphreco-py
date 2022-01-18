@@ -32,14 +32,14 @@ class Writer:
         # set self.sampling_time
         self._write_sampling_time(source)
 
-        rust_code = ""
-        rust_code += self.rsparts["use"]
-        rust_code += self.rsparts["main"]
-        rust_code += self.rsparts["struct"]
-        rust_code += self.rsparts["simtrait"]
-        rust_code += self.rsparts["smp_t"]
+        rs_code = ""
+        rs_code += self.rsparts["use"]
+        rs_code += self.rsparts["main"]
+        rs_code += self.rsparts["struct"]
+        rs_code += self.rsparts["simtrait"]
+        rs_code += self.rsparts["smp_t"]
 
-        return rust_code
+        return rs_code
 
     def write_sim(self):
         pass
