@@ -7,9 +7,12 @@ from aphreco.core import BaseModel
 
 class Picker:
     def __init__(self):
-        self.ode = None
-        self.rec = None
-        self.cre = None
+        self.t = ""
+        self.y = ""
+        self.p = ""
+        self.ode = ""
+        self.rec = ""
+        self.cre = ""
 
     def collect_equations(self, model: BaseModel):
         # dict_ode: Dict[lhs('deriv_' not yet added), rhs]
@@ -84,6 +87,6 @@ class Picker:
             num_space = max_vallen - vallen + 1
             str_p += line.replace("***space***", " " * num_space) + "\n"
 
-        self.ini_y = str_ini_y[:-1]
+        self.y = str_ini_y[:-1]
         self.p = str_p[:-1]
-        self.ini_x = dict_x
+        self.x = dict_x

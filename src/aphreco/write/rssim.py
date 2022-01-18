@@ -41,6 +41,31 @@ def write_fn_new(picked_p: str):
     return new_header + new_body + new_footer
 
 
+INIT_HEADER = """  fn init(&self) -> (f64, [f64; LEN_Y]) {
+"""
+
+INIT_FOOTER = """    ];
+
+    (t0, y0)
+  }
+
+"""
+
+
+def write_fn_init(picked_t: str, picked_y: str):
+    header = INIT_HEADER
+
+    body = ""
+    body += " " * 4 + "let t0 = " + picked_t + ";\n"
+    body += " " * 4 + "let y0 = [\n"
+    indent = " " * 6
+    for line in picked_y.splitlines():
+        body += indent + line + "\n"
+
+    footer = INIT_FOOTER
+    return header + body + footer
+
+
 ODE_HEADER = """  #[allow(unused_variables)]
   fn ode(&self, t: &f64, y: &[f64; LEN_Y], deriv_y: &mut [f64; LEN_Y]) {
 """

@@ -46,6 +46,7 @@ class Writer:
     def _write_sim_model(self, picker: Picker):
         impl = rssim.IMPL_SIMTRAIT
         fn_new = rssim.write_fn_new(picker.p)
+        fn_init = rssim.write_fn_init(picker.t, picker.y)
         fn_ode = rssim.write_fn_ode(picker.ode)
         fn_rec = rssim.write_fn_rec(picker.rec)
         fn_cre = rssim.write_fn_cre(picker.cre)
@@ -54,6 +55,7 @@ class Writer:
         model_code = ""
         model_code += impl
         model_code += fn_new
+        model_code += fn_init
         model_code += fn_ode
         model_code += fn_rec
         model_code += fn_cre

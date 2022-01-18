@@ -19,6 +19,15 @@ class Unit:
         self.picker = Picker()
         self.ini_t = ini_t
 
+    @property
+    def ini_t(self):
+        return self._ini_t
+
+    @ini_t.setter
+    def ini_t(self, ini_t: float):
+        self._ini_t = ini_t
+        self.picker.t = str(float(ini_t))
+
     def add(
         self,
         items: Union[BaseComponent, List[BaseComponent]],
