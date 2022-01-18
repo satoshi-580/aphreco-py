@@ -1,59 +1,62 @@
-from . import rsmain, sim
+from aphreco.pick import Picker
+
+from . import rsmain, rssim, rsuse
 
 
 class Writer:
     def __init__(self):
+        self.use = rsuse.APHRECO_PRELUDE
+        self.main = ""
+        self.struct = ""
+        self.simtrait = ""
+        self.opttrait = ""
+        self.data = ""
+
+    def write(self, source: Picker):
+        #  set self.main
+        self._write_sim_main()
+
+        # set self.struct
+        self._write_struct()
+
+        # set self.simtrait
+        self._write_sim_model(source)
+
+        rust_code = ""
+        rust_code += self.use
+        rust_code += self.main
+        rust_code += self.struct
+        rust_code += self.simtrait
+        return rust_code
+
+    def save(self, path):
         pass
 
-    def rs_main(self):
-        main_header = rsmain.MAIN_HEADER
-        main_body = rsmain.MAIN_BODY
-        main_footer = rsmain.MAIN_FOOTER
-        return main_header + main_body + main_footer
+    def _write_sim_main(self):
+        main_header = rsmain.HEADER
+        main_body = rsmain.SIM_BODY
+        main_footer = rsmain.FOOTER
+        self.main = main_header + main_body + main_footer
 
-    def rs_sim_model(self, ode_code: str, rec_code: str):
-        const = sim.CONST
-        struct = sim.STRUCT
-        new_header = sim.NEW_HEADER
-        new_body = sim.NEW_BODY
-        new_footer = sim.NEW_FOOTER
+    def _write_struct(self):
+        model_const = rssim.CONST
+        struct = rssim.STRUCT
+        self.struct = model_const + struct
+
+    def _write_sim_model(self, picker: Picker):
+        impl = rssim.IMPL_SIMTRAIT
+        fn_new = rssim.write_fn_new(picker.p)
+        fn_ode = rssim.write_fn_ode(picker.ode)
+        fn_rec = rssim.write_fn_rec(picker.rec)
+        fn_cre = rssim.write_fn_cre(picker.cre)
+
         # connect all
         model_code = ""
-        model_code += const
-        model_code += struct
-        model_code += new_header + new_body + new_footer
-        model_code += ode_code
-        model_code += rec_code
+        model_code += impl
+        model_code += fn_new
+        model_code += fn_ode
+        model_code += fn_rec
+        model_code += fn_cre
         model_code = model_code[:-1] + "}\n"  # end impl
 
-        return model_code
-
-    def rs_ode(self, str_ode: str):
-        header = sim.ODE_HEADER
-
-        indent = " " * 4
-        body = ""
-        for line in str_ode.splitlines():
-            body += indent + line + ";\n"
-
-        footer = sim.ODE_FOOTER
-        return header + body + footer
-
-    def rs_rec(self, str_rec: str):
-        header = sim.REC_HEADER
-
-        act_indent = " " * 4
-        delta_indent = " " * 6
-        body = ""
-        beat_id = 0
-        for line in str_rec.splitlines():
-            if line.startswith("==="):
-                if beat_id > 0:
-                    body += act_indent + "}\n"
-                body += act_indent + "if act[" + str(beat_id) + "] {\n"
-            else:
-                body += delta_indent + line + ";\n"
-        body += act_indent + "}\n"
-
-        footer = sim.REC_FOOTER
-        return header + body + footer
+        self.simtrait = model_code

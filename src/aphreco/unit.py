@@ -115,11 +115,8 @@ class Unit:
         self.picker.collect_values(self.model)
 
     def write(self):
-        main_code = self.writer.rs_main()
-        ode_code = self.writer.rs_ode(self.picker.ode)
-        rec_code = self.writer.rs_rec(self.picker.rec)
-        model_code = self.writer.rs_sim_model(ode_code, rec_code)
-        rust_code = main_code + model_code
+        rust_code = self.writer.write(self.picker)
+
         file_name = "main.rs"
         with open(file_name, "w") as f:
             f.write(rust_code)
