@@ -122,10 +122,7 @@ class Unit:
 
     def write(self):
         rust_code = self.writer.write(self.picker)
-
-        file_name = "main.rs"
-        with open(file_name, "w") as f:
-            f.write(rust_code)
+        self.code_name = self.writer.save(rust_code)
 
     def remove(self, name):
         target_path = self.find(name)

@@ -1,18 +1,23 @@
-from . import rsmain, rssampling, rssim, rsuse
+from collections import OrderedDict
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Optional
+
+from . import rscargo, rsmain, rssampling, rssim, rsuse
 from .picker import Picker
 
 
 class Writer:
     def __init__(self):
-        self.use = rsuse.APHRECO_PRELUDE
-        self.main = ""
-        # simulation
-        self.struct = ""
-        self.simtrait = ""
-        self.smp_t = ""
-        # optimization
-        self.opttrait = ""
-        self.data = ""
+        self.rsparts: Dict[str, str] = OrderedDict(
+            use=rsuse.APHRECO_PRELUDE,
+            main="",
+            struct="",
+            simtrait="",
+            smp_t="",
+            opttrait="",
+            data="",
+        )
 
     def write(self, source: Picker):
         #  set self.main
@@ -28,11 +33,11 @@ class Writer:
         self._write_sampling_time(source)
 
         rust_code = ""
-        rust_code += self.use
-        rust_code += self.main
-        rust_code += self.struct
-        rust_code += self.simtrait
-        rust_code += self.smp_t
+        rust_code += self.rsparts["use"]
+        rust_code += self.rsparts["main"]
+        rust_code += self.rsparts["struct"]
+        rust_code += self.rsparts["simtrait"]
+        rust_code += self.rsparts["smp_t"]
 
         return rust_code
 
@@ -46,12 +51,12 @@ class Writer:
         main_header = rsmain.HEADER
         main_body = rsmain.SIM_BODY
         main_footer = rsmain.FOOTER
-        self.main = main_header + main_body + main_footer
+        self.rsparts["main"] = main_header + main_body + main_footer
 
     def _write_struct(self):
         model_const = rssim.CONST
         struct = rssim.STRUCT
-        self.struct = model_const + struct
+        self.rsparts["struct"] = model_const + struct
 
     def _write_sim_model(self, picker: Picker):
         # connect all
@@ -64,10 +69,28 @@ class Writer:
         model_code += rssim.write_fn_beat(picker.beat)
         model_code += rssim.write_fn_cre(picker.cre)
         model_code = model_code[:-1] + "}\n\n"  # end impl
-        self.simtrait = model_code
+        self.rsparts["simtrait"] = model_code
 
     def _write_sampling_time(self, picker: Picker):
-        self.smp_t = rssampling.write_fn_sampling_time("")
+        self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
 
-    def save(self, path):
-        pass
+    def save(self, code: str, path: Optional[Path] = None):
+        if path is None:
+            path = Path.cwd()
+
+        path_cargo_toml = path / "Cargo.toml"
+        if not path_cargo_toml.exists():
+            rscargo.create_toml(path_cargo_toml)
+
+        # create src directory if not exists.
+        path_src = path / "src"
+        if not path_src.exists():
+            path_src.mkdir()
+
+        str_now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # file_name = "aphrecode_" + str_now + ".rs"
+        file_name = "main.rs"
+        with open(path_src / file_name, "w") as f:
+            f.write(code)
+
+        return file_name
