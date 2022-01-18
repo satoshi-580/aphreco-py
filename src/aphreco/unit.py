@@ -5,7 +5,7 @@ from typing import List, Optional, Set, Union
 import sympy
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, ItemType
 from aphreco.pick import Picker
 from aphreco.write import Writer
 
@@ -35,7 +35,7 @@ class Unit:
             raise ValueError(f"invalid path: {path}")
         if not isinstance(model, BaseModel):
             raise ValueError(
-                f"invalid path: expected ItemType.MODEL, found {model.type}."
+                f"invalid path: {model.type} found in '{path}'. expected Box."
             )
 
         if not isinstance(items, list):
