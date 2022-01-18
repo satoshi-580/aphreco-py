@@ -30,9 +30,13 @@ class Picker:
             eq = "deriv_" + lhs + " = " + str(sympy.sympify(rhs))
             str_ode += eq + "\n"
 
-        # assemble rec
+        # assemble rec/cond
         str_rec = ""
+        str_cond = ""
         for i, (beat, rec) in enumerate(dict_rec.items()):
+            str_cond += (
+                f"  act[{i}] = if *dec_t == nect_t[{i}] {{ true }} else {{ false }};"
+            )
             str_rec += f"=== {i}: {beat}\n"
             for lhs, rhs in rec.items():
                 eq = "delta_" + lhs + " += " + str(sympy.sympify(rhs))
@@ -47,6 +51,7 @@ class Picker:
         self.ode = str_ode[:-1]
         self.rec = str_rec[:-1]
         self.cre = str_cre[:-1]
+        self.cond = str_cond[:-1]
 
     def collect_values(self, model):
         val_dicts = model._collect_values(

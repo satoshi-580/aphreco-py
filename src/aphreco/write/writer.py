@@ -46,21 +46,14 @@ class Writer:
         self.struct = model_const + struct
 
     def _write_sim_model(self, picker: Picker):
-        impl = rssim.IMPL_SIMTRAIT
-        fn_new = rssim.write_fn_new(picker.p)
-        fn_init = rssim.write_fn_init(picker.t, picker.y)
-        fn_ode = rssim.write_fn_ode(picker.ode)
-        fn_rec = rssim.write_fn_rec(picker.rec)
-        fn_cre = rssim.write_fn_cre(picker.cre)
-
         # connect all
-        model_code = ""
-        model_code += impl
-        model_code += fn_new
-        model_code += fn_init
-        model_code += fn_ode
-        model_code += fn_rec
-        model_code += fn_cre
+        model_code = rssim.IMPL_SIMTRAIT
+        model_code += rssim.write_fn_new(picker.p)
+        model_code += rssim.write_fn_init(picker.t, picker.y)
+        model_code += rssim.write_fn_ode(picker.ode)
+        model_code += rssim.write_fn_rec(picker.rec)
+        model_code += rssim.write_fn_cond(picker.cond)
+        model_code += rssim.write_fn_cre(picker.cre)
         model_code = model_code[:-1] + "}\n"  # end impl
 
         self.simtrait = model_code
