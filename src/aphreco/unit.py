@@ -5,7 +5,7 @@ from typing import List, Optional, Set, Union
 import sympy
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, ItemType
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.pick import Picker
 from aphreco.write import Writer
 
