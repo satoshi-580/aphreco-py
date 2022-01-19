@@ -14,7 +14,7 @@ class Symbols:
     def exists(self, symbol: str) -> bool:
         return symbol in self.member.keys()
 
-    def add(self, new_symbol: str, vtype: ItemType, index: int = 0):
+    def add(self, new_symbol: str, vtype: ItemType, index: int = -1):
         """add a new symbol to Symbols.registered. (default index is 0)"""
         if self.exists(new_symbol):
             raise ValueError(f"There has already been {new_symbol} in a model.")
@@ -24,10 +24,10 @@ class Symbols:
 
         self.member[new_symbol] = (vtype, index)
 
-    def set_index(self, symbol: str, index: int):
+    def set_index(self, name: str, index: int):
         """update a index of which the sybmol has already been registered."""
-        if not self.exists(symbol):
-            raise ValueError(f"{symbol} not found.")
+        if not self.exists(name):
+            raise ValueError(f"{name} not found.")
 
-        (vtype, _) = self.member[symbol]
-        self.member[symbol] = (vtype, index)
+        (vtype, _) = self.member[name]
+        self.member[name] = (vtype, index)

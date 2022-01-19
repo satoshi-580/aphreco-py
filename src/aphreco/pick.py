@@ -1,7 +1,9 @@
 from collections import OrderedDict
 
 import sympy
+
 from aphreco.core import BaseModel
+from aphreco.symbols import Symbols
 
 
 class Picker:
@@ -58,18 +60,19 @@ class Picker:
             str_cre += eq + "\n"
         self.cre = str_cre[:-1]
 
-    def collect_values(self, model):
+    def collect_values(self, model, symbols: Symbols):
         val_dicts = model._collect_values(
             OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
         )
         dict_y = val_dicts["y"]
-        dict_p = val_dicts["p"]
+        dict_p = val_dicts["p"]  # This p contains both P and X variables
         dict_x = val_dicts["x"]
 
         # assemble y
         str_ini_y_with_replacement = ""
         max_vallen = 0
         for i, (name, value) in enumerate(dict_y.items()):
+            symbols.set_index(name, i)
             # '//' is a comment format in Rust lang.
             str_ini_y_with_replacement += f"{value},***space***// y[{i}] {name}\n"
             vallen = len(str(value))
@@ -85,6 +88,7 @@ class Picker:
         str_p_with_replacement = ""
         max_vallen = 0
         for i, (name, value) in enumerate(dict_p.items()):
+            symbols.set_index(name, i)
             # '//' is a comment format in Rust lang.
             str_p_with_replacement += f"{value},***space***// p[{i}] {name}\n"
             vallen = len(str(value))

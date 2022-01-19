@@ -4,8 +4,9 @@ from typing import List, Optional, Set, Union
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.pick import Picker
 from aphreco.symbols import Symbols
-from aphreco.write import Picker, Writer
+from aphreco.write import Writer
 
 
 class Unit:
@@ -120,7 +121,7 @@ class Unit:
         #   picker.y: str
         #   picker.p: str
         #   picker.x: str
-        self.picker.collect_values(self.model)
+        self.picker.collect_values(self.model, self.symbols)
 
     def write(self):
         rust_code = self.writer.write(self.picker)

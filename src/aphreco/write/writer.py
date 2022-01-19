@@ -3,8 +3,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
+from aphreco.pick import Picker
+
 from . import rscargo, rsmain, rssampling, rssim, rsuse
-from .picker import Picker
 
 
 class Writer:
