@@ -4,16 +4,19 @@ from typing import List, Optional, Set, Union
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.symbols import Symbols
 from aphreco.write import Picker, Writer
 
 
 class Unit:
-    def __init__(self, name: str = "", ini_t: float = 0.0):
-        self.model = Box(name)
-        self.symbols: Set[str] = set()
-        self.command = Command()
-        self.writer = Writer()
-        self.picker = Picker()
+    def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
+        # TODO: symbols: Dict[symbol(str), Tuple(vtype(ItemType), index(int)))]
+        self.syms = Symbols()
+        self.symbols: Set[str] = set()  # symbols for duplication check
+        self.model = Box(name)  # model expressed as a tree structure
+        self.picker = Picker()  # harvest items from self.model
+        self.writer = Writer()  # write/save code from model source
+        self.command = Command()  # for rust compilation
         self.ini_t = ini_t
 
     @property
@@ -32,6 +35,7 @@ class Unit:
         name: str = None,
     ):
         """Add items to Unit.model"""
+        # TODO: enable to add nested box items by Width-First Search
         if name:
             model = self.get(name=name)
         else:

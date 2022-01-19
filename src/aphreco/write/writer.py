@@ -38,14 +38,7 @@ class Writer:
         rs_code += self.rsparts["struct"]
         rs_code += self.rsparts["simtrait"]
         rs_code += self.rsparts["smp_t"]
-
         return rs_code
-
-    def write_sim(self):
-        pass
-
-    def write_opt(self):
-        pass
 
     def _write_sim_main(self):
         main_header = rsmain.HEADER
