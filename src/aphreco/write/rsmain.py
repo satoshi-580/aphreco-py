@@ -6,7 +6,7 @@ SIM_BODY = """
 
   let sampling_time = sampling_time();
   let simres = simulator.run(&sampling_time);
-  simres.save("./");
+  simres.save("./res/");
 """
 
 OPT_BODY = """

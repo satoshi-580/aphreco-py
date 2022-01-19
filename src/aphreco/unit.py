@@ -110,6 +110,11 @@ class Unit:
     def tree(self):
         self.model._print_tree(indent="")
 
+    def simulate(self):
+        self.pick()
+        self.write()
+        self.command.compile()
+
     def pick(self):
         # create
         #   picker.ode: str

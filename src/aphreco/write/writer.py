@@ -121,11 +121,16 @@ class Writer:
         path_src = path / "src"
         if not path_src.exists():
             path_src.mkdir()
-
-        str_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # file_name = "aphrecode_" + str_now + ".rs"
         file_name = "main.rs"
         with open(path_src / file_name, "w") as f:
+            f.write(code)
+
+        path_res = path / "res"
+        if not path_res.exists():
+            path_res.mkdir()
+        str_now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = "aphrecode_" + str_now + ".rs"
+        with open(path_res / file_name, "w") as f:
             f.write(code)
 
         return file_name
