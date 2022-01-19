@@ -1,23 +1,31 @@
 from collections import deque
-from pathlib import Path
 from typing import List, Optional, Set, Union
-
-import sympy
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.pick import Picker
+from aphreco.symbols import Symbols
 from aphreco.write import Writer
 
 
 class Unit:
-    def __init__(self, name: str = "", ini_t: float = 0.0):
-        self.model = Box(name)
-        self.symbols: Set[str] = set()
-        self.command = Command()
-        self.writer = Writer()
-        self.picker = Picker()
+    def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
+        # TODO: symbols: Dict[symbol(str), Tuple(vtype(ItemType), index(int)))]
+        self.symbols = Symbols()  # symbols for duplication check
+        self.model = Box(name)  # model expressed as a tree structure
+        self.picker = Picker()  # harvest items from self.model
+        self.writer = Writer()  # write/save code from model source
+        self.command = Command()  # for rust compilation
         self.ini_t = ini_t
+
+    @property
+    def ini_t(self):
+        return self._ini_t
+
+    @ini_t.setter
+    def ini_t(self, ini_t: float):
+        self._ini_t = ini_t
+        self.picker.t = str(float(ini_t))
 
     def add(
         self,
@@ -26,6 +34,7 @@ class Unit:
         name: str = None,
     ):
         """Add items to Unit.model"""
+        # TODO: enable to add nested box items by Width-First Search
         if name:
             model = self.get(name=name)
         else:
@@ -35,7 +44,7 @@ class Unit:
             raise ValueError(f"invalid path: {path}")
         if not isinstance(model, BaseModel):
             raise ValueError(
-                f"invalid path: expected ItemType.MODEL, found {model.type}."
+                f"invalid path: {model.type} found in '{path}'. expected Box."
             )
 
         if not isinstance(items, list):
@@ -54,12 +63,11 @@ class Unit:
                 if isinstance(item, BaseEdge):
                     for new_sym in new_symbol:
                         s = str(new_sym)
-                        self.check_symbols_used_in_edge(s)
-                        self.symbols.add(s)
+                        if not self.symbols.exists(s):
+                            raise ValueError(f"There is no variable '{s}'.")
                 else:
                     s = str(new_symbol)
-                    self.check_new_symbol(s)
-                    self.symbols.add(s)
+                    self.symbols.add(s, item.type)
                 model._add(item)
 
     def get(self, name: Optional[str] = None, path: Optional[str] = None):
@@ -102,6 +110,11 @@ class Unit:
     def tree(self):
         self.model._print_tree(indent="")
 
+    def simulate(self):
+        self.pick()
+        self.write()
+        self.command.compile()
+
     def pick(self):
         # create
         #   picker.ode: str
@@ -109,20 +122,14 @@ class Unit:
         #   picker.cre: str
         self.picker.collect_equations(self.model)
         # create
-        #   picker.ini_y: str
+        #   picker.y: str
         #   picker.p: str
-        #   picker.ini_x: str
-        self.picker.collect_values(self.model)
+        #   picker.x: str
+        self.picker.collect_values(self.model, self.symbols)
 
     def write(self):
-        main_code = self.writer.rs_main()
-        ode_code = self.writer.rs_ode(self.picker.ode)
-        rec_code = self.writer.rs_rec(self.picker.rec)
-        model_code = self.writer.rs_sim_model(ode_code, rec_code)
-        rust_code = main_code + model_code
-        file_name = "main.rs"
-        with open(file_name, "w") as f:
-            f.write(rust_code)
+        rust_code = self.writer.write(self.picker, self.symbols)
+        self.code_name = self.writer.save(rust_code)
 
     def remove(self, name):
         target_path = self.find(name)
@@ -133,11 +140,3 @@ class Unit:
         _ = dq_path.popleft()
         if len(dq_path) > 0:
             self.model._remove_by_name(dq_path)
-
-    def check_symbols_used_in_edge(self, used_sym):
-        if used_sym not in self.symbols:
-            raise ValueError(f"There is no variable '{used_sym}'.")
-
-    def check_new_symbol(self, new_sym):
-        if new_sym in self.symbols:
-            raise ValueError(f"The name '{new_sym}' has already been used.")

@@ -8,13 +8,12 @@ class RustCompilationError(Exception):
 
 class Command:
     def __init__(self):
-        self.sim_compile = "cargo build --release "
-        self.sim_run = "cargo run --release "
+        self.cargo_run = "cargo run"
 
-    def compile(self, filename):
+    def compile(self):
         success = True
         with subprocess.Popen(
-            shlex.split(self.sim_compile + filename),
+            shlex.split(self.cargo_run),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,
@@ -22,7 +21,8 @@ class Command:
         ) as p:
             while True:
                 line = p.stdout.readline()
-                if "Error:" in line:
+                print(line, end="")
+                if "panic:" in line:
                     x = line.find("Error:")
                     print(line[:x])
                     success = False
