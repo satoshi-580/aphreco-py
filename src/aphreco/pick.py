@@ -13,6 +13,8 @@ class Picker:
         self.p = ""
         self.ode = ""
         self.rec = ""
+        self.cond = ""
+        self.beat = ""
         self.cre = ""
 
     def collect_equations(self, model: BaseModel):

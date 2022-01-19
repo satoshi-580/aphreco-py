@@ -3,7 +3,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
+from aphreco.core import ItemType
 from aphreco.pick import Picker
+from aphreco.symbols import Symbols
 
 from . import rscargo, rsmain, rssampling, rssim, rsuse
 
@@ -20,7 +22,11 @@ class Writer:
             data="",
         )
 
-    def write(self, source: Picker):
+    def write(self, picker: Picker, symbols: Symbols):
+        # replace symbols in model equations
+        repmap = self.create_repmap(symbols)
+        source = self._replace_symbols(picker, repmap)
+
         #  set self.main
         self._write_sim_main()
 
@@ -40,6 +46,34 @@ class Writer:
         rs_code += self.rsparts["simtrait"]
         rs_code += self.rsparts["smp_t"]
         return rs_code
+
+    def create_repmap(self, symbols: Symbols):
+        """create a map for replacement
+        symbol name: replaced string y[index] or p[index]
+        """
+        sorted_member = OrderedDict(
+            sorted(symbols.member.items(), key=lambda k: len(k[0]), reverse=True)
+        )
+
+        repmap = OrderedDict()
+        for name, (vtype, index) in sorted_member.items():
+            if vtype == ItemType.Y:
+                repmap[name] = "y[" + str(index) + "]"
+            if vtype == (ItemType.P or ItemType.X):
+                repmap[name] = "self.p[" + str(index) + "]"
+
+        return repmap
+
+    def _replace_symbols(self, picker: Picker, repmap: Dict[str, str]):
+        """replace symbols by y[i] or self.p[i]"""
+        source = picker
+        for name, code in repmap.items():
+            source.ode = picker.ode.replace(name, code)
+            source.rec = picker.rec.replace(name, code)
+            source.beat = picker.beat.replace(name, code)
+            source.cre = picker.cre.replace(name, code)
+
+        return source
 
     def _write_sim_main(self):
         main_header = rsmain.HEADER

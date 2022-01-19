@@ -124,7 +124,7 @@ class Unit:
         self.picker.collect_values(self.model, self.symbols)
 
     def write(self):
-        rust_code = self.writer.write(self.picker)
+        rust_code = self.writer.write(self.picker, self.symbols)
         self.code_name = self.writer.save(rust_code)
 
     def remove(self, name):
