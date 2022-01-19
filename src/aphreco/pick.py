@@ -47,7 +47,7 @@ class Picker:
                 str_rec += eq + "\n"
             # cond
             str_cond += (
-                f"  act[{i}] = if *dec_t == nect_t[{i}] {{ true }} else {{ false }};"
+                f"  act[{i}] = if *dec_t == next_t[{i}] {{ true }} else {{ false }};"
             )
             # beat
             str_beat += "beat![" + beat[0] + ", " + beat[1] + ", " + beat[2] + "],\n"
