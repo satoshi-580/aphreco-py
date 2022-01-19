@@ -15,6 +15,7 @@ class Writer:
         self.rsparts: Dict[str, str] = OrderedDict(
             use=rsuse.APHRECO_PRELUDE,
             main="",
+            const="",
             struct="",
             simtrait="",
             smp_t="",
@@ -27,25 +28,29 @@ class Writer:
         repmap = self.create_repmap(symbols)
         source = self._replace_symbols(picker, repmap)
 
-        #  set self.main
+        # set rsparts
         self._write_sim_main()
-
-        # set self.struct
+        self._write_const(source)
         self._write_struct()
-
-        # set self.simtrait
         self._write_sim_model(source)
-
-        # set self.sampling_time
         self._write_sampling_time(source)
 
+        # connect rsparts
         rs_code = ""
         rs_code += self.rsparts["use"]
         rs_code += self.rsparts["main"]
+        rs_code += self.rsparts["const"]
         rs_code += self.rsparts["struct"]
         rs_code += self.rsparts["simtrait"]
         rs_code += self.rsparts["smp_t"]
         return rs_code
+
+    def count_rsconst(self, picker: Picker):
+        """count const number(LEN_Y, LNE_P, LEN_B) for the rust code"""
+        len_y = picker.y.count("\n") + 1
+        len_p = picker.p.count("\n") + 1
+        len_b = picker.beat.count("\n") + 1
+        return len_y, len_p, len_b
 
     def create_repmap(self, symbols: Symbols):
         """create a map for replacement
@@ -81,10 +86,12 @@ class Writer:
         main_footer = rsmain.FOOTER
         self.rsparts["main"] = main_header + main_body + main_footer
 
+    def _write_const(self, source: Picker):
+        len_y, len_p, len_b = self.count_rsconst(source)
+        self.rsparts["const"] = rssim.write_const(len_y, len_p, len_b)
+
     def _write_struct(self):
-        model_const = rssim.CONST
-        struct = rssim.STRUCT
-        self.rsparts["struct"] = model_const + struct
+        self.rsparts["struct"] = rssim.STRUCT
 
     def _write_sim_model(self, picker: Picker):
         # connect all

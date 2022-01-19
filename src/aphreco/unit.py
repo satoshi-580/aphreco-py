@@ -1,5 +1,4 @@
 from collections import deque
-from pathlib import Path
 from typing import List, Optional, Set, Union
 
 from aphreco.command import Command

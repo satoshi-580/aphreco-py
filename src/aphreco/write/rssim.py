@@ -1,9 +1,12 @@
-CONST = """
-const LEN_Y: usize = 4;
-const LEN_P: usize = 11;
-const LEN_B: usize = 2;
+def write_const(len_y: int, len_p: int, len_b: int):
+    str_const = "\n"
+    str_const += f"const LEN_Y: usize = {len_y};\n"
+    str_const += f"const LEN_P: usize = {len_p};\n"
+    str_const += f"const LEN_B: usize = {len_b};\n"
+    str_const += "\n"
 
-"""
+    return str_const
+
 
 STRUCT = """
 #[allow(dead_code)]
