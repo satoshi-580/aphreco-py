@@ -11,8 +11,7 @@ from aphreco.write import Picker, Writer
 class Unit:
     def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
         # TODO: symbols: Dict[symbol(str), Tuple(vtype(ItemType), index(int)))]
-        self.syms = Symbols()
-        self.symbols: Set[str] = set()  # symbols for duplication check
+        self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
         self.picker = Picker()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
@@ -64,12 +63,11 @@ class Unit:
                 if isinstance(item, BaseEdge):
                     for new_sym in new_symbol:
                         s = str(new_sym)
-                        self.check_symbols_used_in_edge(s)
-                        self.symbols.add(s)
+                        if not self.symbols.exists(s):
+                            raise ValueError(f"There is no variable '{s}'.")
                 else:
                     s = str(new_symbol)
-                    self.check_new_symbol(s)
-                    self.symbols.add(s)
+                    self.symbols.add(s, item.type)
                 model._add(item)
 
     def get(self, name: Optional[str] = None, path: Optional[str] = None):
@@ -137,11 +135,3 @@ class Unit:
         _ = dq_path.popleft()
         if len(dq_path) > 0:
             self.model._remove_by_name(dq_path)
-
-    def check_symbols_used_in_edge(self, used_sym):
-        if used_sym not in self.symbols:
-            raise ValueError(f"There is no variable '{used_sym}'.")
-
-    def check_new_symbol(self, new_sym):
-        if new_sym in self.symbols:
-            raise ValueError(f"The name '{new_sym}' has already been used.")
