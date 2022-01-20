@@ -1,3 +1,4 @@
+import csv
 from typing import List, Optional, Tuple
 
 from aphreco.core import ItemType
@@ -8,15 +9,23 @@ class Obs:
     def __init__(self) -> None:
         self.data: Optional[
             List[Tuple[str, float, float, Optional[float], Optional[float], int]]
-        ] = [
-            ("X1", 0.0, 100.0, None, None, -1),
-            ("X2", 0.3, 98.0, None, None, -1),
-            ("X3", 0.2, 98.0, None, None, -1),
-            ("X1", 0.1, 98.0, None, None, -1),
-        ]
+        ] = None
 
-    def read_csv(self, csv):
-        pass
+    def read_obs(self, path):
+        with open(path) as f:
+            reader = csv.reader(f)
+            data = [
+                (
+                    row[0],
+                    float(row[1]),
+                    float(row[2]),
+                    None if len(row) <= 3 else {row[3]},
+                    None if len(row) <= 4 else {row[4]},
+                    -1,
+                )
+                for row in reader
+            ]
+        self.data = data
 
     def set_y_index(self, symbols: Symbols):
         if self.data is None:

@@ -1,3 +1,4 @@
+import enum
 from collections import deque
 from typing import List, Optional, Union
 
@@ -7,6 +8,12 @@ from aphreco.data import Obs
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
 from aphreco.write import Writer
+
+
+class ProcState(enum.Enum):
+    MODELING = enum.auto()  # modeling
+    SIMULATING = enum.auto()  # simulating
+    OPTIMIZING = enum.auto()  # optimizing
 
 
 class Unit:
@@ -113,27 +120,40 @@ class Unit:
         self.model._print_tree(indent="")
 
     def simulate(self):
-        self.pick()
+        self.pick(ProcState.SIMULATING)
         self.write()
         self.command.compile()
 
-    def pick(self):
-        # create
-        #   picker.ode: str
-        #   picker.rec: str
-        #   picker.cre: str
-        self.picker.collect_equations(self.model)
-        # create
-        #   picker.y: str
-        #   picker.p: str
-        #   picker.x: str
-        self.picker.collect_values(self.model, self.symbols)
+    def optimize(self):
+        self.pick(ProcState.OPTIMIZING)
+        # self.write()
+        # self.command.compile()
+
+    def pick(self, proc: ProcState):
+        if proc == (ProcState.SIMULATING or ProcState.OPTIMIZING):
+            # create
+            #   picker.ode: str
+            #   picker.rec: str
+            #   picker.cre: str
+            self.picker.collect_equations(self.model)
+
+            # create
+            #   picker.y: str
+            #   picker.p: str
+            self.picker.collect_values(self.model, self.symbols)
+
+        if proc == ProcState.OPTIMIZING:
+            # create
+            #   picker.x: str
+            #   picker.obs
+            self.picker.collect_data(self.obs, self.symbols)
 
     def write(self):
         rust_code = self.writer.write(self.picker, self.symbols)
         self.code_name = self.writer.save(rust_code)
 
-    def read_obs(self, path=""):
+    def read_obs(self, path):
+        self.obs.read_obs(path)
         self.obs.set_y_index(self.symbols)
         self.obs.sort_by_index()
 
