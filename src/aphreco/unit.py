@@ -134,8 +134,8 @@ class Unit:
         self.code_name = self.writer.save(rust_code)
 
     def read_obs(self, path=""):
-        self.obs.sort_data()
         self.obs.set_y_index(self.symbols)
+        self.obs.sort_by_index()
 
     def remove(self, name):
         target_path = self.find(name)

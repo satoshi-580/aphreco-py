@@ -5,34 +5,46 @@ from aphreco.symbols import Symbols
 
 
 class Obs:
-    def __init__(
-        self,
-        data: List[
-            Tuple[Tuple[str, int], Tuple[float, float], Optional[Tuple[float, float]]]
-        ],
-    ) -> None:
-        self.data = data
-        self.data = [
-            (("X1", -1), (0.0, 100.0), None),
-            (("X2", -1), (0.3, 98.0), None),
-            (("X3", -1), (0.2, 98.0), None),
-            (("X1", -1), (0.1, 98.0), None),
+    def __init__(self) -> None:
+        self.data: Optional[
+            List[Tuple[str, float, float, Optional[float], Optional[float], int]]
+        ] = [
+            ("X1", 0.0, 100.0, None, None, -1),
+            ("X2", 0.3, 98.0, None, None, -1),
+            ("X3", 0.2, 98.0, None, None, -1),
+            ("X1", 0.1, 98.0, None, None, -1),
         ]
 
-    def _set_y_index(self, symbols: Symbols):
-        for (i, (var, ty_val, ty_err)) in enumerate(self.data):
-            yname = var[0]
-            if not symbols.exists(yname):
-                raise KeyError(f"There is no {yname} in model")
-            elif symbols.member[yname][0] != ItemType.Y:
+    def read_csv(self, csv):
+        pass
+
+    def set_y_index(self, symbols: Symbols):
+        if self.data is None:
+            raise ValueError("No data found.")
+
+        if not isinstance(self.data, list):
+            raise TypeError("invalid data type")
+
+        for (i, (symbol, t, y, t_err, y_err, _)) in enumerate(self.data):
+            if not symbols.exists(symbol):
+                # cannot define data for a non-registered symbol
+                raise KeyError(f"variable '{symbol}' not found")
+
+            elif symbols.member[symbol][0] != ItemType.Y:
+                # data must be referred by a dependent variable y.
                 raise ValueError(
-                    f"Invalid ItemType: expected ItemType.Y, '{yname}' is {symbols.member[yname][1]}"
+                    f"invalid ItemType: '{symbol}'. found {symbols.member[symbol][1]}, expected ItemType.Y."
                 )
+
+            elif symbols.member[symbol][1] == -1:
+                # -1 is initialized value for yp-index
+                raise ValueError(f"index in Symbols.member has not been set yet.")
+
             else:
-                self.data[i] = ((yname, symbols.member[yname][1]), ty_val, ty_err)
+                self.data[i] = (symbol, t, y, t_err, y_err, symbols.member[symbol][1])
 
-    def _sort_by_index(self):
-        self.data.sort(key=lambda x: x[0][1])
+    def sort_by_index(self):
+        self.data.sort(key=lambda x: x[5])
 
-    def _sort_by_time(self):
-        self.data.sort(key=lambda x: x[1][0])
+    def sort_by_time(self):
+        self.data.sort(key=lambda x: x[1])
