@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Union
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
