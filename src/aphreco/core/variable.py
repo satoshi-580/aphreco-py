@@ -2,12 +2,14 @@ from collections import deque
 from typing import Dict, Optional, Tuple
 
 import sympy
-from aphreco.core.base import BaseComponent, ItemType
+
+from .base import BaseComponent, ItemType
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
     "p": ItemType.P,  # model parameter (independent, constant)
     "x": ItemType.X,  # unknown parameter (optimized)
+    # "e": ItemType.E,  # effect on a target
 }
 
 
@@ -18,10 +20,17 @@ class Var(BaseComponent):
         vtype: str = "y",
         value: float = 0.0,
         term: Optional[str] = None,
+        bounds: Optional[Tuple[float, float]] = None,
     ):
         self.name = name
-        self.value = float(value)
         self.type = vtype
+
+        self.value = float(value)
+
+        if bounds is None:
+            self.bounds = None
+        else:
+            self.bounds = (float(bounds[0]), float(bounds[1]))
 
         if term is None:
             self.term = None
@@ -121,9 +130,18 @@ class P(BaseComponent):
         cls,
         name: str,
         value: float = 0.0,
-        bounds: Optional[Tuple[float, float]] = None,
     ):
         return Var(name=name, value=value, vtype="p", term=None)
+
+
+class X(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        bounds: Optional[Tuple[float, float]] = None,
+    ):
+        return Var(name=name, value=value, vtype="x", term=None, bounds=bounds)
 
 
 class Beat:
