@@ -33,16 +33,12 @@ class Writer:
         self._write_const(source)
         self._write_struct()
         self._write_sim_model(source)
-        self._write_sampling_time(source)
+        self._write_sampling_time()
 
         # connect rsparts
         rs_code = ""
-        rs_code += self.rsparts["use"]
-        rs_code += self.rsparts["main"]
-        rs_code += self.rsparts["const"]
-        rs_code += self.rsparts["struct"]
-        rs_code += self.rsparts["simtrait"]
-        rs_code += self.rsparts["smp_t"]
+        for str_part in self.rsparts.values():
+            rs_code += str_part
         return rs_code
 
     def count_rsconst(self, picker: Picker):
@@ -106,8 +102,11 @@ class Writer:
         model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["simtrait"] = model_code
 
-    def _write_sampling_time(self, picker: Picker):
+    def _write_sampling_time(self):
         self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
+
+    def _write_opt_model(self):
+        pass
 
     def save(self, code: str, path: Optional[Path] = None):
         if path is None:

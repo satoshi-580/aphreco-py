@@ -10,10 +10,9 @@ from aphreco.symbols import Symbols
 from aphreco.write import Writer
 
 
-class ProcState(enum.Enum):
-    MODELING = enum.auto()  # modeling
-    SIMULATING = enum.auto()  # simulating
-    OPTIMIZING = enum.auto()  # optimizing
+class ProcType(enum.Enum):
+    SIM = enum.auto()  # simulate
+    OPT = enum.auto()  # optimize
 
 
 class Unit:
@@ -26,6 +25,7 @@ class Unit:
         self.command = Command()  # for rust compilation
         self.obs = Obs()  # observation data
         self.ini_t = ini_t
+        self.flags = dict(data_loaded=False)
 
     @property
     def ini_t(self):
@@ -119,18 +119,20 @@ class Unit:
     def tree(self):
         self.model._print_tree(indent="")
 
-    def simulate(self):
-        self.pick(ProcState.SIMULATING)
+    def simulate(self, now=True):
+        self.pick(ProcType.SIM)
         self.write()
-        self.command.compile()
+        if now:
+            self.command.compile()
 
-    def optimize(self):
-        self.pick(ProcState.OPTIMIZING)
+    def optimize(self, now=True):
+        self.pick(ProcType.OPT)
         # self.write()
+        # if now:
         # self.command.compile()
 
-    def pick(self, proc: ProcState):
-        if proc == (ProcState.SIMULATING or ProcState.OPTIMIZING):
+    def pick(self, proc: ProcType):
+        if proc == (ProcType.SIM or ProcType.OPT):
             # create
             #   picker.ode: str
             #   picker.rec: str
@@ -142,7 +144,7 @@ class Unit:
             #   picker.p: str
             self.picker.collect_values(self.model, self.symbols)
 
-        if proc == ProcState.OPTIMIZING:
+        if proc == ProcType.OPT:
             # create
             #   picker.x: str
             #   picker.obs

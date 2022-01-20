@@ -16,6 +16,8 @@ class Picker:
         self.cond = ""
         self.beat = ""
         self.cre = ""
+        self.x = ""
+        self.obs = ""
 
     def collect_equations(self, model: BaseModel):
         # dict_ode: Dict[lhs('deriv_' not yet added), rhs]
@@ -105,3 +107,6 @@ class Picker:
         self.y = str_ini_y[:-1]
         self.p = str_p[:-1]
         self.x = dict_x
+
+    def collect_data(self, obs, symbols: Symbols):
+        pass
