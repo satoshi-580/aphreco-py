@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
+from aphreco.data import Obs
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
 from aphreco.write import Writer
@@ -16,6 +17,7 @@ class Unit:
         self.picker = Picker()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
         self.command = Command()  # for rust compilation
+        self.obs = Obs()  # observation data
         self.ini_t = ini_t
 
     @property
@@ -130,6 +132,10 @@ class Unit:
     def write(self):
         rust_code = self.writer.write(self.picker, self.symbols)
         self.code_name = self.writer.save(rust_code)
+
+    def read_obs(self, path=""):
+        self.obs.sort_data()
+        self.obs.set_y_index(self.symbols)
 
     def remove(self, name):
         target_path = self.find(name)

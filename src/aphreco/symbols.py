@@ -11,6 +11,9 @@ class Symbols:
     def keys(self):
         return self.member.keys()
 
+    def items(self):
+        return self.member.items()
+
     def exists(self, symbol: str) -> bool:
         return symbol in self.member.keys()
 
