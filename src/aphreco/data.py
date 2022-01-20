@@ -11,16 +11,16 @@ class Obs:
             List[Tuple[str, float, float, Optional[float], Optional[float], int]]
         ] = None
 
-    def read_obs(self, path):
-        with open(path) as f:
+    def read_obs(self, csv_path):
+        with open(csv_path) as f:
             reader = csv.reader(f)
             data = [
                 (
                     row[0],
                     float(row[1]),
                     float(row[2]),
-                    None if len(row) <= 3 else {row[3]},
-                    None if len(row) <= 4 else {row[4]},
+                    None if len(row) <= 3 else {float(row[3])},
+                    None if len(row) <= 4 else {float(row[4])},
                     -1,
                 )
                 for row in reader
