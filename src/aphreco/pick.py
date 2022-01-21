@@ -149,5 +149,33 @@ class Picker:
         self.x_index = str_x_index
         self.x_bounds = str_x_bounds
 
-    def collect_obs(self, obs, symbols: Symbols):
-        pass
+    def collect_obs(self, obs):
+        str_obs_with_replacement = ""
+        max_datlen = 0
+        for data in obs.data:
+            str_dat = (
+                "("
+                + str(data[5])
+                + ", "
+                + str(data[1])
+                + ", "
+                + str(data[2])
+                + ", "
+                + str(data[3])
+                + ", "
+                + str(data[4])
+                + ")"
+            )
+            str_obs_with_replacement += (
+                str_dat + ",***space***// " + str(data[0]) + "\n"
+            )
+            datlen = len(str_dat)
+            max_datlen = datlen if max_datlen < datlen else max_datlen
+
+        str_obs = ""
+        for line in str_obs_with_replacement.splitlines():
+            datlen = line.find("),")
+            num_space = max_datlen - datlen + 1
+            str_obs += line.replace("***space***", " " * num_space) + "\n"
+
+        self.obs = str_obs

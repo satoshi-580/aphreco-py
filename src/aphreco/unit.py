@@ -123,8 +123,8 @@ class Unit:
     def optimize(self, now=True):
         self.pick(ProcType.OPT)
         self.write(ProcType.OPT)
-        # if now:
-        # self.command.compile()
+        if now:
+            self.command.compile()
 
     def pick(self, ptype: ProcType):
         if ptype in (ProcType.SIM | ProcType.OPT):
@@ -143,7 +143,7 @@ class Unit:
             # create
             #   picker.x: str
             #   picker.obs
-            self.picker.collect_obs(self.obs, self.symbols)
+            self.picker.collect_obs(self.obs)
 
     def write(self, ptype: ProcType):
         rust_code = self.writer.write(self.picker, self.symbols, ptype)

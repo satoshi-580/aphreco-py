@@ -7,7 +7,7 @@ from aphreco.pick import Picker
 from aphreco.symbols import Symbols
 from aphreco.types import ItemType, ProcType
 
-from . import rscargo, rsmain, rsopt, rssampling, rssim, rsuse
+from . import rscargo, rsmain, rsobs, rsopt, rssampling, rssim, rsuse
 
 
 class Writer:
@@ -21,7 +21,7 @@ class Writer:
             smp_t="",
             optconst="",
             opttrait="",
-            data="",
+            obs="",
         )
 
     def write(
@@ -32,29 +32,24 @@ class Writer:
     ):
         # replace symbols in model equations
         repmap = self.create_repmap(symbols)
-        source = self._replace_symbols(picker, repmap)
+        replaced_picker = self._replace_symbols(picker, repmap)
 
         # set rsparts
         self._write_sim_main()
-        self._write_const(source)
+        self._write_const(replaced_picker)
         self._write_struct()
-        self._write_sim_model(source)
+        self._write_sim_model(replaced_picker)
         self._write_sampling_time()
+
         if ptype == ProcType.OPT:
-            self._write_opt_model(source)
+            self._write_opt_model(replaced_picker)
+            self._write_obs(replaced_picker)
 
         # connect rsparts
         rs_code = ""
         for str_part in self.rsparts.values():
             rs_code += str_part
         return rs_code
-
-    def count_rsconst(self, picker: Picker):
-        """count const number(LEN_Y, LNE_P, LEN_B) for the rust code"""
-        len_y = picker.y.count("\n") + 1
-        len_p = picker.p.count("\n") + 1
-        len_b = picker.beat.count("\n") + 1
-        return len_y, len_p, len_b
 
     def create_repmap(self, symbols: Symbols):
         """create a map for replacement
@@ -75,14 +70,14 @@ class Writer:
 
     def _replace_symbols(self, picker: Picker, repmap: Dict[str, str]):
         """replace symbols by y[i] or self.p[i]"""
-        source = picker
+        replaced_picker = picker
         for name, code in repmap.items():
-            source.ode = picker.ode.replace(name, code)
-            source.rec = picker.rec.replace(name, code)
-            source.beat = picker.beat.replace(name, code)
-            source.cre = picker.cre.replace(name, code)
+            replaced_picker.ode = picker.ode.replace(name, code)
+            replaced_picker.rec = picker.rec.replace(name, code)
+            replaced_picker.beat = picker.beat.replace(name, code)
+            replaced_picker.cre = picker.cre.replace(name, code)
 
-        return source
+        return replaced_picker
 
     def _write_sim_main(self):
         main_header = rsmain.HEADER
@@ -90,38 +85,48 @@ class Writer:
         main_footer = rsmain.FOOTER
         self.rsparts["main"] = main_header + main_body + main_footer
 
-    def _write_const(self, source: Picker):
-        len_y, len_p, len_b = self.count_rsconst(source)
+    def _write_const(self, reppicker: Picker):
+        len_y, len_p, len_b = self.count_rsconst(reppicker)
         self.rsparts["const"] = rssim.write_const(len_y, len_p, len_b)
+
+    def count_rsconst(self, reppicker: Picker):
+        """count const number(LEN_Y, LNE_P, LEN_B) for the rust code"""
+        len_y = reppicker.y.count("\n") + 1
+        len_p = reppicker.p.count("\n") + 1
+        len_b = reppicker.beat.count("\n") + 1
+        return len_y, len_p, len_b
 
     def _write_struct(self):
         self.rsparts["struct"] = rssim.STRUCT
 
-    def _write_sim_model(self, picker: Picker):
+    def _write_sim_model(self, reppicker: Picker):
         # connect all
         model_code = rssim.IMPL_SIMTRAIT
-        model_code += rssim.write_fn_new(picker.p)
-        model_code += rssim.write_fn_init(picker.t, picker.y)
-        model_code += rssim.write_fn_ode(picker.ode)
-        model_code += rssim.write_fn_rec(picker.rec)
-        model_code += rssim.write_fn_cond(picker.cond)
-        model_code += rssim.write_fn_beat(picker.beat)
-        model_code += rssim.write_fn_cre(picker.cre)
+        model_code += rssim.write_fn_new(reppicker.p)
+        model_code += rssim.write_fn_init(reppicker.t, reppicker.y)
+        model_code += rssim.write_fn_ode(reppicker.ode)
+        model_code += rssim.write_fn_rec(reppicker.rec)
+        model_code += rssim.write_fn_cond(reppicker.cond)
+        model_code += rssim.write_fn_beat(reppicker.beat)
+        model_code += rssim.write_fn_cre(reppicker.cre)
         model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["simtrait"] = model_code
 
     def _write_sampling_time(self):
         self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
 
-    def _write_opt_model(self, picker: Picker):
-        len_x = picker.y.count("\n") + 1
+    def _write_opt_model(self, reppicker: Picker):
+        len_x = reppicker.y.count("\n") + 1
         str_opt_const = rsopt.write_const(len_x)
         self.rsparts["optconst"] = str_opt_const
 
         model_code = rsopt.IMPL_OPTTRAIT
-        model_code += rsopt.write_fn_getx(picker.x_index, picker.x_bounds)
+        model_code += rsopt.write_fn_getx(reppicker.x_index, reppicker.x_bounds)
         # code += rsopt.write_fn_obs(picker.d)
         self.rsparts["opttrait"] = model_code
+
+    def _write_obs(self, reppicker: Picker):
+        self.rsparts["obs"] = rsobs.write_fn_obs(reppicker.obs)
 
     def save(self, code: str, path: Optional[Path] = None):
         if path is None:
