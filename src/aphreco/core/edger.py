@@ -2,8 +2,9 @@ from collections import OrderedDict, deque
 from typing import Dict, Tuple
 
 import sympy
-from aphreco.core.base import BaseEdge
 from aphreco.types import ItemType
+
+from .base import BaseEdge
 
 
 class EdgeR(BaseEdge):
