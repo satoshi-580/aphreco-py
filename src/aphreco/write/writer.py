@@ -60,7 +60,7 @@ class Writer:
         for name, (vtype, index) in sorted_member.items():
             if vtype == ItemType.Y:
                 repmap[name] = "y[" + str(index) + "]"
-            if vtype == (ItemType.P or ItemType.X):
+            if vtype in (ItemType.P | ItemType.X):
                 repmap[name] = "self.p[" + str(index) + "]"
 
         return repmap
