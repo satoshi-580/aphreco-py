@@ -4,7 +4,9 @@ from collections import OrderedDict, deque
 from operator import eq
 from typing import Dict, List, Optional, Union
 
-from .base import BaseEdge, BaseItem, BaseModel, ItemType
+from aphreco.types import ItemType
+
+from .base import BaseEdge, BaseItem, BaseModel
 from .variable import Var
 
 MTYPES = {

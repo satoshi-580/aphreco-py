@@ -2,8 +2,9 @@ from collections import deque
 from typing import Dict, Optional, Tuple
 
 import sympy
+from aphreco.types import ItemType
 
-from .base import BaseComponent, ItemType
+from .base import BaseComponent
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable

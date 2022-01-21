@@ -1,4 +1,3 @@
-import enum
 from collections import deque
 from typing import List, Optional, Union
 
@@ -7,12 +6,8 @@ from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.data import Obs
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
+from aphreco.types import ProcType
 from aphreco.write import Writer
-
-
-class ProcType(enum.Enum):
-    SIM = enum.auto()  # simulate
-    OPT = enum.auto()  # optimize
 
 
 class Unit:

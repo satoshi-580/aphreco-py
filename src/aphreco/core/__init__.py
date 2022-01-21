@@ -1,4 +1,4 @@
-from .base import BaseComponent, BaseEdge, BaseItem, BaseModel, ItemType
+from .base import BaseComponent, BaseEdge, BaseItem, BaseModel
 from .edgec import EdgeC
 from .edger import EdgeR
 from .model import Box

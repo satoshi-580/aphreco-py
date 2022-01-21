@@ -3,9 +3,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-from aphreco.core import ItemType
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
+from aphreco.types import ItemType
 
 from . import rscargo, rsmain, rssampling, rssim, rsuse
 
