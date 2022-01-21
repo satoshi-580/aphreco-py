@@ -24,12 +24,28 @@ class Writer:
             obs="",
         )
 
+    def initialize(self):
+        self.rsparts = OrderedDict(
+            use=rsuse.APHRECO_PRELUDE,
+            main="",
+            const="",
+            struct="",
+            simtrait="",
+            smp_t="",
+            optconst="",
+            opttrait="",
+            obs="",
+        )
+
     def write(
         self,
         picker: Picker,
         symbols: Symbols,
         ptype: ProcType,
     ):
+        # delete previous strings in rsparts
+        self.initialize()
+
         # replace symbols in model equations
         repmap = self.create_repmap(symbols)
         replaced_picker = self._replace_symbols(picker, repmap)
@@ -39,7 +55,9 @@ class Writer:
         self._write_const(replaced_picker)
         self._write_struct()
         self._write_sim_model(replaced_picker)
-        self._write_sampling_time()
+
+        if ptype == ProcType.SIM:
+            self._write_sampling_time()
 
         if ptype == ProcType.OPT:
             self._write_opt_model(replaced_picker)
