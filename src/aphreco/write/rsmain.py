@@ -22,7 +22,7 @@ OPT_BODY = """
 
   let optimizer = Optimizer::NelderMead;
   let optres = optimizer.run(&mut objective);
-  optres.save("./");
+  optres.save("./res/");
 """
 
 
