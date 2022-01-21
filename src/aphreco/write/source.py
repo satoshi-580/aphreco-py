@@ -1,12 +1,12 @@
 from collections import OrderedDict
 
 import sympy
-
 from aphreco.core import BaseModel
+from aphreco.data import Obs
 from aphreco.symbols import Symbols
 
 
-class Picker:
+class Source:
     def __init__(self):
         self.t = ""
         self.y = ""
@@ -65,7 +65,7 @@ class Picker:
             str_cre += eq + "\n"
         self.cre = str_cre[:-1]
 
-    def collect_values(self, model, symbols: Symbols):
+    def collect_values(self, model: BaseModel, symbols: Symbols):
         val_dicts = model._collect_values(
             OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
         )
@@ -152,7 +152,10 @@ class Picker:
         self.x_index = str_x_index
         self.x_bounds = str_x_bounds
 
-    def collect_obs(self, obs):
+    def collect_obs(self, obs: Obs):
+        if obs.data is None:
+            raise ValueError
+
         str_obs_with_replacement = ""
         max_datlen = 0
         for data in obs.data:

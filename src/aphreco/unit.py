@@ -4,24 +4,24 @@ from typing import List, Optional, Union
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.data import Obs
-from aphreco.pick import Picker
 from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
 from aphreco.types import ProcType
 from aphreco.write import Writer
+from aphreco.write.source import Source
 
 
 class Unit:
     def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
         self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
+        self.obs = Obs()  # observation data
         self.solver = dict(
             sim=Simulator(), opt=Optimizer()
         )  # for selecting a method(methods) and setting options
-        self.picker = Picker()  # harvest items from self.model
+        self.source = Source()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
         self.command = Command()  # for rust compilation
-        self.obs = Obs()  # observation data
         self.ini_t = ini_t
         self.flags = dict(data_loaded=False)
 
@@ -32,7 +32,7 @@ class Unit:
     @ini_t.setter
     def ini_t(self, ini_t: float):
         self._ini_t = ini_t
-        self.picker.t = str(float(ini_t))
+        self.source.t = str(float(ini_t))
 
     def add(
         self,
@@ -132,24 +132,24 @@ class Unit:
     def pick(self, ptype: ProcType):
         if ptype in (ProcType.SIM | ProcType.OPT):
             # create
-            #   picker.ode: str
-            #   picker.rec: str
-            #   picker.cre: str
-            self.picker.collect_equations(self.model)
+            #   source.ode: str
+            #   source.rec: str
+            #   source.cre: str
+            self.source.collect_equations(self.model)
 
             # create
-            #   picker.y: str
-            #   picker.p: str
-            self.picker.collect_values(self.model, self.symbols)
+            #   source.y: str
+            #   source.p: str
+            self.source.collect_values(self.model, self.symbols)
 
         if ptype == ProcType.OPT:
             # create
-            #   picker.x: str
-            #   picker.obs
-            self.picker.collect_obs(self.obs)
+            #   source.x: str
+            #   source.obs
+            self.source.collect_obs(self.obs)
 
     def write(self, ptype: ProcType):
-        rust_code = self.writer.write(self.picker, self.symbols, ptype)
+        rust_code = self.writer.write(self.source, self.symbols, ptype)
         self.code_name = self.writer.save(rust_code)
 
     def read_obs(self, path):
