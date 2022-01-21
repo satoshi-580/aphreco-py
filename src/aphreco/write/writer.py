@@ -35,7 +35,7 @@ class Writer:
         replaced_picker = self._replace_symbols(picker, repmap)
 
         # set rsparts
-        self._write_sim_main()
+        self._write_main(ptype)
         self._write_const(replaced_picker)
         self._write_struct()
         self._write_sim_model(replaced_picker)
@@ -79,9 +79,14 @@ class Writer:
 
         return replaced_picker
 
-    def _write_sim_main(self):
+    def _write_main(self, ptype: ProcType):
         main_header = rsmain.HEADER
-        main_body = rsmain.SIM_BODY
+
+        if ptype == ProcType.SIM:
+            main_body = rsmain.SIM_BODY
+        elif ptype == ProcType.OPT:
+            main_body = rsmain.OPT_BODY
+
         main_footer = rsmain.FOOTER
         self.rsparts["main"] = main_header + main_body + main_footer
 
@@ -122,6 +127,8 @@ class Writer:
 
         model_code = rsopt.IMPL_OPTTRAIT
         model_code += rsopt.write_fn_getx(reppicker.x_index, reppicker.x_bounds)
+        model_code += rsopt.FN_GETP
+        model_code += rsopt.FN_SETP
         model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["opttrait"] = model_code
 

@@ -13,7 +13,7 @@ OPT_BODY = """
   let model = Model::new();
   let simulator = Simulator::new(model, Stepper::Dopri45);
 
-  let data = Data::new(observation());
+  let data = Data::new(obs());
   let mut objective = Objective::new(simulator, data);
 
   let optimizer = Optimizer::GeneticAlgorithm;
