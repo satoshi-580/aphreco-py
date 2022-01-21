@@ -1,8 +1,10 @@
 from collections import OrderedDict
 
 import sympy
+
+# TODO: release dependency with BaseModel, Obs
 from aphreco.core import BaseModel
-from aphreco.data import Obs
+from aphreco.src.aphreco.core.data import Obs
 from aphreco.symbols import Symbols
 
 
