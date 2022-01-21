@@ -10,7 +10,7 @@ IMPL_OPTTRAIT = """#[allow(dead_code)]
 impl OptModelTrait<LEN_Y, LEN_P, LEN_B, LEN_X> for Model {
 """
 
-GETX_HEADER = """  fn getx(&self) -> (Vec<usize), Option<Vec<(f64, f64)>>) {
+GETX_HEADER = """  fn getx(&self) -> (Vec<usize>, Option<Vec<(f64, f64)>>) {
 """
 GETX_FOOTER = """    (x_index, x_bounds)
   }
@@ -34,7 +34,7 @@ def write_fn_getx(picked_x_index: str, picked_x_bounds: str):
         x_bounds = "    let x_bounds = Some(vec![\n"
         for line in picked_x_bounds.splitlines():
             x_bounds += indent + line + "\n"
-        x_bounds += "    ];\n"
+        x_bounds += "    ]);\n"
 
     footer = GETX_FOOTER
     return header + x_index + x_bounds + footer

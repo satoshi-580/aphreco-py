@@ -122,7 +122,7 @@ class Writer:
 
         model_code = rsopt.IMPL_OPTTRAIT
         model_code += rsopt.write_fn_getx(reppicker.x_index, reppicker.x_bounds)
-        # code += rsopt.write_fn_obs(picker.d)
+        model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["opttrait"] = model_code
 
     def _write_obs(self, reppicker: Picker):
