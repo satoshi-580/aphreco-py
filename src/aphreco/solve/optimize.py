@@ -1,6 +1,3 @@
-from click import option
-
-
 class OptOptions:
     def __init__(self):
         pass
