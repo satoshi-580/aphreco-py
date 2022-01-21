@@ -5,6 +5,7 @@ from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.data import Obs
 from aphreco.pick import Picker
+from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
 from aphreco.types import ProcType
 from aphreco.write import Writer
@@ -12,9 +13,11 @@ from aphreco.write import Writer
 
 class Unit:
     def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
-        # TODO: symbols: Dict[symbol(str), Tuple(vtype(ItemType), index(int)))]
         self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
+        self.solver = dict(
+            sim=Simulator(), opt=Optimizer()
+        )  # for selecting a method(methods) and setting options
         self.picker = Picker()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
         self.command = Command()  # for rust compilation
