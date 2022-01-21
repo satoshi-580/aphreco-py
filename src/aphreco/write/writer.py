@@ -139,7 +139,7 @@ class Writer:
         self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
 
     def _write_opt_model(self, reppicker: Picker):
-        len_x = reppicker.y.count("\n") + 1
+        len_x = reppicker.x_index.count("\n") + 1
         str_opt_const = rsopt.write_const(len_x)
         self.rsparts["optconst"] = str_opt_const
 
