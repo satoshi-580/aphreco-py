@@ -2,8 +2,7 @@ from collections import deque
 from typing import List, Optional, Union
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
-from aphreco.data import Obs
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs
 from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
 from aphreco.types import ProcType
