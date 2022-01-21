@@ -1,4 +1,4 @@
-from .core import Beat, Box, EdgeC, EdgeR, P, Var, Y
+from .core import Beat, Box, EdgeC, EdgeR, P, Var, X, Y
 from .data import Obs
 from .unit import Unit
 
