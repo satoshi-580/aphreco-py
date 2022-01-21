@@ -1,7 +1,7 @@
 import enum
 
 
-class ProcType(enum.Enum):
+class ProcType(enum.Flag):
     SIM = enum.auto()  # simulate
     OPT = enum.auto()  # optimize
 

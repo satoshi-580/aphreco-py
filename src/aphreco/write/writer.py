@@ -5,9 +5,9 @@ from typing import Dict, Optional
 
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
-from aphreco.types import ItemType
+from aphreco.types import ItemType, ProcType
 
-from . import rscargo, rsmain, rssampling, rssim, rsuse
+from . import rscargo, rsmain, rsopt, rssampling, rssim, rsuse
 
 
 class Writer:
@@ -19,11 +19,17 @@ class Writer:
             struct="",
             simtrait="",
             smp_t="",
+            optconst="",
             opttrait="",
             data="",
         )
 
-    def write(self, picker: Picker, symbols: Symbols):
+    def write(
+        self,
+        picker: Picker,
+        symbols: Symbols,
+        ptype: ProcType,
+    ):
         # replace symbols in model equations
         repmap = self.create_repmap(symbols)
         source = self._replace_symbols(picker, repmap)
@@ -34,6 +40,8 @@ class Writer:
         self._write_struct()
         self._write_sim_model(source)
         self._write_sampling_time()
+        if ptype == ProcType.OPT:
+            self._write_opt_model(source)
 
         # connect rsparts
         rs_code = ""
@@ -105,8 +113,15 @@ class Writer:
     def _write_sampling_time(self):
         self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
 
-    def _write_opt_model(self):
-        pass
+    def _write_opt_model(self, picker: Picker):
+        len_x = picker.y.count("\n") + 1
+        str_opt_const = rsopt.write_const(len_x)
+        self.rsparts["optconst"] = str_opt_const
+
+        model_code = rsopt.IMPL_OPTTRAIT
+        model_code += rsopt.write_fn_getx(picker.x_index, picker.x_bounds)
+        # code += rsopt.write_fn_obs(picker.d)
+        self.rsparts["opttrait"] = model_code
 
     def save(self, code: str, path: Optional[Path] = None):
         if path is None:

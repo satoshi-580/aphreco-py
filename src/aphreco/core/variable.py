@@ -110,7 +110,7 @@ class Var(BaseComponent):
             dict_x = val_dicts["x"]
             if self.name in dict_x.keys():
                 raise ValueError(f"name duplication: {self.name}")
-            dict_x[self.name] = self.value
+            dict_x[self.name] = (self.value, self.bounds)
             val_dicts["x"] = dict_x
 
         return val_dicts
