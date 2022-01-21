@@ -2,7 +2,8 @@ from collections import deque
 from typing import Dict
 
 import sympy
-from aphreco.core.base import BaseEdge, ItemType
+from aphreco.core.base import BaseEdge
+from aphreco.types import ItemType
 
 
 class EdgeC(BaseEdge):

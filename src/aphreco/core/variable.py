@@ -2,8 +2,9 @@ from collections import deque
 from typing import Dict, Optional, Tuple
 
 import sympy
+from aphreco.types import ItemType
 
-from .base import BaseComponent, ItemType
+from .base import BaseComponent
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
@@ -98,7 +99,7 @@ class Var(BaseComponent):
             dict_y[self.name] = self.value
             val_dicts["y"] = dict_y
 
-        elif self.type == (ItemType.P or ItemType.X):
+        elif self.type in (ItemType.P | ItemType.X):
             dict_p = val_dicts["p"]
             if self.name in dict_p.keys():
                 raise ValueError(f"name duplication: {self.name}")
@@ -109,7 +110,7 @@ class Var(BaseComponent):
             dict_x = val_dicts["x"]
             if self.name in dict_x.keys():
                 raise ValueError(f"name duplication: {self.name}")
-            dict_x[self.name] = self.value
+            dict_x[self.name] = (self.value, self.bounds)
             val_dicts["x"] = dict_x
 
         return val_dicts

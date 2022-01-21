@@ -4,7 +4,9 @@ from collections import OrderedDict, deque
 from operator import eq
 from typing import Dict, List, Optional, Union
 
-from .base import BaseEdge, BaseItem, BaseModel, ItemType
+from aphreco.types import ItemType
+
+from .base import BaseEdge, BaseItem, BaseModel
 from .variable import Var
 
 MTYPES = {
@@ -107,7 +109,7 @@ class Box(BaseModel):
         val_dicts: Dict['y': dict_y, 'p': dict_p, 'x': dict_x]
             dict_y: Dict[name, y0 (initial state value)]
             dict_p: Dict[name, p (constant value)]
-            dict_x: Dict[name, x0 (initial value to be optimized)]
+            dict_x: Dict[name, (value, bounds)]
         """
         for _, item in self:
             if isinstance(item, BaseModel):

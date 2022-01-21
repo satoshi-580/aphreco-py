@@ -1,4 +1,3 @@
-import enum
 from collections import deque
 from typing import List, Optional, Union
 
@@ -7,12 +6,8 @@ from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
 from aphreco.data import Obs
 from aphreco.pick import Picker
 from aphreco.symbols import Symbols
+from aphreco.types import ProcType
 from aphreco.write import Writer
-
-
-class ProcType(enum.Enum):
-    SIM = enum.auto()  # simulate
-    OPT = enum.auto()  # optimize
 
 
 class Unit:
@@ -121,18 +116,18 @@ class Unit:
 
     def simulate(self, now=True):
         self.pick(ProcType.SIM)
-        self.write()
+        self.write(ProcType.SIM)
         if now:
             self.command.compile()
 
     def optimize(self, now=True):
         self.pick(ProcType.OPT)
-        # self.write()
-        # if now:
-        # self.command.compile()
+        self.write(ProcType.OPT)
+        if now:
+            self.command.compile()
 
-    def pick(self, proc: ProcType):
-        if proc == (ProcType.SIM or ProcType.OPT):
+    def pick(self, ptype: ProcType):
+        if ptype in (ProcType.SIM | ProcType.OPT):
             # create
             #   picker.ode: str
             #   picker.rec: str
@@ -144,14 +139,14 @@ class Unit:
             #   picker.p: str
             self.picker.collect_values(self.model, self.symbols)
 
-        if proc == ProcType.OPT:
+        if ptype == ProcType.OPT:
             # create
             #   picker.x: str
             #   picker.obs
-            self.picker.collect_data(self.obs, self.symbols)
+            self.picker.collect_obs(self.obs)
 
-    def write(self):
-        rust_code = self.writer.write(self.picker, self.symbols)
+    def write(self, ptype: ProcType):
+        rust_code = self.writer.write(self.picker, self.symbols, ptype)
         self.code_name = self.writer.save(rust_code)
 
     def read_obs(self, path):

@@ -16,7 +16,8 @@ class Picker:
         self.cond = ""
         self.beat = ""
         self.cre = ""
-        self.x = ""
+        self.x_index = ""
+        self.x_bounds = ""
         self.obs = ""
 
     def collect_equations(self, model: BaseModel):
@@ -87,6 +88,7 @@ class Picker:
             vallen = line.find(",")
             num_space = max_vallen - vallen + 1
             str_ini_y += line.replace("***space***", " " * num_space) + "\n"
+        self.y = str_ini_y[:-1]
 
         # assemble p
         str_p_with_replacement = ""
@@ -103,10 +105,80 @@ class Picker:
             vallen = line.find(",")
             num_space = max_vallen - vallen + 1
             str_p += line.replace("***space***", " " * num_space) + "\n"
-
-        self.y = str_ini_y[:-1]
         self.p = str_p[:-1]
-        self.x = dict_x
 
-    def collect_data(self, obs, symbols: Symbols):
-        pass
+        # assemble x
+        str_x_index_with_replacement = ""
+        str_x_bounds_with_replacement = ""
+        max_vallen_index = 0
+        max_vallen_bounds = 0
+        for i, (name, (value, bounds)) in enumerate(dict_x.items()):
+            # '//' is a comment format in Rust lang.
+            index = symbols.member[name][1]
+            str_x_index_with_replacement += (
+                f"{index},***space***// x[{i}] {name} (= p[{index}])\n"
+            )
+            vallen_index = len(str(index))
+            max_vallen_index = (
+                vallen_index if max_vallen_index < vallen_index else max_vallen_index
+            )
+
+            str_x_bounds_with_replacement += (
+                ""
+                if bounds is None
+                else f"{bounds},***space***// x[{i}] {name} (= p[{symbols.member[name][1]}])\n"
+            )
+            vallen_bounds = len(str(bounds))
+            max_vallen_bounds = (
+                vallen_bounds
+                if max_vallen_bounds < vallen_bounds
+                else max_vallen_bounds
+            )
+
+        str_x_index = ""
+        for line in str_x_index_with_replacement.splitlines():
+            vallen = line.find(",")
+            num_space = max_vallen_index - vallen + 1
+            str_x_index += line.replace("***space***", " " * num_space) + "\n"
+        str_x_bounds = ""
+        if len(str_x_bounds_with_replacement) == 0:
+            str_x_bounds = "    let x_bounds = None;\n"
+        else:
+            for line in str_x_bounds_with_replacement.splitlines():
+                vallen = line.find("),")
+                num_space = max_vallen_bounds - vallen + 1
+                str_x_bounds += line.replace("***space***", " " * num_space) + "\n"
+
+        self.x_index = str_x_index
+        self.x_bounds = str_x_bounds
+
+    def collect_obs(self, obs):
+        str_obs_with_replacement = ""
+        max_datlen = 0
+        for data in obs.data:
+            str_dat = (
+                "("
+                + str(data[5])
+                + ", "
+                + str(data[1])
+                + ", "
+                + str(data[2])
+                + ", "
+                + str(data[3])
+                + ", "
+                + str(data[4])
+                + ")"
+            )
+            str_obs_with_replacement += (
+                str_dat + ",***space***// " + str(data[0]) + "\n"
+            )
+            datlen = len(str_dat)
+            max_datlen = datlen if max_datlen < datlen else max_datlen
+
+        str_obs = ""
+        for line in str_obs_with_replacement.splitlines():
+            datlen = line.find("),")
+            num_space = max_datlen - datlen + 1
+            str_obs += line.replace("***space***", " " * num_space) + "\n"
+
+        self.obs = str_obs
