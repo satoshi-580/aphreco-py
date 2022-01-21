@@ -114,8 +114,11 @@ class Picker:
         max_vallen_bounds = 0
         for i, (name, (value, bounds)) in enumerate(dict_x.items()):
             # '//' is a comment format in Rust lang.
-            str_x_index_with_replacement += f"{value},***space***// x[{i}] {name} (= p[{symbols.member[name][1]}])\n"
-            vallen_index = len(str(value))
+            index = symbols.member[name][1]
+            str_x_index_with_replacement += (
+                f"{index},***space***// x[{i}] {name} (= p[{index}])\n"
+            )
+            vallen_index = len(str(index))
             max_vallen_index = (
                 vallen_index if max_vallen_index < vallen_index else max_vallen_index
             )
