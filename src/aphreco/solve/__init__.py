@@ -1,2 +1,2 @@
-from .optimize import Optimizer, OptMethod, OptOptions
-from .simulate import SimMethod, SimOptions, Simulator
+from .optimize import Optimizer, OptOptions
+from .simulate import SimOptions, Simulator
