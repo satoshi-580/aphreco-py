@@ -6,7 +6,10 @@ from typing import Dict, Optional
 from aphreco.symbols import Symbols
 from aphreco.types import ItemType, ProcType
 
-from . import rscargo, rsmain, rsobs, rsopt, rssampling, rssim, rsuse
+from .fn_main import rsmain
+from .optimize import rsobs, rsopt
+from .setup import rscargo, rsuse
+from .simulate import rssampling, rssim
 from .source import Source
 
 
@@ -24,7 +27,7 @@ class Writer:
             obs="",
         )
 
-    def initialize(self):
+    def reset(self):
         self.rsparts = OrderedDict(
             use=rsuse.APHRECO_PRELUDE,
             main="",
@@ -44,7 +47,7 @@ class Writer:
         ptype: ProcType,
     ):
         # delete previous strings in rsparts
-        self.initialize()
+        self.reset()
 
         # replace symbols in model equations
         repmap = self.create_repmap(symbols)
