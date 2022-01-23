@@ -26,13 +26,11 @@ class BaseOptimizeMethod(abc.ABC):
     def is_default(self, value):
         self._is_default = value
 
-    @abc.abstractmethod
     def set_options(self, **options):
         if options:
             self.is_default = False
             for key, value in options.items():
                 self.options = set_option(self.options, key, value)
 
-    @abc.abstractmethod
     def collect_options(self):
         return str(self.options)
