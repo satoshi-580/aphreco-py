@@ -1,17 +1,43 @@
-HEADER = """fn main() {"""
+HEADER = """fn main() {
+"""
 FOOTER = """}\n"""
+
+LET_MODEL = """  let model = Model::new();
+"""
+
+LET_STEP_OPTIONS = """  let step_options = StepOptions::***method*** {
+    ***options***
+  };
+"""
+LET_STEP_OPTIONS_DEFAULT = """  let step_options = StepOptions::Default;
+"""
+LET_STEPPER = """  let stepper = Stepper::***method***(step_options);
+"""
+
+
+def _write_let_stepper(method: str, options: str = "default"):
+    if options == "default":
+        str_options = LET_STEP_OPTIONS_DEFAULT
+    else:
+        str_options = LET_STEP_OPTIONS
+        str_options = str_options.replace("***method***", method)
+        str_options = str_options.replace("***options***", options)
+
+    str_stepper = LET_STEPPER.replace("***method***", method)
+    return str_options + str_stepper
+
 
 SIM_BODY = """
   let model = Model::new();
 
-  let st_options = StepOptions::Dopri45 {
+  let step_options = StepOptions::Dopri45 {
     h0: 1e-3,
     abstol: 1e-6,
     reltol: 1e-6,
     hmin: 1e-6,
     hmax: 1e-3,
   };
-  let stepper = Stepper::Dopri45(st_options);
+  let stepper = Stepper::Dopri45(step_options);
   let simulator = Simulator::new(model, stepper);
 
   let sampling_time = sampling_time();
@@ -19,16 +45,17 @@ SIM_BODY = """
   simres.save("./res/");
 """
 
+
 OPT_BODY = """
   let model = Model::new();
-  let st_options = StepOptions::Dopri45 {
+  let step_options = StepOptions::Dopri45 {
     h0: 1e-4,
     abstol: 1e-6,
     reltol: 1e-6,
     hmin: 1e-6,
     hmax: 1e-2,
   };
-  let stepper = Stepper::Dopri45(st_options);
+  let stepper = Stepper::Dopri45(step_options);
   let simulator = Simulator::new(model, stepper);
 
   let data = Data::new(obs());
