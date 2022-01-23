@@ -3,9 +3,9 @@ from typing import List, Optional, Union
 
 from aphreco.command import Command
 from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs
+from aphreco.enums import ProcType
 from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
-from aphreco.types import ProcType
 from aphreco.write import Writer
 from aphreco.write.source import Source
 
@@ -14,10 +14,11 @@ class Unit:
     def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
         self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
+        self.simulator = Simulator()  # a simulation method and its options
+
         self.obs = Obs()  # observation data
-        self.solver = dict(
-            sim=Simulator(), opt=Optimizer()
-        )  # for selecting a method(methods) and setting options
+        self.optimizer = Optimizer()  # methods and the corresponding options
+
         self.source = Source()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
         self.command = Command()  # for rust compilation
@@ -117,18 +118,18 @@ class Unit:
         self.model._print_tree(indent="")
 
     def simulate(self, now=True):
-        self.pick(ProcType.SIM)
+        self.collect(ProcType.SIM)
         self.write(ProcType.SIM)
         if now:
             self.command.compile()
 
     def optimize(self, now=True):
-        self.pick(ProcType.OPT)
+        self.collect(ProcType.OPT)
         self.write(ProcType.OPT)
         if now:
             self.command.compile()
 
-    def pick(self, ptype: ProcType):
+    def collect(self, ptype: ProcType):
         if ptype in (ProcType.SIM | ProcType.OPT):
             # create
             #   source.ode: str

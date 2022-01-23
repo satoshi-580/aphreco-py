@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
+from aphreco.enums import ItemType, ProcType
 from aphreco.symbols import Symbols
-from aphreco.types import ItemType, ProcType
 
 from .fn_main import rsmain
 from .optimize import rsobs, rsopt
@@ -111,50 +111,50 @@ class Writer:
         main_footer = rsmain.FOOTER
         self.rsparts["main"] = main_header + main_body + main_footer
 
-    def _write_const(self, repsource: Source):
-        len_y, len_p, len_b = self.count_rsconst(repsource)
+    def _write_const(self, rep_source: Source):
+        len_y, len_p, len_b = self.count_rsconst(rep_source)
         self.rsparts["const"] = rssim.write_const(len_y, len_p, len_b)
 
-    def count_rsconst(self, repsource: Source):
+    def count_rsconst(self, rep_source: Source):
         """count const number(LEN_Y, LNE_P, LEN_B) for the rust code"""
-        len_y = repsource.y.count("\n") + 1
-        len_p = repsource.p.count("\n") + 1
-        len_b = repsource.beat.count("\n") + 1
+        len_y = rep_source.y.count("\n") + 1
+        len_p = rep_source.p.count("\n") + 1
+        len_b = rep_source.beat.count("\n") + 1
         return len_y, len_p, len_b
 
     def _write_struct(self):
         self.rsparts["struct"] = rssim.STRUCT
 
-    def _write_sim_model(self, repsource: Source):
+    def _write_sim_model(self, rep_source: Source):
         # connect all
         model_code = rssim.IMPL_SIMTRAIT
-        model_code += rssim.write_fn_new(repsource.p)
-        model_code += rssim.write_fn_init(repsource.t, repsource.y)
-        model_code += rssim.write_fn_ode(repsource.ode)
-        model_code += rssim.write_fn_rec(repsource.rec)
-        model_code += rssim.write_fn_cond(repsource.cond)
-        model_code += rssim.write_fn_beat(repsource.beat)
-        model_code += rssim.write_fn_cre(repsource.cre)
+        model_code += rssim.write_fn_new(rep_source.p)
+        model_code += rssim.write_fn_init(rep_source.t, rep_source.y)
+        model_code += rssim.write_fn_ode(rep_source.ode)
+        model_code += rssim.write_fn_rec(rep_source.rec)
+        model_code += rssim.write_fn_cond(rep_source.cond)
+        model_code += rssim.write_fn_beat(rep_source.beat)
+        model_code += rssim.write_fn_cre(rep_source.cre)
         model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["simtrait"] = model_code
 
     def _write_sampling_time(self):
         self.rsparts["smp_t"] = rssampling.write_fn_sampling_time("")
 
-    def _write_opt_model(self, repsource: Source):
-        len_x = repsource.x_index.count("\n") + 1
+    def _write_opt_model(self, rep_source: Source):
+        len_x = rep_source.x_index.count("\n") + 1
         str_opt_const = rsopt.write_const(len_x)
         self.rsparts["optconst"] = str_opt_const
 
         model_code = rsopt.IMPL_OPTTRAIT
-        model_code += rsopt.write_fn_getx(repsource.x_index, repsource.x_bounds)
+        model_code += rsopt.write_fn_getx(rep_source.x_index, rep_source.x_bounds)
         model_code += rsopt.FN_GETP
         model_code += rsopt.FN_SETP
         model_code = model_code[:-1] + "}\n\n"  # end impl
         self.rsparts["opttrait"] = model_code
 
-    def _write_obs(self, repsource: Source):
-        self.rsparts["obs"] = rsobs.write_fn_obs(repsource.obs)
+    def _write_obs(self, rep_source: Source):
+        self.rsparts["obs"] = rsobs.write_fn_obs(rep_source.obs)
 
     def save(self, code: str, path: Optional[Path] = None):
         if path is None:

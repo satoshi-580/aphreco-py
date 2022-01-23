@@ -2,7 +2,7 @@ from collections import OrderedDict, deque
 from typing import Dict, Tuple
 
 import sympy
-from aphreco.types import ItemType
+from aphreco.enums import ItemType
 
 from .base import BaseEdge
 

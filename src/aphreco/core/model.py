@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 from collections import OrderedDict, deque
-from operator import eq
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional
 
-from aphreco.types import ItemType
+from aphreco.enums import ItemType
 
 from .base import BaseEdge, BaseItem, BaseModel
 from .variable import Var

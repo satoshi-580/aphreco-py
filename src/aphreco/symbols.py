@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from typing import Dict, Tuple
 
-from aphreco.types import ItemType
+from aphreco.enums import ItemType
 
 
 class Symbols:
