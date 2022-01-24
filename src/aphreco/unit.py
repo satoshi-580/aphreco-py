@@ -6,8 +6,7 @@ from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs
 from aphreco.enums import ProcType
 from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
-from aphreco.write import Writer
-from aphreco.write.source import Source
+from aphreco.write import Source, Writer
 
 
 class Unit:
