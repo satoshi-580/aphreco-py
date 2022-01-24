@@ -104,18 +104,22 @@ class Writer:
         main_header = rsmain.HEADER
 
         parts = list()
+        parts.append(rsmain.LET_MODEL)
+        parts.append(rsmain._write_let_stepper(source.stepper, source.stepper_options))
+        parts.append(rsmain.LET_SIMULATOR)
+
         if ptype == ProcType.SIM:
-            parts.append(rsmain.LET_MODEL)
-            parts.append(
-                rsmain._write_let_stepper(source.stepper, source.stepper_options)
-            )
-            parts.append(rsmain.LET_SIMULATOR)
             parts.append(rsmain.RUN_SIMULATOR)
             parts.append(rsmain.SAVE_SIMRES)
-            main_body = "\n".join(parts)
 
         elif ptype == ProcType.OPT:
-            main_body = rsmain.OPT_BODY
+            parts.append(rsmain.LET_DATA)
+            parts.append(rsmain.LET_OBJECTIVE)
+            parts.extend(
+                rsmain._write_let_optimizer(source.optimizer, source.optimizer_options)
+            )
+
+        main_body = "".join(parts)
 
         main_footer = rsmain.FOOTER
         self.rsparts["main"] = main_header + main_body + main_footer

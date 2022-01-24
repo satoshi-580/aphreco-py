@@ -13,4 +13,4 @@ class Rk4(BaseStepMethod):
         }
 
         if options:
-            self.set_options(options=options)
+            self.set_options(**options)

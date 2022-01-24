@@ -17,4 +17,4 @@ class Dopri45(BaseStepMethod):
         }
 
         if options:
-            self.set_options(options=options)
+            self.set_options(**options)

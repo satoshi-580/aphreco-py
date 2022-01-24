@@ -140,6 +140,8 @@ class Unit:
         if ptype == ProcType.OPT:
             # create obs
             self.source.collect_obs(self.obs)
+            # create optimizer
+            self.source.collect_optimizer(self.optimizer)
 
     def write(self, ptype: ProcType):
         rust_code = self.writer.write(self.source, self.symbols, ptype)

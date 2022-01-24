@@ -1,11 +1,9 @@
 from collections import OrderedDict
-from typing import Any, Dict
 
 import sympy
 
 # TODO: release dependency with BaseModel, Obs
 from aphreco.core import BaseModel, Obs
-from aphreco.enums import ProcType
 from aphreco.symbols import Symbols
 
 
@@ -157,8 +155,8 @@ class Source:
 
     def collect_stepper(self, simulator):
         """
-        solver: str
-        options: a seires of lines for options
+        simulator: Simulator
+            .options: Dict[str, value]
         """
         self.stepper = simulator.stepper.name
         if simulator.stepper.is_default:
@@ -166,8 +164,33 @@ class Source:
         else:
             stepper_options = ""
             for key, value in simulator.stepper.options.items():
+                if isinstance(value, bool):
+                    value = str(value).lower()
                 stepper_options += key + ": " + str(value) + ",\n"
             self.stepper_options = stepper_options
+
+    def collect_optimizer(self, optimizer):
+        """
+        optimizer: Optimizer or List[Optimizer]
+            .options: Dict[str, value] or List[Dict[str, value]]
+        """
+        if not isinstance(optimizer, list):
+            optimizer = [optimizer]
+
+        self.optimizer = list()
+        self.optimizer_options = list()
+
+        for method in optimizer:
+            self.optimizer.append(method.name)
+            if method.is_default:
+                self.optimizer_options.append("default")
+            else:
+                str_optimizer_options = ""
+                for key, value in method.options.items():
+                    if isinstance(value, bool):
+                        value = str(value).lower()
+                    str_optimizer_options += key + ": " + str(value) + ",\n"
+                self.optimizer_options.append(str_optimizer_options)
 
     def collect_obs(self, obs: Obs):
         if obs.data is None:
