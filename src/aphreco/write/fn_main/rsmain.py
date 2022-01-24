@@ -1,8 +1,12 @@
+from cgi import print_form
+from typing import List
+
 HEADER = """fn main() {
 """
 FOOTER = """}\n"""
 
 LET_MODEL = """  let model = Model::new();
+
 """
 
 LET_STEP_OPTIONS = """  let step_options = StepOptions::***method*** {
@@ -28,46 +32,61 @@ def _write_let_stepper(method: str, options: str):
 
 
 LET_SIMULATOR = """  let simulator = Simulator::new(model, stepper);
+
 """
+
 RUN_SIMULATOR = """  let sampling_time = sampling_time();
   let simres = simulator.run(&sampling_time);
 """
 SAVE_SIMRES = """  simres.save("./res/");
 """
 
-OPT_BODY = """
-  let model = Model::new();
-  let step_options = StepOptions::Dopri45 {
-    h0: 1e-4,
-    abstol: 1e-6,
-    reltol: 1e-6,
-    hmin: 1e-6,
-    hmax: 1e-2,
-  };
-  let stepper = Stepper::Dopri45(step_options);
-  let simulator = Simulator::new(model, stepper);
+LET_DATA = """  let data = Data::new(obs());
+"""
+LET_OBJECTIVE = """  let mut objective = Objective::new(simulator, data);
 
-  let data = Data::new(obs());
-  let mut objective = Objective::new(simulator, data);
+"""
 
-  let ga_options = OptOptions::GeneticAlgorithm {
-    max_gen: 10,
-    n_pop: 50,
-    mutation_rate: 0.5,
-    verbose: true,
+LET_OPTIMIZER_OPTIONS = """  let options = OptOptions::***method*** {
+    ***options***
   };
-  let optimizer = Optimizer::GeneticAlgorithm(ga_options);
-  let optres = optimizer.run(&mut objective);
+"""
+LET_OPTIMIZER_OPTIONS_DEFAULT = """  let options = OptOptions::Default;
+"""
+LET_OPTIMIZER = """  let optimizer = Optimizer::***method***(options);
+"""
+RUN_OPTIMIZER = """  let optres = optimizer.run(&mut objective);
+"""
+SET_X_TO_OBJECTIVE = """
   objective.setx(&optres.x);
 
-  let nm_options = OptOptions::NelderMead {
-    max_iter: 0,
-    adaptive: true,
-    x_abstol: 1e-6,
-    f_abstol: 1e-6,
-    verbose: true,
-  };
-  let optimizer = Optimizer::NelderMead(nm_options);
-  let optres = optimizer.run(&mut objective);
+"""
+SAVE_OPTRES = """
   optres.save("./res/");
 """
+
+
+def _write_let_optimizer(list_methods: List[str], list_options: List[str]):
+    list_str_opts = list()
+    n_opts = len(list_methods)
+    for i, (method, options) in enumerate(zip(list_methods, list_options)):
+        if options == "default":
+            str_options = LET_OPTIMIZER_OPTIONS_DEFAULT
+        else:
+            str_options = LET_OPTIMIZER_OPTIONS
+            str_options = str_options.replace("***method***", method)
+            str_options = str_options.replace("***options***", options)
+
+        str_optimizer = (LET_OPTIMIZER + RUN_OPTIMIZER).replace("***method***", method)
+
+        # dealing after optimization
+        # save optres if it is the last optimization process,
+        # or use optimized x as the next if not last.
+        if i == n_opts - 1:
+            str_after = SAVE_OPTRES
+        else:
+            str_after = SET_X_TO_OBJECTIVE
+
+        list_str_opts.append(str_options + str_optimizer + str_after)
+
+    return list_str_opts
