@@ -117,34 +117,28 @@ class Unit:
         self.model._print_tree(indent="")
 
     def simulate(self, now=True):
-        self.collect(ProcType.SIM)
-        self.write(ProcType.SIM)
-        if now:
-            self.command.compile()
+        self.run(ProcType.SIM, now)
 
     def optimize(self, now=True):
-        self.collect(ProcType.OPT)
-        self.write(ProcType.OPT)
+        self.run(ProcType.OPT, now)
+
+    def run(self, proctype: ProcType, now: bool):
+        self.collect(proctype)
+        self.write(proctype)
         if now:
             self.command.compile()
 
     def collect(self, ptype: ProcType):
         if ptype in (ProcType.SIM | ProcType.OPT):
-            # create
-            #   source.ode: str
-            #   source.rec: str
-            #   source.cre: str
+            # create source.ode, rec, cre
             self.source.collect_equations(self.model)
-
-            # create
-            #   source.y: str
-            #   source.p: str
+            # create source.y, p, x_index, x_bounds
             self.source.collect_values(self.model, self.symbols)
+            # create simulator
+            self.source.collect_stepper(self.simulator)
 
         if ptype == ProcType.OPT:
-            # create
-            #   source.x: str
-            #   source.obs
+            # create obs
             self.source.collect_obs(self.obs)
 
     def write(self, ptype: ProcType):

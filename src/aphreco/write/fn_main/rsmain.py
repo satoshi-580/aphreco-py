@@ -15,7 +15,7 @@ LET_STEPPER = """  let stepper = Stepper::***method***(step_options);
 """
 
 
-def _write_let_stepper(method: str, options: str = "default"):
+def _write_let_stepper(method: str, options: str):
     if options == "default":
         str_options = LET_STEP_OPTIONS_DEFAULT
     else:
@@ -27,24 +27,13 @@ def _write_let_stepper(method: str, options: str = "default"):
     return str_options + str_stepper
 
 
-SIM_BODY = """
-  let model = Model::new();
-
-  let step_options = StepOptions::Dopri45 {
-    h0: 1e-3,
-    abstol: 1e-6,
-    reltol: 1e-6,
-    hmin: 1e-6,
-    hmax: 1e-3,
-  };
-  let stepper = Stepper::Dopri45(step_options);
-  let simulator = Simulator::new(model, stepper);
-
-  let sampling_time = sampling_time();
-  let simres = simulator.run(&sampling_time);
-  simres.save("./res/");
+LET_SIMULATOR = """  let simulator = Simulator::new(model, stepper);
 """
-
+RUN_SIMULATOR = """  let sampling_time = sampling_time();
+  let simres = simulator.run(&sampling_time);
+"""
+SAVE_SIMRES = """  simres.save("./res/");
+"""
 
 OPT_BODY = """
   let model = Model::new();

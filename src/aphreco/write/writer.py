@@ -54,7 +54,7 @@ class Writer:
         replaced_source = self._replace_symbols(source, repmap)
 
         # set rsparts
-        self._write_main(ptype)
+        self._write_main(source, ptype)
         self._write_const(replaced_source)
         self._write_struct()
         self._write_sim_model(replaced_source)
@@ -100,11 +100,20 @@ class Writer:
 
         return replaced_source
 
-    def _write_main(self, ptype: ProcType):
+    def _write_main(self, source: Source, ptype: ProcType):
         main_header = rsmain.HEADER
 
+        parts = list()
         if ptype == ProcType.SIM:
-            main_body = rsmain.SIM_BODY
+            parts.append(rsmain.LET_MODEL)
+            parts.append(
+                rsmain._write_let_stepper(source.stepper, source.stepper_options)
+            )
+            parts.append(rsmain.LET_SIMULATOR)
+            parts.append(rsmain.RUN_SIMULATOR)
+            parts.append(rsmain.SAVE_SIMRES)
+            main_body = "\n".join(parts)
+
         elif ptype == ProcType.OPT:
             main_body = rsmain.OPT_BODY
 

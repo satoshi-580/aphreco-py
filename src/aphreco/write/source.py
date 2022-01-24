@@ -1,9 +1,11 @@
 from collections import OrderedDict
+from typing import Any, Dict
 
 import sympy
 
 # TODO: release dependency with BaseModel, Obs
 from aphreco.core import BaseModel, Obs
+from aphreco.enums import ProcType
 from aphreco.symbols import Symbols
 
 
@@ -152,6 +154,20 @@ class Source:
 
         self.x_index = str_x_index
         self.x_bounds = str_x_bounds
+
+    def collect_stepper(self, simulator):
+        """
+        solver: str
+        options: a seires of lines for options
+        """
+        self.stepper = simulator.stepper.name
+        if simulator.stepper.is_default:
+            self.stepper_options = "default"
+        else:
+            stepper_options = ""
+            for key, value in simulator.stepper.options.items():
+                stepper_options += key + ": " + str(value) + ",\n"
+            self.stepper_options = stepper_options
 
     def collect_obs(self, obs: Obs):
         if obs.data is None:
