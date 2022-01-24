@@ -1,12 +1,15 @@
 from collections import OrderedDict
+from typing import Any, Dict
 
 import sympy
 
-from aphreco.core import BaseModel
+# TODO: release dependency with BaseModel, Obs
+from aphreco.core import BaseModel, Obs
+from aphreco.enums import ProcType
 from aphreco.symbols import Symbols
 
 
-class Picker:
+class Source:
     def __init__(self):
         self.t = ""
         self.y = ""
@@ -65,7 +68,7 @@ class Picker:
             str_cre += eq + "\n"
         self.cre = str_cre[:-1]
 
-    def collect_values(self, model, symbols: Symbols):
+    def collect_values(self, model: BaseModel, symbols: Symbols):
         val_dicts = model._collect_values(
             OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
         )
@@ -152,7 +155,24 @@ class Picker:
         self.x_index = str_x_index
         self.x_bounds = str_x_bounds
 
-    def collect_obs(self, obs):
+    def collect_stepper(self, simulator):
+        """
+        solver: str
+        options: a seires of lines for options
+        """
+        self.stepper = simulator.stepper.name
+        if simulator.stepper.is_default:
+            self.stepper_options = "default"
+        else:
+            stepper_options = ""
+            for key, value in simulator.stepper.options.items():
+                stepper_options += key + ": " + str(value) + ",\n"
+            self.stepper_options = stepper_options
+
+    def collect_obs(self, obs: Obs):
+        if obs.data is None:
+            raise ValueError
+
         str_obs_with_replacement = ""
         max_datlen = 0
         for data in obs.data:

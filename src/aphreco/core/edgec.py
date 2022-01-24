@@ -2,8 +2,9 @@ from collections import deque
 from typing import Dict
 
 import sympy
-from aphreco.core.base import BaseEdge
-from aphreco.types import ItemType
+from aphreco.enums import ItemType
+
+from .base import BaseEdge
 
 
 class EdgeC(BaseEdge):

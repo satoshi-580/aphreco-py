@@ -1,8 +1,8 @@
 import csv
 from typing import List, Optional, Tuple
 
+from aphreco.enums import ItemType
 from aphreco.symbols import Symbols
-from aphreco.types import ItemType
 
 
 class Obs:

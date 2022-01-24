@@ -2,23 +2,25 @@ from collections import deque
 from typing import List, Optional, Union
 
 from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box
-from aphreco.data import Obs
-from aphreco.pick import Picker
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs
+from aphreco.enums import ProcType
+from aphreco.solve import Optimizer, Simulator
 from aphreco.symbols import Symbols
-from aphreco.types import ProcType
-from aphreco.write import Writer
+from aphreco.write import Source, Writer
 
 
 class Unit:
     def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
-        # TODO: symbols: Dict[symbol(str), Tuple(vtype(ItemType), index(int)))]
         self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
-        self.picker = Picker()  # harvest items from self.model
+        self.simulator = Simulator()  # a simulation method and its options
+
+        self.obs = Obs()  # observation data
+        self.optimizer = Optimizer()  # methods and the corresponding options
+
+        self.source = Source()  # harvest items from self.model
         self.writer = Writer()  # write/save code from model source
         self.command = Command()  # for rust compilation
-        self.obs = Obs()  # observation data
         self.ini_t = ini_t
         self.flags = dict(data_loaded=False)
 
@@ -29,7 +31,7 @@ class Unit:
     @ini_t.setter
     def ini_t(self, ini_t: float):
         self._ini_t = ini_t
-        self.picker.t = str(float(ini_t))
+        self.source.t = str(float(ini_t))
 
     def add(
         self,
@@ -115,38 +117,32 @@ class Unit:
         self.model._print_tree(indent="")
 
     def simulate(self, now=True):
-        self.pick(ProcType.SIM)
-        self.write(ProcType.SIM)
-        if now:
-            self.command.compile()
+        self.run(ProcType.SIM, now)
 
     def optimize(self, now=True):
-        self.pick(ProcType.OPT)
-        self.write(ProcType.OPT)
+        self.run(ProcType.OPT, now)
+
+    def run(self, proctype: ProcType, now: bool):
+        self.collect(proctype)
+        self.write(proctype)
         if now:
             self.command.compile()
 
-    def pick(self, ptype: ProcType):
+    def collect(self, ptype: ProcType):
         if ptype in (ProcType.SIM | ProcType.OPT):
-            # create
-            #   picker.ode: str
-            #   picker.rec: str
-            #   picker.cre: str
-            self.picker.collect_equations(self.model)
-
-            # create
-            #   picker.y: str
-            #   picker.p: str
-            self.picker.collect_values(self.model, self.symbols)
+            # create source.ode, rec, cre
+            self.source.collect_equations(self.model)
+            # create source.y, p, x_index, x_bounds
+            self.source.collect_values(self.model, self.symbols)
+            # create simulator
+            self.source.collect_stepper(self.simulator)
 
         if ptype == ProcType.OPT:
-            # create
-            #   picker.x: str
-            #   picker.obs
-            self.picker.collect_obs(self.obs)
+            # create obs
+            self.source.collect_obs(self.obs)
 
     def write(self, ptype: ProcType):
-        rust_code = self.writer.write(self.picker, self.symbols, ptype)
+        rust_code = self.writer.write(self.source, self.symbols, ptype)
         self.code_name = self.writer.save(rust_code)
 
     def read_obs(self, path):

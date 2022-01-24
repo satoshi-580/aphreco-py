@@ -6,6 +6,19 @@ class ProcType(enum.Flag):
     OPT = enum.auto()  # optimize
 
 
+class OptType(enum.Flag):
+    NelderMead = enum.auto()
+    GeneticAlgorithm = enum.auto()
+    Serial = NelderMead
+    Parallel = GeneticAlgorithm
+
+
+class SimType(enum.Flag):
+    Rk4 = enum.auto()
+    Dopri45 = enum.auto()
+    Step = Rk4 | Dopri45
+
+
 class ItemType(enum.Flag):
     # Components
     Y = enum.auto()  # dependent variable

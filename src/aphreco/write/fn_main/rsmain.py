@@ -1,0 +1,73 @@
+HEADER = """fn main() {
+"""
+FOOTER = """}\n"""
+
+LET_MODEL = """  let model = Model::new();
+"""
+
+LET_STEP_OPTIONS = """  let step_options = StepOptions::***method*** {
+    ***options***
+  };
+"""
+LET_STEP_OPTIONS_DEFAULT = """  let step_options = StepOptions::Default;
+"""
+LET_STEPPER = """  let stepper = Stepper::***method***(step_options);
+"""
+
+
+def _write_let_stepper(method: str, options: str):
+    if options == "default":
+        str_options = LET_STEP_OPTIONS_DEFAULT
+    else:
+        str_options = LET_STEP_OPTIONS
+        str_options = str_options.replace("***method***", method)
+        str_options = str_options.replace("***options***", options)
+
+    str_stepper = LET_STEPPER.replace("***method***", method)
+    return str_options + str_stepper
+
+
+LET_SIMULATOR = """  let simulator = Simulator::new(model, stepper);
+"""
+RUN_SIMULATOR = """  let sampling_time = sampling_time();
+  let simres = simulator.run(&sampling_time);
+"""
+SAVE_SIMRES = """  simres.save("./res/");
+"""
+
+OPT_BODY = """
+  let model = Model::new();
+  let step_options = StepOptions::Dopri45 {
+    h0: 1e-4,
+    abstol: 1e-6,
+    reltol: 1e-6,
+    hmin: 1e-6,
+    hmax: 1e-2,
+  };
+  let stepper = Stepper::Dopri45(step_options);
+  let simulator = Simulator::new(model, stepper);
+
+  let data = Data::new(obs());
+  let mut objective = Objective::new(simulator, data);
+
+  let ga_options = OptOptions::GeneticAlgorithm {
+    max_gen: 10,
+    n_pop: 50,
+    mutation_rate: 0.5,
+    verbose: true,
+  };
+  let optimizer = Optimizer::GeneticAlgorithm(ga_options);
+  let optres = optimizer.run(&mut objective);
+  objective.setx(&optres.x);
+
+  let nm_options = OptOptions::NelderMead {
+    max_iter: 0,
+    adaptive: true,
+    x_abstol: 1e-6,
+    f_abstol: 1e-6,
+    verbose: true,
+  };
+  let optimizer = Optimizer::NelderMead(nm_options);
+  let optres = optimizer.run(&mut objective);
+  optres.save("./res/");
+"""
