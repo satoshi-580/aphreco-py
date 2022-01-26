@@ -1,4 +1,4 @@
-SMP_TIME_HEADER = """fn sampling_time() -> Vec<f64> {
+SMP_TIME_HEADER = """fn smp_time() -> Vec<f64> {
   let mut vec_smp_t = Vec::new();
 """
 SMP_TIME_FOOTER = """   vec_smp_t
@@ -7,7 +7,7 @@ SMP_TIME_FOOTER = """   vec_smp_t
 """
 
 
-def write_fn_sampling_time(picked_smp_t: str):
+def str_fn_sampling_time(picked_smp_t: str):
     header = SMP_TIME_HEADER
 
     body = """   for i in 0..=5000 {

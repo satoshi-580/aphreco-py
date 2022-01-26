@@ -5,7 +5,7 @@ from .base import BaseOptimizeMethod
 
 class GeneticAlgorithm(BaseOptimizeMethod):
     def __init__(self, **options):
-        self.name = "GeneticAlgorithm"
+        self._name = "GeneticAlgorithm"
         self.opttype = OptType.GeneticAlgorithm
         self.is_default = True
         self.options = {

@@ -1,41 +1,50 @@
-from collections import deque
-from typing import List, Optional, Union
+"""Unit class provides a modeling interface.
+Unit: a modeling unit that contains methods for model construction
+"""
 
-from aphreco.command import Command
-from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs
-from aphreco.enums import ProcType
-from aphreco.solve import Optimizer, Simulator
+from collections import deque
+from typing import Any, List, Optional, Union
+
+from aphreco.core import BaseComponent, BaseEdge, BaseItem, BaseModel, Box, Obs, Var
+from aphreco.solve import (
+    Command,
+    OptCollector,
+    Optimizer,
+    OptWriter,
+    Replacer,
+    SimCollector,
+    Simulator,
+    SimWriter,
+)
+from aphreco.solve.optimize import NelderMead
+from aphreco.solve.simulate import Dopri45
 from aphreco.symbols import Symbols
-from aphreco.write import Source, Writer
 
 
 class Unit:
-    def __init__(self, name: str = "", ini_t: float = 0.0) -> None:
+    def __init__(self, name: str = "") -> None:
         self.symbols = Symbols()  # symbols for duplication check
         self.model = Box(name)  # model expressed as a tree structure
-        self.simulator = Simulator()  # a simulation method and its options
+        self.simulator = Simulator(Dopri45())  # a simulation method and its options
 
-        self.obs = Obs()  # observation data
-        self.optimizer = Optimizer()  # methods and the corresponding options
+        self.data = Obs()  # observation data
+        self.optimizer = Optimizer(
+            methods=[NelderMead()]
+        )  # methods and the corresponding options
 
-        self.source = Source()  # harvest items from self.model
-        self.writer = Writer()  # write/save code from model source
-        self.command = Command()  # for rust compilation
-        self.ini_t = ini_t
         self.flags = dict(data_loaded=False)
 
-    @property
-    def ini_t(self):
-        return self._ini_t
-
-    @ini_t.setter
-    def ini_t(self, ini_t: float):
-        self._ini_t = ini_t
-        self.source.t = str(float(ini_t))
+        self.add(Box(name="preset", mtype="blackbox"))
+        presets = [
+            Var(name="ini_t", vtype="p", value=0.0),
+            Var(name="endless", vtype="p", value=1e14),
+            Var(name="never_again", vtype="p", value=1e14),
+        ]
+        self.add(presets, path="/preset")
 
     def add(
         self,
-        items: Union[BaseComponent, List[BaseComponent]],
+        items: Union[BaseItem, List[Any]],
         path: str = "/",
         name: str = None,
     ):
@@ -117,40 +126,25 @@ class Unit:
         self.model._print_tree(indent="")
 
     def simulate(self, now=True):
-        self.run(ProcType.SIM, now)
+        source = SimCollector.run(self.model, self.symbols, self.simulator)
+        rep_source = Replacer.run(source, self.symbols)
+        SimWriter().run(rep_source)
+        if now:
+            Command.run()
 
     def optimize(self, now=True):
-        self.run(ProcType.OPT, now)
-
-    def run(self, proctype: ProcType, now: bool):
-        self.collect(proctype)
-        self.write(proctype)
+        source = OptCollector.run(
+            self.model, self.symbols, self.simulator, self.optimizer, self.data
+        )
+        rep_source = Replacer.run(source, self.symbols)
+        OptWriter().run(rep_source)
         if now:
-            self.command.compile()
+            Command.run()
 
-    def collect(self, ptype: ProcType):
-        if ptype in (ProcType.SIM | ProcType.OPT):
-            # create source.ode, rec, cre
-            self.source.collect_equations(self.model)
-            # create source.y, p, x_index, x_bounds
-            self.source.collect_values(self.model, self.symbols)
-            # create simulator
-            self.source.collect_stepper(self.simulator)
-
-        if ptype == ProcType.OPT:
-            # create obs
-            self.source.collect_obs(self.obs)
-            # create optimizer
-            self.source.collect_optimizer(self.optimizer)
-
-    def write(self, ptype: ProcType):
-        rust_code = self.writer.write(self.source, self.symbols, ptype)
-        self.code_name = self.writer.save(rust_code)
-
-    def read_obs(self, path):
-        self.obs.read_obs(path)
-        self.obs.set_y_index(self.symbols)
-        self.obs.sort_by_index()
+    def read_data(self, path):
+        self.data.read_obs(path)
+        self.data.set_y_index(self.symbols)
+        self.data.sort_by_index()
 
     def remove(self, name):
         target_path = self.find(name)

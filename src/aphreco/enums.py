@@ -16,7 +16,8 @@ class OptType(enum.Flag):
 class SimType(enum.Flag):
     Rk4 = enum.auto()
     Dopri45 = enum.auto()
-    Step = Rk4 | Dopri45
+    Adaptive = Dopri45
+    Steper = Rk4 | Adaptive
 
 
 class ItemType(enum.Flag):

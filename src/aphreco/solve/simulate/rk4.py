@@ -5,7 +5,7 @@ from .base import BaseStepMethod
 
 class Rk4(BaseStepMethod):
     def __init__(self, **options):
-        self.name = "Rk4"
+        self._name = "Rk4"
         self.simtype = SimType.Dopri45
         self.is_default = True
         self.options = {
