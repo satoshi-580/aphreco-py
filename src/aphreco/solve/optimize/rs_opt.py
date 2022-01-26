@@ -9,6 +9,7 @@ def write_const(len_x: int):
 IMPL_OPTTRAIT = """#[allow(dead_code)]
 impl OptModelTrait<LEN_Y, LEN_P, LEN_B, LEN_X> for Model {
 """
+END_IMPL_OPTTRAIT = """}\n\n"""
 
 GETX_HEADER = """  fn getx(&self) -> (Vec<usize>, Option<Vec<(f64, f64)>>) {
 """
@@ -50,24 +51,3 @@ FN_SETP = """  fn setp(&mut self, index: usize, value: f64) {
   }
 
 """
-
-
-OBS_HEADER = """  #[allow(dead_code)]
-fn observation() -> Vec<(usize, f64, f64, Option<f64>, Option<f64>)> {
-  vec!["""
-OBS_FOOTER = """    ]
-  }
-
-"""
-
-
-def write_fn_obs(picked_data: str):
-    header = OBS_HEADER
-
-    indent = " " * 4
-    body = ""
-    for line in picked_data.splitlines():
-        body += indent + line + "\n"
-
-    footer = OBS_FOOTER
-    return header + body + footer

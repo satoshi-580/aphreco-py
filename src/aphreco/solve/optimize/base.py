@@ -1,4 +1,5 @@
 import abc
+from typing import List, Union
 
 
 def set_option(options, key, value):
@@ -19,6 +20,10 @@ def check_option_type(old_value, new_value):
 
 class BaseOptimizeMethod(abc.ABC):
     @property
+    def name(self):
+        return self._name
+
+    @property
     def is_default(self):
         return self._is_default
 
@@ -34,3 +39,18 @@ class BaseOptimizeMethod(abc.ABC):
 
     def collect_options(self):
         return str(self.options)
+
+
+class Optimizer:
+    def __init__(
+        self,
+        methods: Union[None, BaseOptimizeMethod, List[BaseOptimizeMethod]] = None,
+    ):
+        if methods is None:
+            self.methods = methods
+        elif isinstance(methods, list):
+            self.methods = methods
+        elif isinstance(methods, BaseOptimizeMethod):
+            self.methods = [methods]
+        else:
+            raise TypeError("invalid methods type")

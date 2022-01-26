@@ -5,7 +5,7 @@ from .base import BaseOptimizeMethod
 
 class NelderMead(BaseOptimizeMethod):
     def __init__(self, **options):
-        self.name = "NelderMead"
+        self._name = "NelderMead"
         self.opttype = OptType.NelderMead
         self.is_default = True
         self.options = {

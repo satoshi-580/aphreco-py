@@ -8,18 +8,10 @@ def write_const(len_y: int, len_p: int, len_b: int):
     return str_const
 
 
-STRUCT = """
-#[allow(dead_code)]
-#[derive(Clone)]
-pub struct Model {
-  p: [f64; LEN_P],
-}
-
-"""
-
 IMPL_SIMTRAIT = """#[allow(dead_code)]
 impl SimModelTrait<LEN_Y, LEN_P, LEN_B> for Model {
 """
+END_IMPL_SIMTRAIT = """}\n\n"""
 
 NEW_HEADER = """  fn new() -> Self {
     let p = [

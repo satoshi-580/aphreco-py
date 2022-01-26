@@ -1,9 +1,11 @@
-from cgi import print_form
 from typing import List
 
 HEADER = """fn main() {
 """
-FOOTER = """}\n"""
+FOOTER = """
+}
+
+"""
 
 LET_MODEL = """  let model = Model::new();
 
@@ -35,8 +37,9 @@ LET_SIMULATOR = """  let simulator = Simulator::new(model, stepper);
 
 """
 
-RUN_SIMULATOR = """  let sampling_time = sampling_time();
-  let simres = simulator.run(&sampling_time);
+RUN_SIMULATOR = """  let smp_time = smp_time();
+  let simres = simulator.run(&smp_time);
+
 """
 SAVE_SIMRES = """  simres.save("./res/");
 """
@@ -74,18 +77,21 @@ def _write_let_optimizer(list_methods: List[str], list_options: List[str]):
             str_options = LET_OPTIMIZER_OPTIONS_DEFAULT
         else:
             str_options = LET_OPTIMIZER_OPTIONS
+            indented_options = options.replace("\n", "\n    ")[:-1]
             str_options = str_options.replace("***method***", method)
-            str_options = str_options.replace("***options***", options)
-
-        str_optimizer = (LET_OPTIMIZER + RUN_OPTIMIZER).replace("***method***", method)
+            str_options = str_options.replace("***options***", indented_options)
 
         # dealing after optimization
         # save optres if it is the last optimization process,
         # or use optimized x as the next if not last.
-        if i == n_opts - 1:
-            str_after = SAVE_OPTRES
-        else:
+        if i < n_opts - 1:
+            str_optimizer = (LET_OPTIMIZER + RUN_OPTIMIZER).replace(
+                "***method***", method
+            )
             str_after = SET_X_TO_OBJECTIVE
+        else:
+            str_optimizer = LET_OPTIMIZER.replace("***method***", method)
+            str_after = ""
 
         list_str_opts.append(str_options + str_optimizer + str_after)
 
