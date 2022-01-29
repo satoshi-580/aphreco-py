@@ -44,7 +44,7 @@ class EdgeR(BaseEdge):
                 str_to += name + ":" + term + ","
         self._name = f"{str_from[:-1]}->{str_to[:-1]}"
 
-    def _get_symbol(self):
+    def _get_symbols(self):
         symbols = set()
 
         for b in self.beat:
@@ -55,11 +55,8 @@ class EdgeR(BaseEdge):
             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
         return symbols
 
-    def __str__(self):
-        return f"{self.name}[{self.type.name}]"
-
     def _print_tree(self, indent=""):
-        print(f"{indent}{self}")
+        print(f"{indent}{self}[{self.type.name}]")
 
     def _formulate(
         self,

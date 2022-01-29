@@ -38,7 +38,7 @@ class Unit:
         presets = [
             Var(name="ini_t", vtype="p", value=0.0),
             Var(name="endless", vtype="p", value=1e14),
-            Var(name="never_again", vtype="p", value=1e14),
+            Var(name="onlyonce", vtype="p", value=1e14),
         ]
         self.add(presets, path="/preset")
 
@@ -49,7 +49,6 @@ class Unit:
         name: str = None,
     ):
         """Add items to Unit.model"""
-        # TODO: enable to add nested box items by Width-First Search
         if name:
             model = self.get(name=name)
         else:
@@ -72,8 +71,8 @@ class Unit:
             elif isinstance(item, BaseModel):
                 model._add(item)
 
-            if isinstance(item, BaseComponent):
-                new_symbol = item._get_symbol()
+            elif isinstance(item, BaseComponent):
+                new_symbol = item._get_symbols()
 
                 if isinstance(item, BaseEdge):
                     for new_sym in new_symbol:
@@ -84,6 +83,9 @@ class Unit:
                     s = str(new_symbol)
                     self.symbols.add(s, item.type)
                 model._add(item)
+
+    def rename(self, name, new_name):
+        pass
 
     def get(self, name: Optional[str] = None, path: Optional[str] = None):
         # get item

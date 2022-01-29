@@ -63,14 +63,11 @@ class Var(BaseComponent):
     def name(self, name: str):
         self._name = name
 
-    def _get_symbol(self):
+    def _get_symbols(self):
         return sympy.sympify(self.name)
 
-    def __str__(self):
-        return f"{self.name}[{self.type.name}]"
-
     def _print_tree(self, indent=""):
-        print(f"{indent}{self}")
+        print(f"{indent}{self}[{self.type.name}]")
 
     def _remove_by_name(self, dq_path: deque):
         pass

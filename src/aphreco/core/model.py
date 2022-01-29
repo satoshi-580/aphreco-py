@@ -22,9 +22,6 @@ class Box(BaseModel):
         self.type = mtype
         self.items: Dict[str, BaseItem] = OrderedDict()
 
-    def __str__(self):
-        return f"{self.name}[{self.type.name}]"
-
     def __iter__(self):
         return iter(self.items.items())
 
@@ -50,10 +47,12 @@ class Box(BaseModel):
         self._type = MTYPES[mtype]
 
     def _print_tree(self, indent=""):
-        print(f"{indent}{self}/")
-        if self.type != ItemType.BLACKBOX:
+        if self.type == ItemType.BOX:
+            print(f"{indent}{self}/")
             for _, item in self:
                 item._print_tree(indent + "  ")
+        elif self.type == ItemType.BLACKBOX:
+            print(f"{indent}{self}/...")
 
     def _get_item(self, dq_path: deque) -> Optional[BaseItem]:
         name = dq_path.popleft()

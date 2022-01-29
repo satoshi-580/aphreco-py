@@ -10,6 +10,9 @@ class BaseItem(abc.ABC):
     def name(self, _):
         raise NotImplementedError
 
+    def __str__(self):
+        return f"{self.name}"
+
     @property
     def type(self):
         return self._type
@@ -28,7 +31,7 @@ class BaseItem(abc.ABC):
 
 class BaseComponent(BaseItem):
     @abc.abstractmethod
-    def _get_symbol(self):
+    def _get_symbols(self):
         raise NotImplementedError
 
 
