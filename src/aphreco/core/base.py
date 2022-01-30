@@ -24,6 +24,10 @@ class BaseItem(abc.ABC):
     def _collect_names(self, result):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def copy(self):
+        raise NotImplementedError
+
 
 class BaseComponent(BaseItem):
     pass
