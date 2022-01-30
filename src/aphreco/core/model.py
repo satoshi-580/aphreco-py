@@ -44,6 +44,10 @@ class Model(BaseItem):
             for _, item in self:
                 item._print(indent + "  ")
 
+    def add(self, items, duplicate="error"):
+        if duplicate == "skip":
+            print("function does not check the duplication of name")
+
     def _collect_names(self, result):
         raise NotImplementedError
 
