@@ -1,3 +1,5 @@
+from typing import Union
+
 from aphreco.enums import ItemType
 
 from .base import BaseComponent
@@ -15,16 +17,24 @@ class Variable(BaseComponent):
 
     Attributes:
         name (str): The name of variable used as a symbol in equations
+
         value (float): The value of Variable object, which means
             initial state in simulation for y,
             constant and fixed parameter for p,
             initial value in optimization for x, and
             excluded and non-effect value in filtration for e.
-        type (ItemType): The type of Variable that is any of ItemType.Y, P, X, E.
+
+        type (Union[str, ItemType]): The type of Variable that is any of ItemType.Y, P, X, E.
             In constructor, designate as a string of "y", "p", "x", or "e".
+
         bounds (float, float): The lower and upper bounds of the Variable value
             that are used in optimization.
+
         term (str): The right hand side of constant relationship.
+
+        share (bool): if share this variable name or not in Model.copy.
+            if False, a copied variable adds prefix or suffix to the name.
+            if True, not add any prefix or suffix meaning the same name is used in another model.
 
     Example:
         >>> import aphreco as ap
@@ -41,13 +51,15 @@ class Variable(BaseComponent):
         self,
         name,
         value=0.0,
-        type: str = "y",
+        type: Union[str, ItemType] = "y",
         bounds=None,
         term=None,
+        share=True,
     ):
         self.name = name
         self.value = float(value)
         self.type = type
+        self.share = share
 
         # bounds for optimization for type "p"
         if bounds is None:
@@ -70,13 +82,17 @@ class Variable(BaseComponent):
         return self._type
 
     @type.setter
-    def type(self, type: str):
-        if type not in VTYPES.keys():
-            raise ValueError(
-                f"invalid variable type: {type} \
-                \nvtype must be chosen from {tuple(VTYPES.keys())}"
-            )
-        self._type = VTYPES[type]
+    def type(self, type: Union[str, ItemType]):
+        if isinstance(type, ItemType):
+            self._type = type
+        else:
+            if type not in VTYPES.keys():
+                raise ValueError(
+                    f"invalid variable type: {type} \
+                    \nvtype must be chosen from {tuple(VTYPES.keys())}"
+                )
+
+            self._type = VTYPES[type]
 
     def print(self, indent=""):
         print(f"{indent}{self}[{self.type.name}]")
@@ -84,6 +100,25 @@ class Variable(BaseComponent):
     def collect_names(self, result):
         result.append(self.name)
         return result
+
+    def copy(self, prefix="", suffix="", exclusive=[], share=True):
+        if (
+            (self.type == ItemType.Y)
+            or (self.name in exclusive)
+            or (share and not self.share)
+        ):
+            copied_name = prefix + self.name + suffix
+        else:
+            copied_name = self.name
+
+        copied_var = Variable(
+            name=copied_name,
+            type=self.type,
+            bounds=self.bounds,
+            term=self.term,
+            share=self.share,
+        )
+        return copied_var
 
 
 # from collections import deque

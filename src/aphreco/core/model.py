@@ -56,6 +56,12 @@ class Model(BaseItem):
             result = item.collect_names(result)
         return result
 
+    def copy(self, prefix="", suffix="", exclusive=None, share=True):
+        model = Model(self.name)
+        for item in self:
+            model.add(item.copy(prefix, suffix))
+        return model
+
 
 # from collections import OrderedDict, deque
 # from typing import Dict, Optional

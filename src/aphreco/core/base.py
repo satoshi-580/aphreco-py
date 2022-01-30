@@ -25,7 +25,7 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def copy(self):
+    def copy(self, prefix, suffix, exclusive, share):
         raise NotImplementedError
 
 

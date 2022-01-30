@@ -1,4 +1,4 @@
-from aphreco.core import BaseComponent, BaseItem, Model, Variable
+from aphreco.core import Con, Model, Reg, Variable
 
 # from .solve import Optimizer, Simulator, optimize, simulate
 # from .unit import Unit

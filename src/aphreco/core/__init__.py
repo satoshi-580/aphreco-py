@@ -1,6 +1,5 @@
-from .base import BaseComponent, BaseItem
-from .edges.con import Con
-from .edges.reg import Reg
+from .base import BaseComponent, BaseEdge, BaseItem
+from .edge import Con, Reg
 from .model import Model
 from .variable import Variable
 
