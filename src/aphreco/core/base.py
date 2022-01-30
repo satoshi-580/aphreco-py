@@ -7,57 +7,26 @@ class BaseItem(abc.ABC):
         return self._name
 
     @name.setter
-    def name(self, _):
-        raise NotImplementedError
+    def name(self, name):
+        self._name = name
 
     def __str__(self):
         return f"{self.name}"
-
-    @property
-    def type(self):
-        return self._type
-
-    @type.setter
-    def type(self, _):
-        raise NotImplementedError
 
     def __iter__(self):
         return iter([])
 
     @abc.abstractmethod
-    def _print_tree(self, indent):
+    def _print(self, indent):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _collect_names(self, result):
         raise NotImplementedError
 
 
 class BaseComponent(BaseItem):
-    @abc.abstractmethod
-    def _get_symbols(self):
-        raise NotImplementedError
-
-
-class BaseEdge(BaseComponent):
-    @abc.abstractmethod
-    def _formulate(self, eq_dicts):
-        raise NotImplementedError
-
-
-class BaseModel(BaseItem):
-    @abc.abstractmethod
-    def _get_item(self, dq_path):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _find_name(self, name, path):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _add(self, item):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _formulate(self, eq_dicts):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _collect_values(self, val_dicts):
-        raise NotImplementedError
+    pass
+    # @abc.abstractmethod
+    # def _get_ref_names(self):
+    #     raise NotImplementedError
