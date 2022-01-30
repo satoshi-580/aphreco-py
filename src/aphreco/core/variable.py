@@ -101,12 +101,12 @@ class Variable(BaseComponent):
         result.append(self.name)
         return result
 
-    def copy(self, prefix="", suffix="", exclusive=[], share=True):
-        if (
-            (self.type == ItemType.Y)
-            or (self.name in exclusive)
-            or (share and not self.share)
-        ):
+    def copy(self, prefix="", suffix="", exclusive=[], share=False):
+        if self.type == ItemType.Y:
+            copied_name = prefix + self.name + suffix
+        if self.name in exclusive:
+            copied_name = prefix + self.name + suffix
+        elif share and not self.share:
             copied_name = prefix + self.name + suffix
         else:
             copied_name = self.name
