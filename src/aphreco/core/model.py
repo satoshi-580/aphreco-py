@@ -12,9 +12,12 @@ class Model(BaseItem):
 
     Attributes:
         name (str): The name of model
+
         items (OrderedDict): a dictionary that contains
             children's name and objects
+
         type (ItemType): class member, ItemType.MODEL
+
         hide (bool): whether or not print children
             when printing the model structure
 
@@ -47,6 +50,8 @@ class Model(BaseItem):
     def add(self, items, duplicate="error"):
         if duplicate == "skip":
             print("function does not check the duplication of name")
+        for item in items:
+            self.items[item.name] = item
 
     def collect_names(self, result=list()):
         if not self.items:
@@ -56,7 +61,7 @@ class Model(BaseItem):
             result = item.collect_names(result)
         return result
 
-    def copy(self, prefix="", suffix="", exclusive=None, share=True):
+    def copy(self, prefix="", suffix="", exclusive=[], share=True):
         model = Model(self.name)
         for item in self:
             model.add(item.copy(prefix, suffix))
