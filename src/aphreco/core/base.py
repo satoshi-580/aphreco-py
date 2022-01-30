@@ -30,3 +30,13 @@ class BaseComponent(BaseItem):
     # @abc.abstractmethod
     # def _get_ref_names(self):
     #     raise NotImplementedError
+
+
+class BaseEdge(BaseComponent):
+    @abc.abstractmethod
+    def collect_eq(self):
+        NotImplementedError
+
+    @abc.abstractmethod
+    def collect_val(self):
+        NotImplementedError
