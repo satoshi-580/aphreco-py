@@ -17,11 +17,11 @@ class BaseItem(abc.ABC):
         return iter([])
 
     @abc.abstractmethod
-    def _print(self, indent):
+    def print(self, indent):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _collect_names(self, result):
+    def collect_names(self, result):
         raise NotImplementedError
 
     @abc.abstractmethod

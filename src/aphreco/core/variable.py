@@ -78,11 +78,12 @@ class Variable(BaseComponent):
             )
         self._type = VTYPES[type]
 
-    def _print(self, indent=""):
+    def print(self, indent=""):
         print(f"{indent}{self}[{self.type.name}]")
 
-    def _collect_names(self, result):
-        raise NotImplementedError
+    def collect_names(self, result):
+        result.append(self.name)
+        return result
 
 
 # from collections import deque

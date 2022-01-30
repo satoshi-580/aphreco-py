@@ -36,7 +36,7 @@ class Model(BaseItem):
     def __iter__(self):
         return iter(self.items.items())
 
-    def _print(self, indent: str):
+    def print(self, indent: str):
         if self.hide:
             print(f"{indent}{self.name}/...")
         else:
@@ -48,8 +48,13 @@ class Model(BaseItem):
         if duplicate == "skip":
             print("function does not check the duplication of name")
 
-    def _collect_names(self, result):
-        raise NotImplementedError
+    def collect_names(self, result=list()):
+        if not self.items:
+            return result
+
+        for item in self:
+            result = item.collect_names(result)
+        return result
 
 
 # from collections import OrderedDict, deque
