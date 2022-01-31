@@ -1,7 +1,10 @@
+import itertools
 from collections import OrderedDict
+from typing import Dict, List, Optional, Set, Tuple
 
 from aphreco.core.base import BaseItem
 from aphreco.enums import ItemType
+from aphreco.errors import NameDuplicationError
 
 
 class Model(BaseItem):
@@ -30,41 +33,132 @@ class Model(BaseItem):
 
     type = ItemType.MODEL
 
-    def __init__(self, name="", items=None, hide=False):
+    def __init__(self, name="", items: Dict[str, BaseItem] = None, hide=False):
         self.name = name
         items = items
-        self.items = OrderedDict()
+        self.items: Dict[str, BaseItem] = OrderedDict()
         self.hide = hide
 
     def __iter__(self):
         return iter(self.items.items())
 
-    def print(self, indent: str):
-        if self.hide:
-            print(f"{indent}{self.name}/...")
+    def add(self, new_items, duplicate: str = "error"):
+        if not isinstance(new_items, list):
+            new_items = [new_items]
+
+        if duplicate != ("error" or "skip"):
+            raise ValueError(f"invalid argument: {duplicate}")
+        if duplicate == "error":
+            has_checked_dup = self.check_duplication(new_items)
+            # has_checked_dup is always True in this case.
         else:
-            print(f"{indent}{self.name}/")
-            for _, item in self:
-                item._print(indent + "  ")
+            has_checked_dup = False
+            # if has_checked_dup is False and a duplication is found,
+            # it means that adding the Variable should be skipped.
 
-    def add(self, items, duplicate="error"):
-        if duplicate == "skip":
-            print("function does not check the duplication of name")
-        for item in items:
-            self.items[item.name] = item
+        new_model = self._add(new_items, has_checked_dup)
+        for name, item in new_model.items():
+            self.items[name] = item
 
-    def collect_names(self, result=list()):
-        if not self.items:
-            return result
+    def _add(self, new_items, has_checked_dup, model=None):
+        if model is None:
+            model = Model()
+
+        for new_item in new_items:
+            if not isinstance(new_item, BaseItem):
+                raise TypeError(f"invalid type: {type(new_item)}")
+
+            elif isinstance(new_item, Model):
+                self.items[new_item.name] = new_item
+
+        return model
+
+    def check_duplication(self, new_items) -> bool:
+        """checks if the new_items have the name that has already existed.
+
+        Args:
+            new_items: List[Any of BaseItem]
+
+        Returns:
+            bool: This method always returns True because the process raises Error
+                if the arg 'new_items' does not pass the check.
+                The bool indicates if the new_items has passed the check or not.
+
+        """
+        # 1) check duplication of names inside new_items
+        # collect new_names from new_items
+        new_names_dict_list = list()
+        for new_item in new_items:
+            new_names_dict = new_item.collect_names(OrderedDict())
+            new_names_dict_list.append(new_names_dict)
+
+        # In the case of length of new_items >= 2, name duplications for all combinations of
+        # list components will be checked.
+        # if length of new_items is 1, the process does not reach inside this for-loop.
+        for a, b in itertools.combinations(new_names_dict_list, 2):
+            intersection = a.keys() & b.keys()
+            if intersection != set():
+                raise NameDuplicationError(intersection)
+
+        # 2) check duplication between new_items and items in the original model.
+        union: Set[str] = set()
+        for new in new_names_dict_list:
+            union = union | new.keys()
+
+        names_dict = self.collect_names(OrderedDict())
+        intersection = union & names_dict.keys()
+        if intersection != set():
+            raise NameDuplicationError(intersection)
+
+        return True
+
+    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        """recursively collects all names of Y, P, X, E below the current model.
+
+        This method is an abstractmethod defined in and forced by BaseItem.
+        Variable and Edge classes also have this method.
+        The names collected in this method does not collect Model.name,
+        because Model.name is not needed to be unique in a whole tree;
+        Duplication of Model.names in a whole tree does not matter as long as
+        it is unique within a single model.
+
+        Args:
+            names_dict (OrderedDict[str, (ItemType, int)]): The argument in which
+                the function collects and stores tree items.
+                The key of this dictionary indicates the name of Variable (str), and
+                the value of this dictionary is a tuple of ItemType and index in Y or P.
+                All indices are set to -1 in the collection phase and
+                will be update in replacement phase.
+        """
+        if len(self.items) == 0:
+            return names_dict
 
         for item in self:
-            result = item.collect_names(result)
-        return result
+            names_dict = item.collect_names(names_dict)
+        return names_dict
+
+    def tree(
+        self,
+        indent: str = "",
+        structure: Optional[List[str]] = None,
+    ) -> Optional[List[str]]:
+        """creates a str list of tree components."""
+        if structure is None:
+            structure = list()
+
+        if not self.hide:
+            structure.append(f"{indent}{self.name}/")
+            for _, item in self:
+                structure = item.tree(indent + "  ", structure)
+        else:
+            structure.append(f"{indent}{self.name}/...")
+
+        return structure
 
     def copy(self, prefix="", suffix="", exclusive=[], share=True):
         model = Model(self.name)
         for item in self:
-            model.add(item.copy(prefix, suffix))
+            model.add(item.copy(prefix, suffix, exclusive, share))
         return model
 
 
