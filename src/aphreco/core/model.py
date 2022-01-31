@@ -105,7 +105,10 @@ class Model(BaseItem):
         for new in new_names_dict_list:
             union = union | new.keys()
 
+        # collect names from an original model
         names_dict = self.collect_names(OrderedDict())
+
+        # if duplication is found, raise error.
         intersection = union & names_dict.keys()
         if intersection != set():
             raise NameDuplicationError(intersection)
