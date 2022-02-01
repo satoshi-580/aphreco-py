@@ -157,11 +157,6 @@ class Variable(BaseComponent):
         )
         return copied_var
 
-    def _get_item_by_name(self, name):
-        if name == self.name:
-            return self
-        return None
-
 
 # from collections import deque
 # from typing import Dict, Optional, Tuple
