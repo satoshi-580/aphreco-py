@@ -265,7 +265,10 @@ class Model(BaseItem):
         model = Model(name=name, hide=self.hide)
         model.parent = self.parent
         for name, item in self.children.items():
-            model.children[name] = item.copy(prefix, suffix, exclusive, share)
+            child = item.copy(prefix, suffix, exclusive, share)
+            model.children[child.name] = child
+
+            model.children[child.name].parent = model
         return model
 
     def __getitem__(self, name: str):

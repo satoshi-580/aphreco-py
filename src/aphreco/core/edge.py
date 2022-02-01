@@ -1,7 +1,59 @@
+from typing import Dict, List, Optional, Tuple
+
+from aphreco.enums import ItemType
+
 from .base import BaseEdge
 
 
 class Con(BaseEdge):
+    cnt = 0
+
+    def __init__(self, term: Dict[str, str], name=None):
+        self.term = term
+        self._type = ItemType.CON
+        self.parent = None
+
+        if name is not None:
+            self.name = name
+        else:
+            Con.cnt += 1
+            self.name = "edgec" + str(Con.cnt)
+
+    @property
+    def type(self):
+        return self._type
+
+    def _add_or_skip(self, parent, is_done):
+        edge = Con(
+            term=self.term,
+            name=self.name,
+        )
+        edge.parent = parent
+        return edge, is_done
+
+    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        return names_dict
+
+    def tree(
+        self,
+        indent: str = "",
+        structure: Optional[List[str]] = None,
+    ) -> Optional[List[str]]:
+        if structure is None:
+            structure = list()
+
+        structure.append(
+            f"{indent}{self.name}[{self.type.name}]{set(self.term.keys())}"
+        )
+        return structure
+
+    def copy(self, prefix="", suffix="", exclusive=[], share=False):
+        copied_edge = Con(
+            term=self.term,
+            name=self.name,
+        )
+        return copied_edge
+
     def collect_eq(self):
         pass
 
