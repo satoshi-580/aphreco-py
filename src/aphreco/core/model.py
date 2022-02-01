@@ -253,6 +253,9 @@ class Model(BaseItem):
 
         return structure
 
+    def __str__(self):
+        return "\n".join(self.tree())
+
     def copy(self, prefix="", suffix="", exclusive=[], share=True):
         """copies items recursively as adding prefix/suffix to names"""
         model = Model(self.name, self.hide)
