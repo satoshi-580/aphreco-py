@@ -258,14 +258,22 @@ class Model(BaseItem):
 
     def copy(self, prefix="", suffix="", exclusive=[], share=True):
         """copies items recursively as adding prefix/suffix to names"""
-        model = Model(self.name, self.hide)
+        if self.parent is None:
+            name = prefix + self.name + suffix
+        else:
+            name = self.name
+
+        model = Model(name=name, hide=self.hide)
         model.parent = self.parent
         for name, item in self.children.items():
             model.children[name] = item.copy(prefix, suffix, exclusive, share)
         return model
 
     def __getitem__(self, name: str):
-        return self._get_item_by_name(name)
+        res = self._get_item_by_name(name)
+        if res is None:
+            raise KeyError(f"'{name}' not found.")
+        return res
 
     def _get_item_by_name(self, name: str):
         if name == self.name:
@@ -274,8 +282,8 @@ class Model(BaseItem):
             for _, item in self.children.items():
                 res = item._get_item_by_name(name)
                 if res is not None:
-                    return res
-        raise KeyError(f"'{name}' not found.")
+                    break
+        return res
 
 
 # from collections import OrderedDict, deque
