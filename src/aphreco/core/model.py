@@ -45,15 +45,14 @@ class Model(BaseItem):
         self.hide = hide
         self.parent = None
 
-        if items is None:
-            self.children: Dict[str, BaseItem] = OrderedDict()
-        else:
+        self.children: Dict[str, BaseItem] = OrderedDict()
+        if items is not None:
             self.add(items)
 
     def __iter__(self):
         return iter(self.children.items())
 
-    def add(self, new_items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
+    def add(self, items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
         """adds items
 
         This method is not recursive, but calls a recursive self._add method inside.
@@ -71,10 +70,10 @@ class Model(BaseItem):
                     if duplication is between new_items and an origin, just skip all duplicated items.
         """
 
-        if not isinstance(new_items, list):
-            new_items = [new_items]
+        if not isinstance(items, list):
+            items = [items]
 
-        new_names_dict_list = self._collect_new_names(new_items)
+        new_names_dict_list = self._collect_new_names(items)
         existing_names_dict = self._collect_existing_names()
 
         if not isinstance(duplicate, str):
@@ -91,18 +90,18 @@ class Model(BaseItem):
             is_done = None
 
         elif duplicate == "skip":
-            new_names_set: Set[str] = set()
+            union_new_names: Set[str] = set()
             for names_dict in new_names_dict_list:
-                new_names_set = new_names_set | names_dict.keys()
+                union_new_names = union_new_names | names_dict.keys()
 
-            is_done = {name: False for name in list(new_names_set)}
+            is_done = {name: False for name in list(union_new_names)}
             for key in existing_names_dict.keys() & is_done.keys():
                 is_done[key] = True
 
         else:
             raise ValueError(f"invalid argument: {duplicate}")
 
-        for new_item in new_items:
+        for new_item in items:
             child, is_done = new_item._add_or_skip(parent=self, is_done=is_done)
             if child is not None:
                 self.children[child.name] = child
@@ -284,6 +283,9 @@ class Model(BaseItem):
                 if res is not None:
                     break
         return res
+
+    def rename(self, name: str, new_name: str):
+        pass
 
 
 # from collections import OrderedDict, deque

@@ -105,7 +105,7 @@ class Variable(BaseComponent):
             # therefore this item should be skipped.
             return None, is_done
 
-        ret_var = Variable(
+        var = Variable(
             name=self.name,
             value=self.value,
             type=self.type,
@@ -113,12 +113,12 @@ class Variable(BaseComponent):
             term=self.term,
             share=self.share,
         )
-        ret_var.parent = parent
+        var.parent = parent
 
         if is_done is not None:
-            is_done[ret_var.name] = True  # skip this name next time
+            is_done[var.name] = True  # skip this name next time
 
-        return ret_var, is_done
+        return var, is_done
 
     def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
         names_dict[self.name] = (self.type, -1)
