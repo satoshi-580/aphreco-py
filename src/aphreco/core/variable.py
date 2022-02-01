@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from aphreco.enums import ItemType
 
@@ -60,6 +60,7 @@ class Variable(BaseComponent):
         self.value = float(value)
         self.type = type
         self.share = share
+        self.parent = None
 
         # bounds for optimization for type "p"
         if bounds is None:
@@ -94,31 +95,72 @@ class Variable(BaseComponent):
 
             self._type = VTYPES[type]
 
-    def print(self, indent=""):
-        print(f"{indent}{self}[{self.type.name}]")
+    def _add_or_skip(self, parent, is_done):
+        if is_done is not None and is_done[self.name]:
+            # if duplicate == "error", is_done is None.
+            # in this case, duplicate == "skip".
+            #
+            # is_done[self.name] is True,
+            # another item with the same name has already been added,
+            # therefore this item should be skipped.
+            return None, is_done
 
-    def collect_names(self, result):
-        result.append(self.name)
-        return result
+        ret_var = Variable(
+            name=self.name,
+            value=self.value,
+            type=self.type,
+            bounds=self.bounds,
+            term=self.term,
+            share=self.share,
+        )
+        ret_var.parent = parent
+
+        if is_done is not None:
+            is_done[ret_var.name] = True  # skip this name next time
+
+        return ret_var, is_done
+
+    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        names_dict[self.name] = (self.type, -1)
+        return names_dict
+
+    def tree(
+        self,
+        indent: str = "",
+        structure: Optional[List[str]] = None,
+    ) -> Optional[List[str]]:
+        if structure is None:
+            structure = list()
+
+        structure.append(f"{indent}{self}[{self.type.name}]")
+        return structure
 
     def copy(self, prefix="", suffix="", exclusive=[], share=False):
         if self.type == ItemType.Y:
             copied_name = prefix + self.name + suffix
-        if self.name in exclusive:
+        elif self.name in exclusive:
             copied_name = prefix + self.name + suffix
         elif share and not self.share:
+            copied_name = prefix + self.name + suffix
+        elif (not share) and (exclusive == []):
             copied_name = prefix + self.name + suffix
         else:
             copied_name = self.name
 
         copied_var = Variable(
             name=copied_name,
+            value=self.value,
             type=self.type,
             bounds=self.bounds,
             term=self.term,
             share=self.share,
         )
         return copied_var
+
+    def _get_item_by_name(self, name):
+        if name == self.name:
+            return self
+        return None
 
 
 # from collections import deque

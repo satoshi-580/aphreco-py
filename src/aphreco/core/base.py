@@ -1,4 +1,5 @@
 import abc
+from typing import List
 
 
 class BaseItem(abc.ABC):
@@ -10,6 +11,14 @@ class BaseItem(abc.ABC):
     def name(self, name):
         self._name = name
 
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        self._parent = parent
+
     def __str__(self):
         return f"{self.name}"
 
@@ -17,23 +26,44 @@ class BaseItem(abc.ABC):
         return iter([])
 
     @abc.abstractmethod
-    def print(self, indent):
+    def _add_or_skip(self, parent, is_done):
+        """creates a BaseItem object to be added, or else skip.
+
+        if Model, _add method creates items recursively and
+        returns an object with items in a lower layer.
+        if Component like Variable and Edge, _add methods creates just a Self object.
+
+        If the object should be skipped, returns None.
+
+        Args:
+            parent (Model): An item (Model object) in an upper layer
+
+            is_done (Dict[str, bool]): A dictionary that contains str of item names as key,
+                and bool if addition has been done or not as value.
+                The bool is used to judge if the addition of an item should be skipped or not.
+                If True, skip; if False, add an item to Model.children.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def collect_names(self, result):
+    def tree(self, indent, structure):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _collect_names(self, names_dict):
         raise NotImplementedError
 
     @abc.abstractmethod
     def copy(self, prefix, suffix, exclusive, share):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def _get_item_by_name(self, name):
+        raise NotImplementedError
+
 
 class BaseComponent(BaseItem):
     pass
-    # @abc.abstractmethod
-    # def _get_ref_names(self):
-    #     raise NotImplementedError
 
 
 class BaseEdge(BaseComponent):

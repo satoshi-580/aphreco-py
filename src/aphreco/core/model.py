@@ -1,8 +1,9 @@
 import itertools
 from collections import OrderedDict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from aphreco.core.base import BaseItem
+from aphreco.core.variable import Variable
 from aphreco.enums import ItemType
 from aphreco.errors import NameDuplicationError
 
@@ -11,7 +12,7 @@ class Model(BaseItem):
     """Model represents a composite of items in a model tree.
 
     A Model object can contain objects of Variable, Edge, and Model itself.
-    The items are included in self.items, so that a client can visit them recursively.
+    The items are included in self.children, so that a client can visit them recursively.
 
     Attributes:
         name (str): The name of model
@@ -21,8 +22,9 @@ class Model(BaseItem):
 
         type (ItemType): class member, ItemType.MODEL
 
-        hide (bool): whether or not print children
-            when printing the model structure
+        hide (bool): whether or not print children when printing the model structure
+
+        parent (BaseItem): an upper layer item in a tree structure
 
     Example:
         >>> import aphreco as ap
@@ -33,47 +35,141 @@ class Model(BaseItem):
 
     type = ItemType.MODEL
 
-    def __init__(self, name="", items: Dict[str, BaseItem] = None, hide=False):
+    def __init__(
+        self,
+        name="",
+        items: Optional[Union[BaseItem, List[BaseItem]]] = None,
+        hide=False,
+    ):
         self.name = name
-        items = items
-        self.items: Dict[str, BaseItem] = OrderedDict()
         self.hide = hide
+        self.parent = None
+
+        if items is None:
+            self.children: Dict[str, BaseItem] = OrderedDict()
+        else:
+            self.add(items)
 
     def __iter__(self):
-        return iter(self.items.items())
+        return iter(self.children.items())
 
-    def add(self, new_items, duplicate: str = "error"):
+    def add(self, new_items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
+        """adds items
+
+        This method is not recursive, but calls a recursive self._add method inside.
+
+        Args:
+            new_items (Union[BaseItem, List[BaseItem]]): BaseItem(Model)
+
+            duplicate (str): how to deal with items with a duplicated name.
+                Duplication occurs in two ways; the first is inside the new_items,
+                the second is between new_items and an original model.
+                "error"; raise NameDuplicationError
+                "skip" ; skip adding and does not raise error
+                    if duplication is inside new_items, the only first one is added (the priority is
+                    given to the one registered earlier).
+                    if duplication is between new_items and an origin, just skip all duplicated items.
+        """
+
         if not isinstance(new_items, list):
             new_items = [new_items]
 
-        if duplicate != ("error" or "skip"):
-            raise ValueError(f"invalid argument: {duplicate}")
-        if duplicate == "error":
-            has_checked_dup = self.check_duplication(new_items)
-            # has_checked_dup is always True in this case.
+        new_names_dict_list = self._collect_new_names(new_items)
+        existing_names_dict = self._collect_existing_names()
+
+        if not isinstance(duplicate, str):
+            raise TypeError(f"duplicate expects str 'error' or 'skip'.")
+
+        elif duplicate == "error":
+            # if new_items have duplicated names, raise error.
+            self.check_duplication_within_new(new_names_dict_list)
+
+            # compare names in new_items with the existing names
+            self.check_duplication_between_new_and_old(
+                new_names_dict_list, existing_names_dict
+            )
+            is_done = None
+
+        elif duplicate == "skip":
+            new_names_set: Set[str] = set()
+            for names_dict in new_names_dict_list:
+                new_names_set = new_names_set | names_dict.keys()
+
+            is_done = {name: False for name in list(new_names_set)}
+            for key in existing_names_dict.keys() & is_done.keys():
+                is_done[key] = True
+
         else:
-            has_checked_dup = False
-            # if has_checked_dup is False and a duplication is found,
-            # it means that adding the Variable should be skipped.
-
-        new_model = self._add(new_items, has_checked_dup)
-        for name, item in new_model.items():
-            self.items[name] = item
-
-    def _add(self, new_items, has_checked_dup, model=None):
-        if model is None:
-            model = Model()
+            raise ValueError(f"invalid argument: {duplicate}")
 
         for new_item in new_items:
-            if not isinstance(new_item, BaseItem):
-                raise TypeError(f"invalid type: {type(new_item)}")
+            child, is_done = new_item._add_or_skip(parent=self, is_done=is_done)
+            if child is not None:
+                self.children[child.name] = child
 
-            elif isinstance(new_item, Model):
-                self.items[new_item.name] = new_item
+    def _add_or_skip(self, parent, is_done: Dict[str, bool]):
+        """creates items recursively and returns a Model object with items in a lower layer.
 
-        return model
+        Args:
+            parent (Model): An item (Model object) in an upper layer
 
-    def check_duplication(self, new_items) -> bool:
+            is_done (Dict[str, bool]): A dictionary that contains str of item names as key,
+                and bool if addition has been done or not as value.
+                The bool is used to judge if the addition of an item should be skipped or not.
+                If True, skip; if False, add an item to Model.children.
+
+        Returns:
+            Optional[Model]: The Model object with children and with parent set.
+                Addition of items with duplicated names to children are skipped.
+
+            Dict[str, bool]: is_done updated in adding Variable objects
+        """
+        model = Model(name=self.name, hide=self.hide)
+        model.parent = parent
+
+        for name, item in self.children.items():
+            child, is_done = item._add_or_skip(parent=model, is_done=is_done)
+            if child is not None:
+                model.children[name] = child
+        return model, is_done
+
+    def _collect_new_names(self, new_items: List[BaseItem]):
+        """
+        Model.collect_names(noargs) -> names_dict
+        Variable.collect_names(names_dict) -> names_dict
+        """
+        # collect new_names from new_items
+        new_names_dict_list = list()
+        for new_item in new_items:
+            new_names_dict = new_item._collect_names(OrderedDict())
+            new_names_dict_list.append(new_names_dict)
+        return new_names_dict_list
+
+    def check_duplication_within_new(
+        self, new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]]
+    ) -> bool:
+        """checks if there is any duplication of names inside new_items.
+
+        Args:
+            new_names_dict_list (List[Dict[str, (ItemType, int)]]): list of names_dict based on new_items
+
+        Returns:
+            bool: always True meaning the new_names_dict_list passed the check.
+                if not passed, raise NameDuplicationError.
+        """
+
+        # In the case of length of new_names_dict_list >= 2,
+        # name duplications for all combinations of list components will be checked.
+        # if length of new_items is 1, the process does not reach to the inside of the for-loop.
+        for a, b in itertools.combinations(new_names_dict_list, 2):
+            intersection = a.keys() & b.keys()
+            if intersection != set():
+                raise NameDuplicationError(intersection)
+        return True
+
+    def check_duplication_between_new_and_old(
+        self, new_names_dict_list, existing_names_dict
+    ) -> bool:
         """checks if the new_items have the name that has already existed.
 
         Args:
@@ -85,38 +181,37 @@ class Model(BaseItem):
                 The bool indicates if the new_items has passed the check or not.
 
         """
-        # 1) check duplication of names inside new_items
-        # collect new_names from new_items
-        new_names_dict_list = list()
-        for new_item in new_items:
-            new_names_dict = new_item.collect_names(OrderedDict())
-            new_names_dict_list.append(new_names_dict)
-
-        # In the case of length of new_items >= 2, name duplications for all combinations of
-        # list components will be checked.
-        # if length of new_items is 1, the process does not reach inside this for-loop.
-        for a, b in itertools.combinations(new_names_dict_list, 2):
-            intersection = a.keys() & b.keys()
-            if intersection != set():
-                raise NameDuplicationError(intersection)
-
-        # 2) check duplication between new_items and items in the original model.
+        # check duplication between new_items and items in the original model.
         union: Set[str] = set()
         for new in new_names_dict_list:
             union = union | new.keys()
 
-        # collect names from an original model
-        names_dict = self.collect_names(OrderedDict())
-
         # if duplication is found, raise error.
-        intersection = union & names_dict.keys()
+        intersection = union & existing_names_dict.keys()
         if intersection != set():
             raise NameDuplicationError(intersection)
 
         return True
 
-    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
-        """recursively collects all names of Y, P, X, E below the current model.
+    def _collect_existing_names(self):
+        """collects variable names in a model.
+
+        Even though this method is called by a model in a middle layer,
+        the method goes up to the top layer and start collecting names from a root model.
+
+        Returns:
+            Dict[str, (ItemType, int)]: names_dict with a name as a key, and
+                a tuple of (itemtype, index) as value.
+                All indices are set to -1 until Replacer.run().
+                names_dict[name, (itemtype, index)]
+        """
+        if self.parent is None:
+            return self._collect_names(OrderedDict())
+        else:
+            return self.parent._collect_existing_names()
+
+    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        """recursively collects names of Y, P, X, E in lower layers than the current model.
 
         This method is an abstractmethod defined in and forced by BaseItem.
         Variable and Edge classes also have this method.
@@ -133,11 +228,11 @@ class Model(BaseItem):
                 All indices are set to -1 in the collection phase and
                 will be update in replacement phase.
         """
-        if len(self.items) == 0:
+        if len(self.children) == 0:
             return names_dict
 
-        for item in self:
-            names_dict = item.collect_names(names_dict)
+        for _, item in self.children.items():
+            names_dict = item._collect_names(names_dict)
         return names_dict
 
     def tree(
@@ -159,10 +254,25 @@ class Model(BaseItem):
         return structure
 
     def copy(self, prefix="", suffix="", exclusive=[], share=True):
-        model = Model(self.name)
-        for item in self:
-            model.add(item.copy(prefix, suffix, exclusive, share))
+        """copies items recursively as adding prefix/suffix to names"""
+        model = Model(self.name, self.hide)
+        model.parent = self.parent
+        for name, item in self.children.items():
+            model.children[name] = item.copy(prefix, suffix, exclusive, share)
         return model
+
+    def __getitem__(self, name: str):
+        return self._get_item_by_name(name)
+
+    def _get_item_by_name(self, name: str):
+        if name == self.name:
+            return self
+        else:
+            for _, item in self.children.items():
+                res = item._get_item_by_name(name)
+                if res is not None:
+                    return res
+        raise KeyError(f"'{name}' not found.")
 
 
 # from collections import OrderedDict, deque
