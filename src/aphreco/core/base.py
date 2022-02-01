@@ -1,4 +1,5 @@
 import abc
+from typing import List
 
 
 class BaseItem(abc.ABC):
@@ -7,54 +8,69 @@ class BaseItem(abc.ABC):
         return self._name
 
     @name.setter
-    def name(self, _):
-        raise NotImplementedError
+    def name(self, name):
+        self._name = name
 
     @property
-    def type(self):
-        return self._type
+    def parent(self):
+        return self._parent
 
-    @type.setter
-    def type(self, _):
-        raise NotImplementedError
+    @parent.setter
+    def parent(self, parent):
+        self._parent = parent
+
+    def __str__(self):
+        return f"{self.name}"
 
     def __iter__(self):
         return iter([])
 
     @abc.abstractmethod
-    def _print_tree(self, indent):
+    def _add_or_skip(self, parent, is_done):
+        """creates a BaseItem object to be added, or else skip.
+
+        if Model, _add method creates items recursively and
+        returns an object with items in a lower layer.
+        if Component like Variable and Edge, _add methods creates just a Self object.
+
+        If the object should be skipped, returns None.
+
+        Args:
+            parent (Model): An item (Model object) in an upper layer
+
+            is_done (Dict[str, bool]): A dictionary that contains str of item names as key,
+                and bool if addition has been done or not as value.
+                The bool is used to judge if the addition of an item should be skipped or not.
+                If True, skip; if False, add an item to Model.children.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def tree(self, indent, structure):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _collect_names(self, names_dict):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def copy(self, prefix, suffix, exclusive, share):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _get_item_by_name(self, name):
         raise NotImplementedError
 
 
 class BaseComponent(BaseItem):
-    @abc.abstractmethod
-    def _get_symbol(self):
-        raise NotImplementedError
+    pass
 
 
 class BaseEdge(BaseComponent):
     @abc.abstractmethod
-    def _formulate(self, eq_dicts):
-        raise NotImplementedError
-
-
-class BaseModel(BaseItem):
-    @abc.abstractmethod
-    def _get_item(self, dq_path):
-        raise NotImplementedError
+    def collect_eq(self):
+        NotImplementedError
 
     @abc.abstractmethod
-    def _find_name(self, name, path):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _add(self, item):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _formulate(self, eq_dicts):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _collect_values(self, val_dicts):
-        raise NotImplementedError
+    def collect_val(self):
+        NotImplementedError
