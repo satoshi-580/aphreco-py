@@ -63,7 +63,10 @@ class BaseItem(abc.ABC):
 
 
 class BaseComponent(BaseItem):
-    pass
+    def _get_item_by_name(self, name):
+        if name == self.name:
+            return self
+        return None
 
 
 class BaseEdge(BaseComponent):
