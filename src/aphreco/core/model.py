@@ -262,14 +262,14 @@ class Model(BaseItem):
         else:
             name = self.name
 
-        model = Model(name=name, hide=self.hide)
-        model.parent = self.parent
+        copied_model = Model(name=name, hide=self.hide)
+        copied_model.parent = self.parent
         for name, item in self.children.items():
             child = item.copy(prefix, suffix, exclusive, share)
-            model.children[child.name] = child
+            copied_model.children[child.name] = child
 
-            model.children[child.name].parent = model
-        return model
+            copied_model.children[child.name].parent = copied_model
+        return copied_model
 
     def __getitem__(self, name: str):
         res = self._get_item_by_name(name)
