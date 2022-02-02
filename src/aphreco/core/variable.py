@@ -37,13 +37,13 @@ class Variable(BaseComponent):
             if True, not add any prefix or suffix meaning the same name is used in another model.
 
     Example:
-        >>> import aphreco as ap
-        >>> var = ap.Variable("k", 0.01, "p")
+        >>> import aphreco as aph
+        >>> var = aph.Variable("k", 0.01, "p")
         >>> var.name
         k
         >>> var.value
         0.01
-        >>> var.type
+        >>> var.type.name
         ItemType.P
     """
 

@@ -27,10 +27,12 @@ class Model(BaseItem):
         parent (BaseItem): an upper layer item in a tree structure
 
     Example:
-        >>> import aphreco as ap
-        >>> model = ap.Model("sample")
+        >>> import aphreco as aph
+        >>> model = aph.Model("sample")
         >>> model.name
         sample
+        >>> model.type.name
+        ItemType.MODEL
     """
 
     type = ItemType.MODEL
@@ -253,6 +255,7 @@ class Model(BaseItem):
         return structure
 
     def __str__(self):
+        """connects a tree items via line feeds."""
         return "\n".join(self.tree())
 
     def copy(self, prefix="", suffix="", exclusive=[], share=True):
