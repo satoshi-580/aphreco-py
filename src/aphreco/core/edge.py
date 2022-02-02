@@ -17,7 +17,7 @@ class Con(BaseEdge):
             self.name = name
         else:
             Con.cnt += 1
-            self.name = "edgec" + str(Con.cnt)
+            self.name = "con_edge_" + str(Con.cnt)
 
     @property
     def type(self):

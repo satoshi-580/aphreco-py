@@ -21,7 +21,7 @@ class TestTypicalUserExperience:
         expected_out = """cmpt1/
   X0[Y]
   V0[P]
-  edgec1[CON]{'X0'}
+  con_edge_1[CON]{'X0'}
   X_dose[P]
   ke[P]
   C0[Y]
