@@ -136,6 +136,9 @@ class Variable(BaseComponent):
         return structure
 
     def copy(self, prefix="", suffix="", exclusive=[], share=False):
+        # TODO: how should the method deal with the case that the name
+        # resulting from addition of prefix/suffix could be the same as
+        # another existing name?
         if self.type == ItemType.Y:
             copied_name = prefix + self.name + suffix
         elif self.name in exclusive:
