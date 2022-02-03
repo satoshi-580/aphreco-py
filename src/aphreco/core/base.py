@@ -65,6 +65,10 @@ class BaseItem(abc.ABC):
     def _get_item_by_name(self, name):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def _rename(self, repmap):
+        raise NotImplementedError
+
 
 class BaseComponent(BaseItem):
     def _get_item_by_name(self, name):

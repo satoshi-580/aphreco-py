@@ -104,6 +104,24 @@ class Con(BaseEdge):
         )
         return copied_edge
 
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name == self._create_name_from_term(self.term):
+            is_default_name = True
+        else:
+            is_default_name = False
+
+        for yname in self.term.keys():
+            for old, new in repmap.items():
+                self.term[yname] = self.term[yname].replace(old, new)
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                self.term[new_name] = self.term[yname]
+                del self.term[yname]
+
+        if is_default_name:
+            self.name = self._create_name_from_term(self.term)
+
     def collect_eq(self):
         pass
 
@@ -248,6 +266,34 @@ class Reg(BaseEdge):
         )
 
         return copied_edge
+
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name == self._create_name_from_term(self.term):
+            is_default_name = True
+        else:
+            is_default_name = False
+
+        start, step, stop = self.beat
+        if start in repmap.keys():
+            start = repmap[start]
+        if stop in repmap.keys():
+            stop = repmap[stop]
+        if step in repmap.keys():
+            step = repmap[step]
+        self.beat = (start, stop, step)
+
+        renamed_term: Dict[str, str] = self.term.copy()
+        for yname in self.term.keys():
+            for old, new in repmap.items():
+                renamed_term[yname] = self.term[yname].replace(old, new)
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                renamed_term[new_name] = self.term[yname]
+                del renamed_term[yname]
+
+        if is_default_name:
+            self.name = self._create_name_from_term(self.term)
 
     def collect_eq(self):
         pass

@@ -168,8 +168,9 @@ class Variable(BaseComponent):
         )
         return copied_var
 
-    def convert(self, vartype):
-        pass
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name in repmap.keys():
+            self.name = repmap[self.name]
 
 
 # from collections import deque
