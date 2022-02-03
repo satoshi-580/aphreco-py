@@ -36,16 +36,6 @@ class Variable(BaseComponent):
         share (bool): if share this variable name or not in Model.copy.
             if False, a copied variable adds prefix or suffix to the name.
             if True, not add any prefix or suffix meaning the same name is used in another model.
-
-    Example:
-        >>> import aphreco as aph
-        >>> var = aph.Variable("k", 0.01, "p")
-        >>> var.name
-        k
-        >>> var.value
-        0.01
-        >>> var.type.name
-        ItemType.P
     """
 
     def __init__(
