@@ -371,8 +371,17 @@ class Model(BaseItem):
                     break
         return res
 
-    def rename(self, name: str, new_name: str):
-        pass
+    def delete(self, name: Union[str, List[str]] = None):
+        if name is None:
+            raise TypeError(f"please designate argument of name.")
+
+        names = name
+        if isinstance(names, str):
+            names = [names]
+
+        for name in names:
+            p = self[name].parent
+            del p.children[name]
 
 
 # from collections import OrderedDict, deque
