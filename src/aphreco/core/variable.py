@@ -1,5 +1,6 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
+import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseComponent
@@ -124,6 +125,18 @@ class Variable(BaseComponent):
         names_dict[self.name] = (self.type, -1)
         return names_dict
 
+    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+        if self.term is None:
+            return used_names_set
+        else:
+            used_names: Set[str] = set()
+
+            symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
+            str_symbols_set = {str(symbol) for symbol in symbols_set}
+            used_names = used_names | str_symbols_set
+
+            return used_names_set | used_names
+
     def tree(
         self,
         indent: str = "",
@@ -132,33 +145,41 @@ class Variable(BaseComponent):
         if structure is None:
             structure = list()
 
-        structure.append(f"{indent}{self}[{self.type.name}]")
+        structure.append(f"{indent}[{self.type.name}]{self}")
         return structure
 
-    def copy(self, prefix="", suffix="", exclusive=[], share=False):
-        # TODO: how should the method deal with the case that the name
-        # resulting from addition of prefix/suffix could be the same as
-        # another existing name?
-        if self.type == ItemType.Y:
-            copied_name = prefix + self.name + suffix
-        elif self.name in exclusive:
-            copied_name = prefix + self.name + suffix
-        elif share and not self.share:
-            copied_name = prefix + self.name + suffix
-        elif (not share) and (exclusive == []):
-            copied_name = prefix + self.name + suffix
-        else:
-            copied_name = self.name
+    def copy(
+        self,
+        prefix="",
+        suffix="",
+        exclusive: List[str] = [],
+        share: bool = False,
+        _repmap: Optional[Dict[str, str]] = None,
+    ):
+        copied_name = self.name
+        copied_term = self.term
+
+        if _repmap is not None:
+            if self.name in _repmap.keys():
+                copied_name = _repmap[self.name]
+
+            # replace names in term
+            if copied_term is not None:
+                for old, new in _repmap.items():
+                    copied_term = copied_term.replace(old, new)
 
         copied_var = Variable(
             name=copied_name,
             value=self.value,
             type=self.type,
             bounds=self.bounds,
-            term=self.term,
+            term=copied_term,
             share=self.share,
         )
         return copied_var
+
+    def convert(self, vartype):
+        pass
 
 
 # from collections import deque

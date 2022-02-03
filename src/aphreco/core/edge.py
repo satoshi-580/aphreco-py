@@ -1,5 +1,7 @@
-from typing import Dict, List, Optional, Tuple
+from collections import OrderedDict
+from typing import Dict, List, Optional, Set, Tuple
 
+import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
@@ -16,12 +18,22 @@ class Con(BaseEdge):
         if name is not None:
             self.name = name
         else:
-            Con.cnt += 1
-            self.name = "con_edge_" + str(Con.cnt)
+            self.name = self._create_name_from_term(term)
 
     @property
     def type(self):
         return self._type
+
+    def _create_name_from_term(self, term):
+        str_from = ""
+        str_to = ""
+        for name, term in term.items():
+            if term.lstrip()[0] == "-":
+                str_from += name + ":" + term + ","
+            else:
+                str_to += name + ":" + term + ","
+        name = f"{str_from[:-1]}->{str_to[:-1]}"
+        return name
 
     def _add_or_skip(self, parent, is_done):
         edge = Con(
@@ -31,8 +43,24 @@ class Con(BaseEdge):
         edge.parent = parent
         return edge, is_done
 
-    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
-        return names_dict
+    def _collect_names(self, _):
+        pass
+
+    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+        """collects all names used in terms of this edge.
+
+        This method is called when this object is added to a model
+        to check if unregistered names are used in terms of this edge or not.
+        """
+        used_names = set()
+        for yname, term in self.term.items():
+            used_names.add(str(sympy.sympify(yname)))
+
+            symbols_set = sympy.sympify(term).atoms(sympy.Symbol)
+            str_symbols_set = {str(symbol) for symbol in symbols_set}
+            used_names = used_names | str_symbols_set
+
+        return used_names_set | used_names
 
     def tree(
         self,
@@ -42,16 +70,34 @@ class Con(BaseEdge):
         if structure is None:
             structure = list()
 
-        structure.append(
-            f"{indent}{self.name}[{self.type.name}]{set(self.term.keys())}"
-        )
+        structure.append(f"{indent}[{self.type.name}]{self.name}")
         return structure
 
-    def copy(self, prefix="", suffix="", exclusive=[], share=False):
+    def copy(
+        self,
+        prefix="",
+        suffix="",
+        exclusive: List[str] = [],
+        share: bool = False,
+        _repmap: Dict[str, str] = None,
+    ):
+        copied_term: Dict[str, str] = OrderedDict()
+        for yname, str_rhs in self.term.items():
+            # because lhs is always ItemType.Y,
+            # add prefix/suffix to yname unconditionally.
+            copied_name = prefix + yname + suffix
+
+            copied_rhs = str_rhs
+            if _repmap is not None:
+                for old, new in _repmap.items():
+                    copied_rhs = copied_rhs.replace(old, new)
+
+            copied_term[copied_name] = copied_rhs
+
         copied_edge = Con(
-            term=self.term,
-            name=self.name,
+            term=copied_term,
         )
+
         return copied_edge
 
     def collect_eq(self):

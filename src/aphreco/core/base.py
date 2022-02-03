@@ -51,10 +51,15 @@ class BaseItem(abc.ABC):
 
     @abc.abstractmethod
     def _collect_names(self, names_dict):
+        """collects names defined by Variable objects."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def copy(self, prefix, suffix, exclusive, share):
+    def _collect_names_in_terms_recursively(self, used_names_set):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def copy(self, prefix, suffix, exclusive, share, _repmap):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -71,9 +76,13 @@ class BaseComponent(BaseItem):
 
 class BaseEdge(BaseComponent):
     @abc.abstractmethod
+    def _create_name_from_term(self, term):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def collect_eq(self):
-        NotImplementedError
+        raise NotImplementedError
 
     @abc.abstractmethod
     def collect_val(self):
-        NotImplementedError
+        raise NotImplementedError
