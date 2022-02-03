@@ -290,23 +290,24 @@ class Variable(BaseComponent):
 #         return val_dicts
 
 
-# class Y(BaseComponent):
-#     def __new__(
-#         cls,
-#         name: str,
-#         value: float = 0.0,
-#         term: Optional[str] = None,
-#     ):
-#         return Var(name=name, value=value, vtype="y", term=term)
+class Y:
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        term: Optional[str] = None,
+    ):
+        return Variable(name=name, value=value, type="y", term=term, share=False)
 
 
-# class P(BaseComponent):
-#     def __new__(
-#         cls,
-#         name: str,
-#         value: float = 0.0,
-#     ):
-#         return Var(name=name, value=value, vtype="p", term=None)
+class P:
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        share: bool = True,
+    ):
+        return Variable(name=name, value=value, type="p", term=None, share=share)
 
 
 # class X(BaseComponent):
