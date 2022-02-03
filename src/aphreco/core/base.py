@@ -1,5 +1,4 @@
 import abc
-from typing import List
 
 
 class BaseItem(abc.ABC):
