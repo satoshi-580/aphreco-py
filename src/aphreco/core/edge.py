@@ -31,6 +31,7 @@ class Con(BaseEdge):
             else:
                 str_to += name + ":" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
+        name = name.strip()
         return name
 
     def _add_or_skip(self, parent, is_done):
@@ -158,6 +159,7 @@ class Reg(BaseEdge):
             else:
                 str_to += name + ":" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
+        name = name.strip()
         return name
 
     def _add_or_skip(self, parent, is_done):
