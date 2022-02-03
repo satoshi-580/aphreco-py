@@ -24,14 +24,6 @@ class Model(BaseItem):
         hide (bool): whether or not print children when printing the model structure
 
         parent (BaseItem): an upper layer item in a tree structure
-
-    Example:
-        >>> import aphreco as aph
-        >>> model = aph.Model("sample")
-        >>> model.name
-        sample
-        >>> model.type.name
-        ItemType.MODEL
     """
 
     type = ItemType.MODEL
