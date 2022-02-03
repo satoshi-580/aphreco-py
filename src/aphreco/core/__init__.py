@@ -1,7 +1,7 @@
 from .base import BaseComponent, BaseEdge, BaseItem
 from .edge import Con, Reg
 from .model import Model
-from .variable import Variable
+from .variable import P, Variable, Y
 
 # from .base import BaseComponent, BaseEdge, BaseItem, BaseModel
 # from .data import Obs

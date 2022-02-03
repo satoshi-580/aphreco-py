@@ -1,4 +1,4 @@
-from aphreco.core import Con, Model, Reg, Variable
+from aphreco.core import Con, Model, P, Reg, Variable, Y
 from aphreco.enums import ItemType
 
 # from .solve import Optimizer, Simulator, optimize, simulate
