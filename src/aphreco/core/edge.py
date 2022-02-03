@@ -70,7 +70,7 @@ class Con(BaseEdge):
         if structure is None:
             structure = list()
 
-        structure.append(f"{indent}[{self.type.name}]{self.name}")
+        structure.append(f"{indent}[{self.type.name}] {self.name}")
         return structure
 
     def copy(

@@ -145,7 +145,7 @@ class Variable(BaseComponent):
         if structure is None:
             structure = list()
 
-        structure.append(f"{indent}[{self.type.name}]{self}")
+        structure.append(f"{indent}[ {self.type.name} ] {self}")
         return structure
 
     def copy(
