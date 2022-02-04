@@ -7,8 +7,8 @@ class ItemType(enum.Flag):
     P = enum.auto()  # a constant model parameter
     X = enum.auto()  # an unknown parameter in optimization
     E = enum.auto()  # a provisional effect
-    A = enum.auto()  # an alias of a term to be replaced in converting
-    R = enum.auto()  # a reference to another variable (proxy, shortcut, alias of P)
+    A = enum.auto()  # an alias (or a placeholder) of a term to be replaced
+    R = enum.auto()  # a reference to another variable (proxy, shortcut to P)
     VARIABLE = Y | P | X | R | E | A
 
     CON = enum.auto()  # continuous edge

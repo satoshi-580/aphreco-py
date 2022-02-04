@@ -7,11 +7,11 @@ from .base import BaseComponent
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
-    "p": ItemType.P,  # model parameter (independent, constant)
-    "x": ItemType.X,  # unknown parameter (optimized)
+    "p": ItemType.P,  # model parameter (independent and constant)
+    "x": ItemType.X,  # unknown parameter (independent and optimized)
     "e": ItemType.E,  # provisional effect
-    "a": ItemType.A,  # alias of a term
-    "r": ItemType.R,  # reference to another variable
+    "a": ItemType.A,  # an alias (or a placeholder) of a term to be replaced
+    "r": ItemType.R,  # reference to another variable (generated in skipping copy)
 }
 
 
@@ -319,6 +319,25 @@ class P:
 #         bounds: Optional[Tuple[float, float]] = None,
 #     ):
 #         return Var(name=name, value=value, vtype="x", term=None, bounds=bounds)
+
+
+class A:
+    def __new__(
+        cls,
+        name: str,
+        term: str,
+        share: bool = True,
+    ):
+        """A class is for defining an alias of a term which is to be replaced.
+
+        In writing a model code, the name of A is replaced by its term.
+        For example, if a name 'J0' is defined with a term 'Jmax * C0 / (Km_ + C0)',
+        the 'J0' in edge terms in a model will be replaced by the term in writing
+        a model code.
+        Variable.value is not evaluated.
+
+        """
+        return Variable(name=name, type="a", term=term, share=share)
 
 
 # class Beat:
