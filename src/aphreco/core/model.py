@@ -385,6 +385,13 @@ class Model(BaseItem):
 
     def rename(self, repmap: Dict[str, str]):
         """renames an old name (key) into a new name (value) of repmap (dictionary)."""
+        # check duplication after renaming
+        existing_names_dict = self._collect_existing_names()
+        new_names_dict_list = [{new_name: None for _, new_name in repmap.items()}]
+        self.check_duplication_between_new_and_old(
+            new_names_dict_list, existing_names_dict
+        )
+
         if self.parent is None:
             return self._rename(repmap)
         else:
