@@ -3,20 +3,23 @@ import enum
 
 class ItemType(enum.Flag):
     # Component
-    Y = enum.auto()  # dependent variable
-    P = enum.auto()  # constant model parameter
-    X = enum.auto()  # unknown parameter in optimization
-    E = enum.auto()
-    VARIABLE = Y | P | X | E
+    Y = enum.auto()  # a dependent variable
+    P = enum.auto()  # a constant model parameter
+    X = enum.auto()  # an unknown parameter in optimization
+    E = enum.auto()  # a provisional effect
+    A = enum.auto()  # an alias of a term to be replaced in converting
+    R = enum.auto()  # a reference to another variable (proxy, shortcut, alias of P)
+    VARIABLE = Y | P | X | R | E | A
 
     CON = enum.auto()  # continuous edge
     REG = enum.auto()  # discrete edge with a regular interval
-    EDGE = CON | REG
+    FLX = enum.auto()  # discrete edge with a flexible interval
+    EDGE = CON | REG | FLX
 
     COMPONENT = VARIABLE | EDGE
 
     # Composite
-    MODEL = enum.auto()  # show inside
+    MODEL = enum.auto()  # a model with children listed as tree structure
 
     # Item
     ITEM = COMPONENT | MODEL

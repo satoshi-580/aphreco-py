@@ -9,7 +9,9 @@ VTYPES = {
     "y": ItemType.Y,  # dependent variable
     "p": ItemType.P,  # model parameter (independent, constant)
     "x": ItemType.X,  # unknown parameter (optimized)
-    # "e": ItemType.E,  # effect on a target
+    "e": ItemType.E,  # provisional effect
+    "a": ItemType.A,  # alias of a term
+    "r": ItemType.R,  # reference to another variable
 }
 
 
@@ -288,6 +290,14 @@ class Y:
         value: float = 0.0,
         term: Optional[str] = None,
     ):
+        """Y class is for defining a (dependent) Variable object with its type set to ItemYype.Y.
+
+        If the argument 'term' is designated, the term will be evaluated as a constant relationship (CRE).
+        For example, if defining Y(name="C0", term="X0 / V0"), aphreco regard a relationship
+        'C0 = X0 / V0' as constant, and calculate the equation every step of simulation.
+        Please note that it is not recommended to use 'C0' in Edge terms when the name is defined
+        as the lhs of CRE. In the case that use a temporary name in edge term, define as A (an alias of a term).
+        """
         return Variable(name=name, value=value, type="y", term=term, share=False)
 
 
