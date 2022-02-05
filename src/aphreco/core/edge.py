@@ -315,53 +315,13 @@ class Reg(BaseEdge):
         pass
 
 
-# from collections import deque
-# from typing import Dict
-
-# import sympy
-# from aphreco.enums import ItemType
-
-# from ..base import BaseEdge
-
-
 # class EdgeC(BaseEdge):
-#     def __init__(self, term: Dict[str, str]):
-#         self.term = term
-#         self._type = ItemType.CON
-#         self.name = term
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, etype: ItemType):
-#         raise AttributeError("edge type is immutable.")
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, term):
-#         str_from = ""
-#         str_to = ""
-#         for name, term in self.term.items():
-#             if term.lstrip()[0] == "-":
-#                 str_from += name + ":" + term + ","
-#             else:
-#                 str_to += name + ":" + term + ","
-#         self._name = f"{str_from[:-1]}->{str_to[:-1]}"
-
 #     def _get_symbols(self):
 #         symbols = set()
 #         for k, term in self.term.items():
 #             symbols.add(sympy.sympify(k))
 #             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
 #         return symbols
-
-#     def _print_tree(self, indent=""):
-#         print(f"{indent}{self}[{self.type.name}]")
 
 #     def _formulate(self, eq_dicts):
 #         dict_ode = eq_dicts["ode"]
@@ -375,56 +335,7 @@ class Reg(BaseEdge):
 #         eq_dicts["ode"] = dict_ode
 #         return eq_dicts
 
-#     def _remove_by_name(self, dq_path: deque):
-#         pass
-
-
-# from collections import OrderedDict, deque
-# from typing import Dict, Tuple
-
-# import sympy
-# from aphreco.enums import ItemType
-
-# from ..base import BaseComponent
-
-
 # class EdgeR(BaseEdge):
-#     def __init__(self, beat: Tuple[str, str, str], term: Dict[str, str]):
-#         """
-#         term: Dict[lhs, rhs]
-#             lhs indicates a dependent variable.
-#             rhs is the difference of the corresponding lhs
-#             at a discrete point (delta_lhs += rhs).
-#         beat: Tuple(start, stop, step)
-#         """
-#         self.term = term
-#         self.beat = beat
-#         self._type = ItemType.REG
-#         self.name = term
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, etype: ItemType):
-#         raise AttributeError("edge type is immutable.")
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, term):
-#         str_from = ""
-#         str_to = ""
-#         for name, term in self.term.items():
-#             if term.lstrip()[0] == "-":
-#                 str_from += name + ":" + term + ","
-#             else:
-#                 str_to += name + ":" + term + ","
-#         self._name = f"{str_from[:-1]}->{str_to[:-1]}"
-
 #     def _get_symbols(self):
 #         symbols = set()
 
@@ -435,9 +346,6 @@ class Reg(BaseEdge):
 #             symbols.add(sympy.sympify(k))
 #             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
 #         return symbols
-
-#     def _print_tree(self, indent=""):
-#         print(f"{indent}{self}[{self.type.name}]")
 
 #     def _formulate(
 #         self,
@@ -456,6 +364,3 @@ class Reg(BaseEdge):
 
 #         eq_dicts["rec"] = dict_rec
 #         return eq_dicts
-
-#     def _remove_by_name(self, dq_path: deque):
-#         pass
