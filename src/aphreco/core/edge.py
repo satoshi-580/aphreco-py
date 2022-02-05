@@ -9,15 +9,26 @@ from .func.symbolize import extract_symset, str_symbol_name
 
 
 class Con(BaseEdge):
-    def __init__(self, term: Dict[str, str], name=None):
+    def __init__(
+        self,
+        term: Dict[str, str],
+        name: str = None,
+        _is_default_name: bool = None,
+    ):
         self.term = term
         self._type = ItemType.CON
         self.parent = None
 
-        if name is not None:
-            self._name = name
-        else:
+        if name is None:
             self._name = self._create_name_from_term(term)
+            if _is_default_name is None:
+                _is_default_name = True
+        else:
+            self._name = name
+            if _is_default_name is None:
+                _is_default_name = False
+
+        self._is_default_name = _is_default_name
 
     @property
     def type(self):
@@ -39,6 +50,7 @@ class Con(BaseEdge):
         edge = Con(
             term=self.term,
             name=self.name,
+            _is_default_name=self._is_default_name,
         )
         edge.parent = parent
         return edge, is_done
@@ -46,7 +58,7 @@ class Con(BaseEdge):
     def _collect_names(self, _):
         pass
 
-    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
         """collects all names used in terms of this edge.
 
         This method is called when this object is added to a model
@@ -101,14 +113,14 @@ class Con(BaseEdge):
         copied_edge = Con(
             term=copied_term,
             name=copied_name,
+            _is_default_name=self._is_default_name,
         )
         return copied_edge
 
-    def _rename(self, repmap: Dict[str, str]):
-        if self.name == self._create_name_from_term(self.term):
-            is_default_name = True
-        else:
-            is_default_name = False
+    def _rename_self(self, repmap: Dict[str, str]):
+        if not self._is_default_name:
+            if self._name in repmap.keys():
+                self._name = repmap[self._name]
 
         renamed_term = self.term.copy()
         for yname in self.term.keys():
@@ -134,8 +146,33 @@ class Con(BaseEdge):
                 del renamed_term[yname]
         self.term = renamed_term
 
-        if is_default_name:
+        if self._is_default_name:
             self._name = self._create_name_from_term(self.term)
+
+        return self
+
+    def _delete_involved(self, name: str):
+        del_term = self.term.copy()
+        for yname in self.term.keys():
+            # if name is included as a symbol in term,
+            # the whole term is deleted.
+            symset = extract_symset(del_term[yname])
+            if name in symset:
+                del del_term[yname]
+
+        if name in del_term.keys():
+            del del_term[name]
+
+        self.term = del_term
+        if len(self.term) > 0:
+            is_empty = False
+        else:
+            is_empty = True
+
+        if self._is_default_name and (not is_empty):
+            self._name = self._create_name_from_term(self.term)
+
+        return is_empty, self
 
     def collect_eq(self):
         pass
@@ -207,7 +244,7 @@ class Reg(BaseEdge):
     def _collect_names(self, _):
         pass
 
-    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
         """collects all names used in terms and a beat of this edge.
 
         This method is called when this object is added to a model
@@ -280,7 +317,7 @@ class Reg(BaseEdge):
 
         return copied_edge
 
-    def _rename(self, repmap: Dict[str, str]):
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name == self._create_name_from_term(self.term):
             is_default_name = True
         else:
@@ -297,22 +334,34 @@ class Reg(BaseEdge):
 
         renamed_term: Dict[str, str] = self.term.copy()
         for yname in self.term.keys():
-            for old, new in repmap.items():
-                renamed_term[yname] = self.term[yname].replace(old, new)
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
 
             if yname in repmap.keys():
                 new_name = repmap[yname]
-                renamed_term[new_name] = self.term[yname]
+                renamed_term[new_name] = renamed_term[yname]
                 del renamed_term[yname]
+        self.term = renamed_term
 
         if is_default_name:
             self._name = self._create_name_from_term(self.term)
+        return self
 
     def collect_eq(self):
         pass
 
     def collect_val(self):
         pass
+
+    def _delete_involved(self, name: str):
+        return False
 
 
 # class EdgeC(BaseEdge):

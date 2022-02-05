@@ -52,7 +52,7 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _collect_names_in_terms_recursively(self, used_names_set):
+    def _collect_names_in_terms(self, used_names_set):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -60,11 +60,15 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _rename(self, repmap):
+    def _rename_self(self, repmap):
         raise NotImplementedError
 
     @abc.abstractmethod
     def _find_path_by_name(self, name, dq_path):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _delete_involved(self, name):
         raise NotImplementedError
 
 

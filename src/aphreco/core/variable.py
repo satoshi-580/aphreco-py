@@ -119,7 +119,7 @@ class Variable(BaseComponent):
         names_dict[self.name] = (self.type, -1)
         return names_dict
 
-    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
         if self.term is None:
             return used_names_set
         else:
@@ -185,7 +185,7 @@ class Variable(BaseComponent):
         )
         return copied_var
 
-    def _rename(self, repmap: Dict[str, str]):
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
             self._name = repmap[self.name]
 
@@ -200,6 +200,15 @@ class Variable(BaseComponent):
                         old=old,
                         new=repmap[old],
                     )
+        return self
+
+    def _delete_involved(self, name: str):
+        if (self.term is not None) and (name in self.term.keys()):
+            self.term = None
+            if self.type in (ItemType.Y | ItemType.E | ItemType.A):
+                return True, self
+
+        return False, self
 
 
 # class Var(BaseComponent):
