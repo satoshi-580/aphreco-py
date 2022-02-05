@@ -4,8 +4,8 @@ import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseComponent
-from .utils.rename import rename_all
-from .utils.symbolize import extract_symset
+from .func.rename import rename_all
+from .func.symbolize import extract_symset
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
