@@ -1,10 +1,11 @@
 from collections import OrderedDict
 from typing import Dict, List, Optional, Set, Tuple
 
-import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
+from .rename import rename_all
+from .symbolize import extract_symset, str_symbol_name
 
 
 class Con(BaseEdge):
@@ -53,11 +54,10 @@ class Con(BaseEdge):
         """
         used_names = set()
         for yname, term in self.term.items():
-            used_names.add(str(sympy.sympify(yname)))
+            used_names.add(str_symbol_name(yname))
 
-            symbols_set = sympy.sympify(term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
+            symset = extract_symset(term)
+            used_names = used_names | symset
 
         return used_names_set | used_names
 
@@ -110,14 +110,29 @@ class Con(BaseEdge):
         else:
             is_default_name = False
 
+        renamed_term = self.term.copy()
         for yname in self.term.keys():
-            for old, new in repmap.items():
-                self.term[yname] = self.term[yname].replace(old, new)
+            # extract a set of symbols (names) from a term
+            # filter the set to be replaced.
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+
+            # replace all positions in a term while other inclusive names
+            # are not replaced. For example, when replacing 'X0', neither
+            # 'prefix_X0' nor 'X0_suffix' will be replaced.
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
 
             if yname in repmap.keys():
                 new_name = repmap[yname]
-                self.term[new_name] = self.term[yname]
-                del self.term[yname]
+                renamed_term[new_name] = renamed_term[yname]
+                del renamed_term[yname]
+        self.term = renamed_term
 
         if is_default_name:
             self.name = self._create_name_from_term(self.term)
@@ -202,11 +217,9 @@ class Reg(BaseEdge):
         used_names = {name for name in self.beat}
         # terms
         for yname, term in self.term.items():
-            used_names.add(str(sympy.sympify(yname)))
-
-            symbols_set = sympy.sympify(term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
+            used_names.add(str_symbol_name(yname))
+            symset = extract_symset(term)
+            used_names = used_names | symset
 
         return used_names_set | used_names
 
