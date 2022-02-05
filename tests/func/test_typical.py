@@ -80,8 +80,9 @@ class TestSimpleUserExperience:
             cmpt2["X1"]
             cmpt2["k12"]
 
-    # @pytest.mark.skip(reason="not implemented yet")
     def test_delete_var(self, cmpt2):
+        # deletion of a variable leads to deletion of edge/variable
+        # which have involved terms.
         cmpt2.delete("X2")
 
         # if success, a deleted name must not exist.
@@ -101,7 +102,6 @@ class TestSimpleUserExperience:
   [CON] X1:-ke*X1 ->"""
         assert str(cmpt2) == expected_tree
 
-    # @pytest.mark.skip(reason="not implemented yet")
     def test_delete_edge(self, cmpt2):
         cmpt2.delete("X1:-k12*X1 -> X2:k12*X1")
 
@@ -120,12 +120,14 @@ class TestSimpleUserExperience:
         assert str(cmpt2) == expected_tree
 
     def test_delete_model(self, cmpt2, str_cmpt2):
+        # add model with inside items
         cmpt2.add(ap.Model("box"))
         cmpt2["box"].add(ap.Y("y_in_box"))
         cmpt2["box"].add(ap.P("p_in_box"))
         cmpt2["box"].add(ap.X("x_in_box"))
         assert str(cmpt2) != str_cmpt2
 
+        # deletion of a model leads to deletion of inside items.
         cmpt2.delete("box")
         assert str(cmpt2) == str_cmpt2
 
