@@ -5,6 +5,7 @@ from aphreco.enums import ItemType
 
 from .base import BaseComponent
 from .rename import rename_all
+from .symbolize import extract_symset
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
@@ -138,7 +139,12 @@ class Variable(BaseComponent):
         if structure is None:
             structure = list()
 
-        structure.append(f"{indent}[ {self.type.name} ] {self}")
+        if self.term is None:
+            str_tree = f"{indent}[ {self.type.name} ] {self}"
+        else:
+            str_tree = f"{indent}[ {self.type.name} ] {self} = {self.term}"
+
+        structure.append(str_tree)
         return structure
 
     def copy(
@@ -182,7 +188,18 @@ class Variable(BaseComponent):
     def _rename(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
             self.name = repmap[self.name]
-        # term??
+
+        if self.term is not None:
+            symset = extract_symset(self.term)
+            intersect = symset & repmap.keys()
+
+            if intersect != set():
+                for old in intersect:
+                    self.term = rename_all(
+                        term=self.term,
+                        old=old,
+                        new=repmap[old],
+                    )
 
 
 # class Var(BaseComponent):
