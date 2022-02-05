@@ -47,7 +47,7 @@ class TestSimpleUserExperience:
             cmpt2.add(ap.Y("k21"))
 
         with pytest.raises(UnregisteredNameError):
-            cmpt2.rename({"NotExistName": "MeaninglessName"})
+            cmpt2.rename({"NotExistingName": "MeaninglessName"})
 
     def test_getitem(self, cmpt2):
         # success Model.__getitem__()
@@ -88,4 +88,13 @@ class TestSimpleUserExperience:
 
         # fail when a name does not exist in a model.
         with pytest.raises(UnregisteredNameError):
-            cmpt2.delete("NothingName")
+            cmpt2.delete("UnnecessaryName")
+
+    @pytest.mark.skip(reason="not implemented yet")
+    def test_simulation(self, cmpt2):
+        out_time = [float(i) / 100 for i in range(1000)]
+        simulator = ap.Simulator()
+        simres = simulator.run(cmpt2, out_time)
+
+        assert simres.out_t == out_time
+        # assert simres.out_y == data of cmpt2 simulation loaded by fixture
