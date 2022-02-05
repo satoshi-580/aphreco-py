@@ -29,7 +29,7 @@ class TestSimpleUserExperience:
 
     def test_print_tree(self, cmpt2):
         # check answer
-        expected_out = """cmpt2/
+        expected_tree = """cmpt2/
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
@@ -38,7 +38,7 @@ class TestSimpleUserExperience:
   [CON] X2:-k21*X2 -> X1:k21*X2
   [ P ] ke
   [CON] X1:-ke*X1 ->"""
-        assert str(cmpt2) == expected_out
+        assert str(cmpt2) == expected_tree
 
     def test_name_check(self, cmpt2):
         with pytest.raises(DuplicatedNameError):
@@ -78,17 +78,44 @@ class TestSimpleUserExperience:
             cmpt2["X1"]
             cmpt2["k12"]
 
-    @pytest.mark.skip(reason="not implemented yet")
-    def test_delete_item(self, cmpt2):
-        cmpt2.delete("X1")
+    # @pytest.mark.skip(reason="not implemented yet")
+    def test_delete_var(self, cmpt2):
+        cmpt2.delete("X2")
 
         # if success, a deleted name must not exist.
         with pytest.raises(KeyError):
-            cmpt2["X1"]
+            cmpt2["X2"]
 
         # fail when a name does not exist in a model.
-        with pytest.raises(UnregisteredNameError):
+        with pytest.raises(KeyError):
             cmpt2.delete("UnnecessaryName")
+
+        expected_tree = """cmpt2/
+  [ Y ] X1
+  [ P ] k12
+  [ P ] k21
+  [CON] X1:-k12*X1 ->
+  [ P ] ke
+  [CON] X1:-ke*X1 ->"""
+        assert str(cmpt2) == expected_tree
+
+    # @pytest.mark.skip(reason="not implemented yet")
+    def test_delete_edge(self, cmpt2):
+        cmpt2.delete("X1:-k12*X1 -> X2:k12*X1")
+
+        # if success, a deleted name must not exist.
+        with pytest.raises(KeyError):
+            cmpt2["X1:-k12*X1 -> X2:k12*X1"]
+
+        expected_tree = """cmpt2/
+  [ Y ] X1
+  [ Y ] X2
+  [ P ] k12
+  [ P ] k21
+  [CON] X2:-k21*X2 -> X1:k21*X2
+  [ P ] ke
+  [CON] X1:-ke*X1 ->"""
+        assert str(cmpt2) == expected_tree
 
     @pytest.mark.skip(reason="not implemented yet")
     def test_simulation(self, cmpt2):
