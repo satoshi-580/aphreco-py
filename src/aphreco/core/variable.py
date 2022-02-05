@@ -185,7 +185,7 @@ class Variable(BaseComponent):
         )
         return copied_var
 
-    def _rename(self, repmap: Dict[str, str]):
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
             self._name = repmap[self.name]
 
@@ -200,6 +200,7 @@ class Variable(BaseComponent):
                         old=old,
                         new=repmap[old],
                     )
+        return self
 
 
 # class Var(BaseComponent):

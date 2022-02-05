@@ -60,7 +60,7 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _rename(self, repmap):
+    def _rename_self(self, repmap):
         raise NotImplementedError
 
     @abc.abstractmethod

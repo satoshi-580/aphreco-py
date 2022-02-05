@@ -360,24 +360,43 @@ class Model(BaseItem):
 
     def rename(self, repmap: Dict[str, str]):
         """renames an old name (key) into a new name (value) of repmap (dictionary)."""
-        # check duplication of renamed name
-        existing_names_dict = self._collect_existing_names()
-        new_names_dict_list = [{new_name: None for _, new_name in repmap.items()}]
-        check_duplication_between_new_and_old(
-            new_names_dict_list,
-            existing_names_dict,
-        )
-
-        if self.parent is None:
-            return self._rename(repmap)
+        if self.parent is not None:
+            # go upward to a top of a tree
+            self.parent.rename(repmap)
         else:
-            return self.parent.rename(repmap)
+            # if the current model is a top of a tree, start renaming
 
-    def _rename(self, repmap: Dict[str, str]):
+            # check duplication of renamed name
+            existing_names_dict = self._collect_existing_names()
+            new_names_dict_list = [
+                {new_name: (ItemType.ITEM, -1) for _, new_name in repmap.items()}
+            ]
+            check_duplication_between_new_and_old(
+                new_names_dict_list,
+                existing_names_dict,
+            )
+            used_names_set = set(repmap.keys())
+            check_unregistration(
+                used_names_set,
+                existing_names_dict,
+                new_names_dict_list,
+            )
+
+            # rename
+            self._rename_self(repmap)
+
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
             self.name = repmap[self.name]
+
+        renamed_children: Dict[str, BaseItem] = OrderedDict()
         for _, item in self.children.items():
-            item._rename(repmap)
+            renamed_child = item._rename_self(repmap)
+            renamed_children[renamed_child.name] = renamed_child
+
+        self.children = renamed_children
+
+        return self
 
     def find(self, name: str) -> Optional[str]:
         if name == self.name:

@@ -104,11 +104,13 @@ class Con(BaseEdge):
         )
         return copied_edge
 
-    def _rename(self, repmap: Dict[str, str]):
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name == self._create_name_from_term(self.term):
             is_default_name = True
         else:
             is_default_name = False
+            if self._name in repmap.keys():
+                self._name = repmap[self._name]
 
         renamed_term = self.term.copy()
         for yname in self.term.keys():
@@ -136,6 +138,8 @@ class Con(BaseEdge):
 
         if is_default_name:
             self._name = self._create_name_from_term(self.term)
+
+        return self
 
     def collect_eq(self):
         pass
@@ -280,7 +284,7 @@ class Reg(BaseEdge):
 
         return copied_edge
 
-    def _rename(self, repmap: Dict[str, str]):
+    def _rename_self(self, repmap: Dict[str, str]):
         if self.name == self._create_name_from_term(self.term):
             is_default_name = True
         else:
@@ -297,16 +301,25 @@ class Reg(BaseEdge):
 
         renamed_term: Dict[str, str] = self.term.copy()
         for yname in self.term.keys():
-            for old, new in repmap.items():
-                renamed_term[yname] = self.term[yname].replace(old, new)
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
 
             if yname in repmap.keys():
                 new_name = repmap[yname]
-                renamed_term[new_name] = self.term[yname]
+                renamed_term[new_name] = renamed_term[yname]
                 del renamed_term[yname]
+        self.term = renamed_term
 
         if is_default_name:
             self._name = self._create_name_from_term(self.term)
+        return self
 
     def collect_eq(self):
         pass
