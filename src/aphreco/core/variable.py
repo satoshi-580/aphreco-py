@@ -4,6 +4,7 @@ import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseComponent
+from .rename import rename_all
 
 VTYPES = {
     "y": ItemType.Y,  # dependent variable
@@ -157,8 +158,16 @@ class Variable(BaseComponent):
 
             # replace names in term
             if copied_term is not None:
-                for old, new in _repmap.items():
-                    copied_term = copied_term.replace(old, new)
+                symbols_set = sympy.sympify(copied_term).atoms(sympy.Symbol)
+                str_symbols_set = {str(symbol) for symbol in symbols_set}
+                intersect = str_symbols_set & _repmap.keys()
+                if intersect != set():
+                    for old in intersect:
+                        copied_term = rename_all(
+                            term=copied_term,
+                            old=old,
+                            new=_repmap[old],
+                        )
 
         copied_var = Variable(
             name=copied_name,
@@ -173,74 +182,12 @@ class Variable(BaseComponent):
     def _rename(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
             self.name = repmap[self.name]
-
-
-# from collections import deque
-# from typing import Dict, Optional, Tuple
-
-# import sympy
-# from aphreco.enums import ItemType
-
-# from .base import BaseComponent
+        # term??
 
 
 # class Var(BaseComponent):
-#     def __init__(
-#         self,
-#         name: str,
-#         vtype: str = "y",
-#         value: float = 0.0,
-#         term: Optional[str] = None,
-#         bounds: Optional[Tuple[float, float]] = None,
-#     ):
-#         self.name = name
-#         self.type = vtype
-
-#         self.value = float(value)
-
-#         if bounds is None:
-#             self.bounds = None
-#         else:
-#             self.bounds = (float(bounds[0]), float(bounds[1]))
-
-#         if term is None:
-#             self.term = None
-#         else:
-#             if self.type != ItemType.Y:
-#                 raise ValueError(
-#                     f"variable type must be 'y' when cre term is used: {self.type}"
-#                 )
-#             self.term = term
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, vtype: str):
-#         if vtype not in VTYPES.keys():
-#             raise ValueError(
-#                 f"invalid variable type: {vtype} \
-#                 \nvtype must be chosen from {tuple(VTYPES.keys())}"
-#             )
-#         self._type = VTYPES[vtype]
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, name: str):
-#         self._name = name
-
 #     def _get_symbols(self):
 #         return sympy.sympify(self.name)
-
-#     def _print_tree(self, indent=""):
-#         print(f"{indent}{self}[{self.type.name}]")
-
-#     def _remove_by_name(self, dq_path: deque):
-#         pass
 
 #     def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
 #         if self.term is None:
@@ -290,13 +237,16 @@ class Y:
         value: float = 0.0,
         term: Optional[str] = None,
     ):
-        """Y class is for defining a (dependent) Variable object with its type set to ItemYype.Y.
+        """Y class is for defining a dependent variable.
 
         If the argument 'term' is designated, the term will be evaluated as a constant relationship (CRE).
         For example, if defining Y(name="C0", term="X0 / V0"), aphreco regard a relationship
         'C0 = X0 / V0' as constant, and calculate the equation every step of simulation.
         Please note that it is not recommended to use 'C0' in Edge terms when the name is defined
         as the lhs of CRE. In the case that use a temporary name in edge term, define as A (an alias of a term).
+
+        Returns:
+            Variable: The variable object with its type set to ItemType.Y.
         """
         return Variable(name=name, value=value, type="y", term=term, share=False)
 
@@ -308,17 +258,35 @@ class P:
         value: float = 0.0,
         share: bool = True,
     ):
+        """P class is for defining an independent parameter in a model.
+
+        If shared, ***???***
+        Variable.term is not evaluated.
+
+        Returns:
+            Variable: The variable object with its type set to ItemType.P.
+        """
         return Variable(name=name, value=value, type="p", term=None, share=share)
 
 
-# class X(BaseComponent):
-#     def __new__(
-#         cls,
-#         name: str,
-#         value: float = 0.0,
-#         bounds: Optional[Tuple[float, float]] = None,
-#     ):
-#         return Var(name=name, value=value, vtype="x", term=None, bounds=bounds)
+class X(BaseComponent):
+    def __new__(
+        cls,
+        name: str,
+        value: float = 0.0,
+        bounds: Optional[Tuple[float, float]] = None,
+    ):
+        """X class is for defining an unknown parameter in optimization.
+
+        X variable is regarded as an unknown parameter in optimization, whereas it is
+        regarded as a fix parameter (like a P variable) in simulation.
+
+        Variable.term is not evaluated.
+
+        Returns:
+            Variable: The variable object with its type set to ItemType.X.
+        """
+        return Variable(name=name, value=value, type="x", term=None, bounds=bounds)
 
 
 class A:
@@ -334,8 +302,11 @@ class A:
         For example, if a name 'J0' is defined with a term 'Jmax * C0 / (Km_ + C0)',
         the 'J0' in edge terms in a model will be replaced by the term in writing
         a model code.
+
         Variable.value is not evaluated.
 
+        Returns:
+            Variable: The variable object with its type set to ItemType.A.
         """
         return Variable(name=name, type="a", term=term, share=share)
 
