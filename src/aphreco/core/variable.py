@@ -51,7 +51,7 @@ class Variable(BaseComponent):
         term=None,
         share=True,
     ):
-        self.name = name
+        self._name = name
         self.value = float(value)
         self.type = type
         self.share = share
@@ -187,7 +187,7 @@ class Variable(BaseComponent):
 
     def _rename(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
-            self.name = repmap[self.name]
+            self._name = repmap[self.name]
 
         if self.term is not None:
             symset = extract_symset(self.term)

@@ -15,9 +15,9 @@ class Con(BaseEdge):
         self.parent = None
 
         if name is not None:
-            self.name = name
+            self._name = name
         else:
-            self.name = self._create_name_from_term(term)
+            self._name = self._create_name_from_term(term)
 
     @property
     def type(self):
@@ -135,7 +135,7 @@ class Con(BaseEdge):
         self.term = renamed_term
 
         if is_default_name:
-            self.name = self._create_name_from_term(self.term)
+            self._name = self._create_name_from_term(self.term)
 
     def collect_eq(self):
         pass
@@ -175,9 +175,9 @@ class Reg(BaseEdge):
         self.parent = None
 
         if name is not None:
-            self.name = name
+            self._name = name
         else:
-            self.name = self._create_name_from_term(term)
+            self._name = self._create_name_from_term(term)
 
     @property
     def type(self):
@@ -306,7 +306,7 @@ class Reg(BaseEdge):
                 del renamed_term[yname]
 
         if is_default_name:
-            self.name = self._create_name_from_term(self.term)
+            self._name = self._create_name_from_term(self.term)
 
     def collect_eq(self):
         pass

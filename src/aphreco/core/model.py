@@ -1,5 +1,5 @@
 import itertools
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 from aphreco.core.base import BaseEdge, BaseItem
@@ -34,9 +34,9 @@ class Model(BaseItem):
         items: Optional[Union[BaseItem, List[BaseItem]]] = None,
         hide=False,
     ):
+        self.parent = None
         self.name = name
         self.hide = hide
-        self.parent = None
 
         self.children: Dict[str, BaseItem] = OrderedDict()
         if items is not None:
@@ -44,6 +44,16 @@ class Model(BaseItem):
 
     def __iter__(self):
         return iter(self.children.items())
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if (self.parent is not None) and (name in self.parent.children.keys()):
+            raise DuplicatedNameError(name)
+        self._name = name
 
     def add(self, items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
         """adds items
@@ -66,11 +76,16 @@ class Model(BaseItem):
         if not isinstance(items, list):
             items = [items]
 
+        # check new model name directly below self
+        for item in items:
+            if isinstance(item, Model):
+                check_model_name_duplication(self, item.name)
+
         new_names_dict_list = self._collect_new_names(items)
         existing_names_dict = self._collect_existing_names()
 
         if not isinstance(duplicate, str):
-            raise TypeError(f"duplicate expects str 'error' or 'skip'.")
+            raise TypeError(f"not str found in 'dupliate': excpected 'error' or 'skip'")
 
         # check new variables
         elif duplicate == "error":
@@ -299,22 +314,37 @@ class Model(BaseItem):
         return copied_model
 
     def __getitem__(self, name: str):
-        res = self._get_item_by_name(name)
+        if "/" not in name:
+            dq_path = self._find_path_by_name(name, deque([]))
+            if dq_path is None:
+                raise KeyError(f"'{name}' not found.")
+            dq_path.popleft()
+
+        else:
+            dq_path = deque(name.split(sep="/"))
+            if dq_path[0] == "":
+                dq_path.popleft()
+
+        res = self._get_item_by_path(dq_path)
         if res is None:
             raise KeyError(f"'{name}' not found.")
         return res
 
-    def _get_item_by_name(self, name: str):
-        res = None
-        if name == self.name:
-            res = self
+    def _get_item_by_path(self, dq_path: deque):
+        name = dq_path.popleft()
+        if name == "":
+            return self
+        elif name not in self.children.keys():
+            return None
+        elif len(dq_path) == 0:
+            return self.children[name]
         else:
-            for _, item in self.children.items():
-                res = item._get_item_by_name(name)
-                if res is not None:
-                    break
-        return res
+            next_item = self.children[name]
+            if isinstance(next_item, Model):
+                return next_item._get_item_by_path(dq_path)
+            return None
 
+    # TODO: self._delete_by_path()
     def delete(self, name: Union[str, List[str]]):
         names = name
         if isinstance(names, str):
@@ -347,6 +377,33 @@ class Model(BaseItem):
             self.name = repmap[self.name]
         for _, item in self.children.items():
             item._rename(repmap)
+
+    def find(self, name: str) -> Optional[str]:
+        if name == self.name:
+            return name
+
+        dq_path = self._find_path_by_name(name, deque([]))
+
+        if dq_path is None:
+            return None
+
+        return "/".join(dq_path)
+
+    def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
+        ans = None
+
+        if name == self.name:
+            dq_path.append(name)
+            return dq_path
+
+        for _, item in self.children.items():
+            dq_path.append(self.name)
+            ans = item._find_path_by_name(name, dq_path)
+            if ans is None:
+                dq_path.pop()
+            else:
+                break
+        return ans
 
 
 # class Model(BaseComponent):
