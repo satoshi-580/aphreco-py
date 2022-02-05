@@ -305,8 +305,9 @@ class Model(BaseItem):
         return res
 
     def _get_item_by_name(self, name: str):
+        res = None
         if name == self.name:
-            return self
+            res = self
         else:
             for _, item in self.children.items():
                 res = item._get_item_by_name(name)
