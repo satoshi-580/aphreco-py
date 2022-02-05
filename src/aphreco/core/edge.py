@@ -1,10 +1,11 @@
 from collections import OrderedDict
 from typing import Dict, List, Optional, Set, Tuple
 
-import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
+from .func.rename import rename_all
+from .func.symbolize import extract_symset, str_symbol_name
 
 
 class Con(BaseEdge):
@@ -14,9 +15,9 @@ class Con(BaseEdge):
         self.parent = None
 
         if name is not None:
-            self.name = name
+            self._name = name
         else:
-            self.name = self._create_name_from_term(term)
+            self._name = self._create_name_from_term(term)
 
     @property
     def type(self):
@@ -31,6 +32,7 @@ class Con(BaseEdge):
             else:
                 str_to += name + ":" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
+        name = name.strip()
         return name
 
     def _add_or_skip(self, parent, is_done):
@@ -52,11 +54,10 @@ class Con(BaseEdge):
         """
         used_names = set()
         for yname, term in self.term.items():
-            used_names.add(str(sympy.sympify(yname)))
+            used_names.add(str_symbol_name(yname))
 
-            symbols_set = sympy.sympify(term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
+            symset = extract_symset(term)
+            used_names = used_names | symset
 
         return used_names_set | used_names
 
@@ -103,6 +104,39 @@ class Con(BaseEdge):
         )
         return copied_edge
 
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name == self._create_name_from_term(self.term):
+            is_default_name = True
+        else:
+            is_default_name = False
+
+        renamed_term = self.term.copy()
+        for yname in self.term.keys():
+            # extract a set of symbols (names) from a term
+            # filter the set to be replaced.
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+
+            # replace all positions in a term while other inclusive names
+            # are not replaced. For example, when replacing 'X0', neither
+            # 'prefix_X0' nor 'X0_suffix' will be replaced.
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                renamed_term[new_name] = renamed_term[yname]
+                del renamed_term[yname]
+        self.term = renamed_term
+
+        if is_default_name:
+            self._name = self._create_name_from_term(self.term)
+
     def collect_eq(self):
         pass
 
@@ -141,9 +175,9 @@ class Reg(BaseEdge):
         self.parent = None
 
         if name is not None:
-            self.name = name
+            self._name = name
         else:
-            self.name = self._create_name_from_term(term)
+            self._name = self._create_name_from_term(term)
 
     @property
     def type(self):
@@ -158,6 +192,7 @@ class Reg(BaseEdge):
             else:
                 str_to += name + ":" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
+        name = name.strip()
         return name
 
     def _add_or_skip(self, parent, is_done):
@@ -182,11 +217,9 @@ class Reg(BaseEdge):
         used_names = {name for name in self.beat}
         # terms
         for yname, term in self.term.items():
-            used_names.add(str(sympy.sympify(yname)))
-
-            symbols_set = sympy.sympify(term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
+            used_names.add(str_symbol_name(yname))
+            symset = extract_symset(term)
+            used_names = used_names | symset
 
         return used_names_set | used_names
 
@@ -247,6 +280,34 @@ class Reg(BaseEdge):
 
         return copied_edge
 
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name == self._create_name_from_term(self.term):
+            is_default_name = True
+        else:
+            is_default_name = False
+
+        start, step, stop = self.beat
+        if start in repmap.keys():
+            start = repmap[start]
+        if stop in repmap.keys():
+            stop = repmap[stop]
+        if step in repmap.keys():
+            step = repmap[step]
+        self.beat = (start, stop, step)
+
+        renamed_term: Dict[str, str] = self.term.copy()
+        for yname in self.term.keys():
+            for old, new in repmap.items():
+                renamed_term[yname] = self.term[yname].replace(old, new)
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                renamed_term[new_name] = self.term[yname]
+                del renamed_term[yname]
+
+        if is_default_name:
+            self._name = self._create_name_from_term(self.term)
+
     def collect_eq(self):
         pass
 
@@ -254,53 +315,13 @@ class Reg(BaseEdge):
         pass
 
 
-# from collections import deque
-# from typing import Dict
-
-# import sympy
-# from aphreco.enums import ItemType
-
-# from ..base import BaseEdge
-
-
 # class EdgeC(BaseEdge):
-#     def __init__(self, term: Dict[str, str]):
-#         self.term = term
-#         self._type = ItemType.CON
-#         self.name = term
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, etype: ItemType):
-#         raise AttributeError("edge type is immutable.")
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, term):
-#         str_from = ""
-#         str_to = ""
-#         for name, term in self.term.items():
-#             if term.lstrip()[0] == "-":
-#                 str_from += name + ":" + term + ","
-#             else:
-#                 str_to += name + ":" + term + ","
-#         self._name = f"{str_from[:-1]}->{str_to[:-1]}"
-
 #     def _get_symbols(self):
 #         symbols = set()
 #         for k, term in self.term.items():
 #             symbols.add(sympy.sympify(k))
 #             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
 #         return symbols
-
-#     def _print_tree(self, indent=""):
-#         print(f"{indent}{self}[{self.type.name}]")
 
 #     def _formulate(self, eq_dicts):
 #         dict_ode = eq_dicts["ode"]
@@ -314,56 +335,7 @@ class Reg(BaseEdge):
 #         eq_dicts["ode"] = dict_ode
 #         return eq_dicts
 
-#     def _remove_by_name(self, dq_path: deque):
-#         pass
-
-
-# from collections import OrderedDict, deque
-# from typing import Dict, Tuple
-
-# import sympy
-# from aphreco.enums import ItemType
-
-# from ..base import BaseComponent
-
-
 # class EdgeR(BaseEdge):
-#     def __init__(self, beat: Tuple[str, str, str], term: Dict[str, str]):
-#         """
-#         term: Dict[lhs, rhs]
-#             lhs indicates a dependent variable.
-#             rhs is the difference of the corresponding lhs
-#             at a discrete point (delta_lhs += rhs).
-#         beat: Tuple(start, stop, step)
-#         """
-#         self.term = term
-#         self.beat = beat
-#         self._type = ItemType.REG
-#         self.name = term
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, etype: ItemType):
-#         raise AttributeError("edge type is immutable.")
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, term):
-#         str_from = ""
-#         str_to = ""
-#         for name, term in self.term.items():
-#             if term.lstrip()[0] == "-":
-#                 str_from += name + ":" + term + ","
-#             else:
-#                 str_to += name + ":" + term + ","
-#         self._name = f"{str_from[:-1]}->{str_to[:-1]}"
-
 #     def _get_symbols(self):
 #         symbols = set()
 
@@ -374,9 +346,6 @@ class Reg(BaseEdge):
 #             symbols.add(sympy.sympify(k))
 #             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
 #         return symbols
-
-#     def _print_tree(self, indent=""):
-#         print(f"{indent}{self}[{self.type.name}]")
 
 #     def _formulate(
 #         self,
@@ -395,6 +364,3 @@ class Reg(BaseEdge):
 
 #         eq_dicts["rec"] = dict_rec
 #         return eq_dicts
-
-#     def _remove_by_name(self, dq_path: deque):
-#         pass

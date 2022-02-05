@@ -1,14 +1,12 @@
 import abc
+from collections import deque
+from typing import Optional
 
 
 class BaseItem(abc.ABC):
     @property
     def name(self):
         return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
 
     @property
     def parent(self):
@@ -62,15 +60,21 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _get_item_by_name(self, name):
+    def _rename(self, repmap):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _find_path_by_name(self, name, dq_path):
         raise NotImplementedError
 
 
 class BaseComponent(BaseItem):
-    def _get_item_by_name(self, name):
+    def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
         if name == self.name:
-            return self
-        return None
+            dq_path.append(self.name)
+            return dq_path
+        else:
+            return None
 
 
 class BaseEdge(BaseComponent):

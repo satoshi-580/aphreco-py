@@ -1,10 +1,11 @@
 import itertools
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from typing import Dict, List, Optional, Set, Tuple, Union
 
-from aphreco.core.base import BaseEdge, BaseItem
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
+
+from .base import BaseEdge, BaseItem
 
 
 class Model(BaseItem):
@@ -34,9 +35,9 @@ class Model(BaseItem):
         items: Optional[Union[BaseItem, List[BaseItem]]] = None,
         hide=False,
     ):
+        self.parent = None
         self.name = name
         self.hide = hide
-        self.parent = None
 
         self.children: Dict[str, BaseItem] = OrderedDict()
         if items is not None:
@@ -44,6 +45,16 @@ class Model(BaseItem):
 
     def __iter__(self):
         return iter(self.children.items())
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if (self.parent is not None) and (name in self.parent.children.keys()):
+            raise DuplicatedNameError(name)
+        self._name = name
 
     def add(self, items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
         """adds items
@@ -66,20 +77,26 @@ class Model(BaseItem):
         if not isinstance(items, list):
             items = [items]
 
+        # check new model name directly below self
+        for item in items:
+            if isinstance(item, Model):
+                check_model_name_duplication(self, item.name)
+
         new_names_dict_list = self._collect_new_names(items)
         existing_names_dict = self._collect_existing_names()
 
         if not isinstance(duplicate, str):
-            raise TypeError(f"duplicate expects str 'error' or 'skip'.")
+            raise TypeError(f"not str found in 'dupliate': excpected 'error' or 'skip'")
 
         # check new variables
         elif duplicate == "error":
             # if new_items have duplicated names, raise error.
-            self.check_duplication_within_new(new_names_dict_list)
+            check_duplication_within_new(new_names_dict_list)
 
             # compare names in new_items with the existing names
-            self.check_duplication_between_new_and_old(
-                new_names_dict_list, existing_names_dict
+            check_duplication_between_new_and_old(
+                new_names_dict_list,
+                existing_names_dict,
             )
             is_done = None
 
@@ -97,8 +114,10 @@ class Model(BaseItem):
 
         # check new edges
         used_names_set = self.collect_names_in_new_terms(items)
-        self.check_unregistration(
-            used_names_set, existing_names_dict, new_names_dict_list
+        check_unregistration(
+            used_names_set,
+            existing_names_dict,
+            new_names_dict_list,
         )
 
         # add items
@@ -173,64 +192,6 @@ class Model(BaseItem):
             # collect from Edge and Variable with cre, or go to lower Model
             used_names_set = item._collect_names_in_terms_recursively(used_names_set)
         return used_names_set
-
-    def check_duplication_within_new(
-        self, new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]]
-    ):
-        """checks if there is any duplication of names inside new_items.
-
-        Args:
-            new_names_dict_list (List[Dict[str, (ItemType, int)]]): list of names_dict based on new_items
-        """
-
-        # In the case of length of new_names_dict_list >= 2,
-        # name duplications for all combinations of list components will be checked.
-        # if length of new_items is 1, the process does not reach to the inside of the for-loop.
-        for a, b in itertools.combinations(new_names_dict_list, 2):
-            intersection = a.keys() & b.keys()
-            if intersection != set():
-                raise DuplicatedNameError(intersection)
-
-    def check_duplication_between_new_and_old(
-        self,
-        new_names_dict_list,
-        existing_names_dict: Dict[str, Tuple[ItemType, int]],
-    ):
-        """checks if the new_items have the name that has already existed.
-
-        Args:
-            new_items: List[Any of BaseItem]
-        """
-        # check duplication between new_items and items in the original model.
-        union: Set[str] = set()
-        for new in new_names_dict_list:
-            union = union | new.keys()
-
-        # if duplication is found, raise error.
-        intersection = union & existing_names_dict.keys()
-        if intersection != set():
-            raise DuplicatedNameError(intersection)
-
-    def check_unregistration(
-        self,
-        used_names_set: Set[str],
-        existing_names_dict: Dict[str, Tuple[ItemType, int]],
-        new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]],
-    ):
-        union: Set[str] = set()
-        for new in new_names_dict_list:
-            union = union | new.keys()
-
-        # print("used in terms:    ", used_names_set)
-        # print("new_names:        ", union)
-        # print("existing:         ", existing_names_dict.keys())
-        union = union | existing_names_dict.keys()
-        # print("union = new+exist:", union)
-        # print("difference:       ", used_names_set - union)
-
-        difference = used_names_set - union
-        if difference != set():
-            raise UnregisteredNameError(difference)
 
     def _collect_existing_names(self):
         """collects variable names in a model.
@@ -334,9 +295,7 @@ class Model(BaseItem):
 
         # check duplication of names after adding prefix/suffix
         new_names_dict_list = [{new_name: None for _, new_name in _repmap.items()}]
-        self.check_duplication_between_new_and_old(
-            new_names_dict_list, existing_names_dict
-        )
+        check_duplication_between_new_and_old(new_names_dict_list, existing_names_dict)
 
         # add prefix/suffix to a root Model.
         if self.parent is None:
@@ -356,75 +315,99 @@ class Model(BaseItem):
         return copied_model
 
     def __getitem__(self, name: str):
-        res = self._get_item_by_name(name)
+        if "/" not in name:
+            dq_path = self._find_path_by_name(name, deque([]))
+            if dq_path is None:
+                raise KeyError(f"'{name}' not found.")
+            dq_path.popleft()
+
+        else:
+            dq_path = deque(name.split(sep="/"))
+            if dq_path[0] == "":
+                dq_path.popleft()
+
+        res = self._get_item_by_path(dq_path)
         if res is None:
             raise KeyError(f"'{name}' not found.")
         return res
 
-    def _get_item_by_name(self, name: str):
-        if name == self.name:
+    def _get_item_by_path(self, dq_path: deque):
+        name = dq_path.popleft()
+        if name == "":
             return self
+        elif name not in self.children.keys():
+            return None
+        elif len(dq_path) == 0:
+            return self.children[name]
         else:
-            for _, item in self.children.items():
-                res = item._get_item_by_name(name)
-                if res is not None:
-                    break
-        return res
+            next_item = self.children[name]
+            if isinstance(next_item, Model):
+                return next_item._get_item_by_path(dq_path)
+            return None
 
-    def rename(self, name: str, new_name: str):
-        pass
+    # TODO: self._delete_by_path()
+    def delete(self, name: Union[str, List[str]]):
+        names = name
+        if isinstance(names, str):
+            names = [names]
 
+        for name in names:
+            del self[name]
 
-# from collections import OrderedDict, deque
-# from typing import Dict, Optional
+    def __delitem__(self, item_name):
+        p = self[item_name].parent
+        del p.children[item_name]
 
-# from aphreco.enums import ItemType
+    def rename(self, repmap: Dict[str, str]):
+        """renames an old name (key) into a new name (value) of repmap (dictionary)."""
+        # check duplication of renamed name
+        existing_names_dict = self._collect_existing_names()
+        new_names_dict_list = [{new_name: None for _, new_name in repmap.items()}]
+        check_duplication_between_new_and_old(
+            new_names_dict_list,
+            existing_names_dict,
+        )
 
-# from .base import BaseComponent
-# from .variable import Var
+        if self.parent is None:
+            return self._rename(repmap)
+        else:
+            return self.parent.rename(repmap)
+
+    def _rename(self, repmap: Dict[str, str]):
+        if self.name in repmap.keys():
+            self.name = repmap[self.name]
+        for _, item in self.children.items():
+            item._rename(repmap)
+
+    def find(self, name: str) -> Optional[str]:
+        if name == self.name:
+            return name
+
+        dq_path = self._find_path_by_name(name, deque([]))
+
+        if dq_path is None:
+            return None
+
+        return "/".join(dq_path)
+
+    def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
+        ans = None
+
+        if name == self.name:
+            dq_path.append(name)
+            return dq_path
+
+        for _, item in self.children.items():
+            dq_path.append(self.name)
+            ans = item._find_path_by_name(name, dq_path)
+            if ans is None:
+                dq_path.pop()
+            else:
+                break
+        return ans
 
 
 # class Model(BaseComponent):
-#     def __init__(
-#         self,
-#         name: str,
-#     ):
-#         self.name = name
-#         self.type = mtype
-#         self.items: Dict[str, BaseItem] = OrderedDict()
-
-#     def __iter__(self):
-#         return iter(self.items.items())
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @name.setter
-#     def name(self, name: str):
-#         self._name = name
-
-#     @property
-#     def type(self):
-#         return self._type
-
-#     @type.setter
-#     def type(self, mtype: str):
-#         if mtype not in MTYPES.keys():
-#             raise ValueError(
-#                 f"invalid model type: {mtype} \
-#                 \nmtype must be chosen from {tuple(MTYPES.keys())}"
-#             )
-#         self._type = MTYPES[mtype]
-
-#     def _print_tree(self, indent=""):
-#         if self.type == ItemType.BOX:
-#             print(f"{indent}{self}/")
-#             for _, item in self:
-#                 item._print_tree(indent + "  ")
-#         elif self.type == ItemType.BLACKBOX:
-#             print(f"{indent}{self}/...")
-
 #     def _get_item(self, dq_path: deque) -> Optional[BaseItem]:
 #         name = dq_path.popleft()
 #         if name not in self.items.keys():
@@ -439,12 +422,6 @@ class Model(BaseItem):
 #                 return next_item._get_item(dq_path)
 #             else:
 #                 return None
-
-#     def _add(self, item: BaseItem, symbols: Optional[Symbols] = None):
-#         if symbols is None:
-#             self.items[item.name] = item
-#         else:
-#             print(str(item), symbols.exists(str(item)))
 
 #     def _find_name(self, name, path: str) -> Optional[str]:
 #         ans = None
@@ -489,3 +466,61 @@ class Model(BaseItem):
 #             elif isinstance(item, BaseEdge):
 #                 continue
 #         return val_dicts
+
+
+def check_duplication_within_new(
+    new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]]
+):
+    """checks if there is any duplication of names inside new_items.
+
+    Args:
+        new_names_dict_list (List[Dict[str, (ItemType, int)]]): list of names_dict based on new_items
+    """
+
+    # In the case of length of new_names_dict_list >= 2,
+    # name duplications for all combinations of list components will be checked.
+    # if length of new_items is 1, the process does not reach to the inside of the for-loop.
+    for a, b in itertools.combinations(new_names_dict_list, 2):
+        intersection = a.keys() & b.keys()
+        if intersection != set():
+            raise DuplicatedNameError(intersection)
+
+
+def check_duplication_between_new_and_old(
+    new_names_dict_list,
+    existing_names_dict: Dict[str, Tuple[ItemType, int]],
+):
+    """checks if the new_items have the name that has already existed.
+
+    Args:
+        new_items: List[Any of BaseItem]
+    """
+    # check duplication between new_items and items in the original model.
+    union: Set[str] = set()
+    for new in new_names_dict_list:
+        union = union | new.keys()
+
+    # if duplication is found, raise error.
+    intersection = union & existing_names_dict.keys()
+    if intersection != set():
+        raise DuplicatedNameError(intersection)
+
+
+def check_unregistration(
+    used_names_set: Set[str],
+    existing_names_dict: Dict[str, Tuple[ItemType, int]],
+    new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]],
+):
+    union: Set[str] = set()
+    for new in new_names_dict_list:
+        union = union | new.keys()
+    union = union | existing_names_dict.keys()
+
+    difference = used_names_set - union
+    if difference != set():
+        raise UnregisteredNameError(difference)
+
+
+def check_model_name_duplication(model: Model, child_name: str):
+    if child_name in model.children.keys():
+        raise DuplicatedNameError(child_name)
