@@ -456,13 +456,7 @@ def check_unregistration(
     union: Set[str] = set()
     for new in new_names_dict_list:
         union = union | new.keys()
-
-    # print("used in terms:    ", used_names_set)
-    # print("new_names:        ", union)
-    # print("existing:         ", existing_names_dict.keys())
     union = union | existing_names_dict.keys()
-    # print("union = new+exist:", union)
-    # print("difference:       ", used_names_set - union)
 
     difference = used_names_set - union
     if difference != set():
