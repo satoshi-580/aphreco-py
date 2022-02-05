@@ -27,9 +27,9 @@ class TestSimpleUserExperience:
         cmpt2.add([ap.P("ke"), ap.Con({"X1": "-ke*X1"})])
         return cmpt2
 
-    def test_print_tree(self, cmpt2):
-        # check answer
-        expected_tree = """cmpt2/
+    @pytest.fixture()
+    def str_cmpt2(self):
+        return """cmpt2/
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
@@ -38,7 +38,9 @@ class TestSimpleUserExperience:
   [CON] X2:-k21*X2 -> X1:k21*X2
   [ P ] ke
   [CON] X1:-ke*X1 ->"""
-        assert str(cmpt2) == expected_tree
+
+    def test_print_tree(self, cmpt2, str_cmpt2):
+        assert str(cmpt2) == str_cmpt2
 
     def test_name_check(self, cmpt2):
         with pytest.raises(DuplicatedNameError):
@@ -116,6 +118,16 @@ class TestSimpleUserExperience:
   [ P ] ke
   [CON] X1:-ke*X1 ->"""
         assert str(cmpt2) == expected_tree
+
+    def test_delete_model(self, cmpt2, str_cmpt2):
+        cmpt2.add(ap.Model("box"))
+        cmpt2["box"].add(ap.Y("y_in_box"))
+        cmpt2["box"].add(ap.P("p_in_box"))
+        cmpt2["box"].add(ap.X("x_in_box"))
+        assert str(cmpt2) != str_cmpt2
+
+        cmpt2.delete("box")
+        assert str(cmpt2) == str_cmpt2
 
     @pytest.mark.skip(reason="not implemented yet")
     def test_simulation(self, cmpt2):
