@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
-from .base import BaseEdge, BaseItem
+from .base import BaseComponent, BaseEdge, BaseItem
 
 
 class Model(BaseItem):
@@ -178,19 +178,18 @@ class Model(BaseItem):
         """
         used_names_set: Set[str] = set()
         for new_item in new_items:
-            used_names_set = (
+            used_names_set = used_names_set | new_item._collect_names_in_terms(
                 used_names_set
-                | new_item._collect_names_in_terms_recursively(used_names_set)
             )
         return used_names_set
 
-    def _collect_names_in_terms_recursively(self, used_names_set: Set[str]):
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
         if len(self.children) == 0:
             return used_names_set
 
         for _, item in self.children.items():
             # collect from Edge and Variable with cre, or go to lower Model
-            used_names_set = item._collect_names_in_terms_recursively(used_names_set)
+            used_names_set = item._collect_names_in_terms(used_names_set)
         return used_names_set
 
     def _collect_existing_names(self):
@@ -345,18 +344,55 @@ class Model(BaseItem):
                 return next_item._get_item_by_path(dq_path)
             return None
 
-    # TODO: self._delete_by_path()
-    def delete(self, name: Union[str, List[str]]):
-        names = name
-        if isinstance(names, str):
-            names = [names]
+    def delete(self, name: str):
+        if self.parent is not None:
+            # go up to a top of a tree
+            self.parent.delete(name)
 
-        for name in names:
-            del self[name]
+        else:
+            if "/" not in name:
+                dq_path = self._find_path_by_name(name, deque([]))
+                if dq_path is None:
+                    raise KeyError(f"'{name}' not found.")
+                dq_path.popleft()
 
-    def __delitem__(self, item_name):
-        p = self[item_name].parent
-        del p.children[item_name]
+            else:
+                dq_path = deque(name.split(sep="/"))
+                if dq_path[0] == "":
+                    dq_path.popleft()
+                # check if the path is valid
+                _ = self._get_item_by_path(dq_path.copy())
+
+            del_name = dq_path[-1]
+            self._delete_item_by_path(dq_path)
+            self._delete_involved(del_name)
+
+    def _delete_item_by_path(self, dq_path: deque):
+        name = dq_path.popleft()
+        if name not in self.children.keys():
+            raise KeyError(f"'{name}' not found.")
+        elif len(dq_path) == 0:
+            del self.children[name]
+        else:
+            next_item = self.children[name]
+            if isinstance(next_item, Model):
+                next_item._delete_item_by_path(dq_path)
+            else:
+                raise KeyError(f"invalid path: '{dq_path[0]}'")
+
+    def _delete_involved(self, name: str):
+        lst_children = list()
+
+        for _, item in self.children.items():
+            is_empty, del_child = item._delete_involved(name)
+            if is_empty:
+                continue
+            else:
+                lst_children.append((del_child.name, del_child))
+
+        self.children = OrderedDict(lst_children)
+
+        return False, self
 
     def rename(self, repmap: Dict[str, str]):
         """renames an old name (key) into a new name (value) of repmap (dictionary)."""
