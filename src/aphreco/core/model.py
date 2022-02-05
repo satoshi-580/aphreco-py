@@ -2,9 +2,10 @@ import itertools
 from collections import OrderedDict, deque
 from typing import Dict, List, Optional, Set, Tuple, Union
 
-from aphreco.core.base import BaseEdge, BaseItem
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
+
+from .base import BaseEdge, BaseItem
 
 
 class Model(BaseItem):

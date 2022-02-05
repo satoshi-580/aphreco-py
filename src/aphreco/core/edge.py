@@ -4,8 +4,8 @@ from typing import Dict, List, Optional, Set, Tuple
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
-from .rename import rename_all
-from .symbolize import extract_symset, str_symbol_name
+from .utils.rename import rename_all
+from .utils.symbolize import extract_symset, str_symbol_name
 
 
 class Con(BaseEdge):
