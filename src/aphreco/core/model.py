@@ -274,8 +274,6 @@ class Model(BaseItem):
         for node in self.tree():
             if "[ Y ]" in node:
                 tree.append(node.replace("[ Y ]", PColor.R + "[ Y ]" + PColor.RESET))
-            elif "[ X ]" in node:
-                tree.append(node.replace("[ X ]", PColor.G + "[ X ]" + PColor.RESET))
             elif "[CON]" in node:
                 tree.append(node.replace("[CON]", PColor.B + "[CON]" + PColor.RESET))
             elif "[REG]" in node:

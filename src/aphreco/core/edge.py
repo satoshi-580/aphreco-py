@@ -39,9 +39,9 @@ class Con(BaseEdge):
         str_to = ""
         for name, term in term.items():
             if term.lstrip()[0] == "-":
-                str_from += name + ":" + term + ","
+                str_from += "deriv_" + name + "=" + term + ","
             else:
-                str_to += name + ":" + term + ","
+                str_to += "deriv_" + name + "=" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
         name = name.strip()
         return name
@@ -232,9 +232,9 @@ class Reg(BaseEdge):
         str_to = ""
         for name, term in term.items():
             if term.lstrip()[0] == "-":
-                str_from += name + ":" + term + ","
+                str_from += "delta_" + name + "+=" + term + ","
             else:
-                str_to += name + ":" + term + ","
+                str_to += "delta_" + name + "+=" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
         name = name.strip()
         return name

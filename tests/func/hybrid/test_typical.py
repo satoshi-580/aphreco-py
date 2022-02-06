@@ -5,6 +5,7 @@ from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 class TestTypicalUserExperience:
     def test_print_tree(self, model, str_model):
+        print(model)
         tree = "\n".join(model.tree())
         assert tree == str_model
 
@@ -21,7 +22,7 @@ class TestTypicalUserExperience:
         # success Model.__getitem__()
         assert model["V_cent"].name == "V_cent"
         assert model["V_hb"].name == "V_hb"
-        assert type(model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]) == type(
+        assert type(model["deriv_X_hb=-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]) == type(
             ap.Con(term={"_": "_"})
         )
 
@@ -38,7 +39,8 @@ class TestTypicalUserExperience:
         assert model["\\V_cent"].name == "V_cent"
         assert model["\\Liver\\X_hb"].name == "X_hb"
         assert isinstance(
-            model["C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb"], ap.Reg
+            model["delta_C_cent+=-C_cent*V_hb/V_cent -> delta_X_hb+=C_cent*V_hb"],
+            ap.Reg,
         )
 
         # fail Model.__getitem__() when a model does not have the designated name.
@@ -109,20 +111,19 @@ class TestTypicalUserExperience:
       [ X ] Km
       [ X ] Vmax
     [ P ] tau_hb
-    [REG] C_cent:-C_cent*V_hb/V_cent ->
+    [REG] delta_C_cent+=-C_cent*V_hb/V_cent ->
   Dosing\\
     [ P ] X_dose
-    [REG] -> C_cent:X_dose/V_cent"""
+    [REG] -> delta_C_cent+=X_dose/V_cent"""
 
         assert tree == expected_tree
 
     def test_delete_edge(self, model):
-        assert type(model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]) == type(
-            ap.Con(term={"_": "_"})
-        )
-        model.delete("X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->")
+        edge_name = "deriv_X_hb=-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"
+        assert type(model[edge_name]) == type(ap.Con(term={"_": "_"}))
+        model.delete(edge_name)
         with pytest.raises(KeyError):
-            model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]
+            model[edge_name]
 
         tree = "\n".join(model.tree())
         expected_tree = """Model\\
@@ -141,11 +142,11 @@ class TestTypicalUserExperience:
       [ X ] Km
       [ X ] Vmax
     [ P ] tau_hb
-    [REG] C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb
-    [REG] X_hb:-X_hb -> C_cent:X_hb/V_cent
+    [REG] delta_C_cent+=-C_cent*V_hb/V_cent -> delta_X_hb+=C_cent*V_hb
+    [REG] delta_X_hb+=-X_hb -> delta_C_cent+=X_hb/V_cent
   Dosing\\
     [ P ] X_dose
-    [REG] -> C_cent:X_dose/V_cent"""
+    [REG] -> delta_C_cent+=X_dose/V_cent"""
 
         assert tree == expected_tree
 
