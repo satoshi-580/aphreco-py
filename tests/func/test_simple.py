@@ -1,0 +1,189 @@
+import aphreco as ap
+import pytest
+from aphreco.errors import DuplicatedNameError, UnregisteredNameError
+
+
+class TestSimpleUserExperience:
+    @pytest.fixture()
+    def cmpt2(self):
+        # model
+        cmpt2 = ap.Model("cmpt2")
+
+        # dep/indep parameters
+        cmpt2.add(
+            [
+                ap.Y("X1", value=100.0),
+                ap.Y("X2"),
+                ap.P("k12"),
+                ap.P("k21"),
+            ]
+        )
+
+        # distribution
+        cmpt2.add(ap.Con({"X1": "-k12*X1", "X2": "k12*X1"}))
+        cmpt2.add(ap.Con({"X2": "-k21*X2", "X1": "k21*X2"}))
+
+        # elimination
+        cmpt2.add([ap.P("ke"), ap.Con({"X1": "-ke*X1"})])
+        return cmpt2
+
+    @pytest.fixture()
+    def str_cmpt2(self):
+        return """cmpt2/
+  [ Y ] X1
+  [ Y ] X2
+  [ P ] k12
+  [ P ] k21
+  [CON] X1:-k12*X1 -> X2:k12*X1
+  [CON] X2:-k21*X2 -> X1:k21*X2
+  [ P ] ke
+  [CON] X1:-ke*X1 ->"""
+
+    def test_print_tree(self, cmpt2, str_cmpt2):
+        assert str(cmpt2) == str_cmpt2
+
+    def test_name_check(self, cmpt2):
+        with pytest.raises(DuplicatedNameError):
+            cmpt2.add(ap.P("X1"))
+        with pytest.raises(DuplicatedNameError):
+            cmpt2.add(ap.Y("k21"))
+
+        with pytest.raises(UnregisteredNameError):
+            cmpt2.rename({"NotExistingName": "MeaninglessName"})
+
+    def test_getitem_by_name(self, cmpt2):
+        # success Model.__getitem__()
+        assert cmpt2["X1"].name == "X1"
+        assert cmpt2["X1"].value == 100.0
+        assert type(cmpt2["X1:-k12*X1 -> X2:k12*X1"]) == type(
+            ap.Con(term={"dummy": "nothing"})
+        )
+
+        # fail Model.__getitem__() when a model does not have the designated name.
+        with pytest.raises(KeyError):
+            cmpt2["Nothing"]
+            cmpt2["_k12"]  # underscore
+            cmpt2["k12_"]  # underscore
+            cmpt2["X1 "]  # space
+            cmpt2[" X1"]  # space
+
+    # @pytest.mark.skip(reason="unstable")
+    def test_getitem_by_path(self, cmpt2):
+        # success Model.__getitem__()
+        assert cmpt2["/cmpt2/X1"].name == "X1"
+        # assert cmpt2["X1"].value == 100.0
+        # assert type(cmpt2["X1:-k12*X1 -> X2:k12*X1"]) == type(
+        #     ap.Con(term={"dummy": "nothing"})
+        # )
+
+        # # fail Model.__getitem__() when a model does not have the designated name.
+        # with pytest.raises(KeyError):
+        #     cmpt2["Nothing"]
+        #     cmpt2["_k12"]  # underscore
+        #     cmpt2["k12_"]  # underscore
+        #     cmpt2["X1 "]  # space
+        #     cmpt2[" X1"]  # space
+
+    def test_rename_var(self, cmpt2):
+        # rename variable y
+        repmap_y = {"X1": "A", "X2": "B"}  # repmap = replacement map
+        cmpt2.rename(repmap_y)
+        assert cmpt2["A"].name == repmap_y["X1"]
+        assert cmpt2["B"].name == repmap_y["X2"]
+        with pytest.raises(KeyError):
+            cmpt2["X1"]
+            cmpt2["X2"]
+
+        # rename variable pd
+        repmap_p = {"k12": "k_a2b", "k21": "k_b2a"}  # repmap: replacement map
+        cmpt2.rename(repmap_p)
+        assert cmpt2["k_a2b"].name == repmap_p["k12"]
+        assert cmpt2["k_b2a"].name == repmap_p["k21"]
+        with pytest.raises(KeyError):
+            cmpt2["k12"]
+            cmpt2["k21"]
+
+    @pytest.mark.skip(reason="not implemnted yet")
+    def test_rename_edge(self, cmpt2):
+        pass
+
+    def test_rename_model(self, cmpt2, str_cmpt2):
+        # add a model with inside items
+        cmpt2.add(ap.Model("box"))
+        cmpt2["box"].add(ap.Y("y_in_box"))
+        cmpt2["box"].add(ap.P("p_in_box"))
+        cmpt2["box"].add(ap.X("x_in_box"))
+        assert str(cmpt2) != str_cmpt2
+
+        # lower
+        repmap_m = {"box": "container"}
+        cmpt2["box"].name = repmap_m["box"]
+        with pytest.raises(KeyError):
+            cmpt2["box"]
+
+        # top
+        repmap_m = {"cmpt2": "renamed_model"}
+        cmpt2.name = repmap_m["cmpt2"]
+        assert cmpt2.tree()[0] == repmap_m["cmpt2"] + "/"
+        assert cmpt2.name == "renamed_model"
+        assert cmpt2.name != "cmpt2"
+
+    def test_delete_var(self, cmpt2):
+        # deletion of a variable leads to deletion of edge/variable
+        # which have involved terms.
+        cmpt2.delete("X2")
+
+        # if success, a deleted name must not exist.
+        with pytest.raises(KeyError):
+            cmpt2["X2"]
+
+        # fail when a name does not exist in a model.
+        with pytest.raises(KeyError):
+            cmpt2.delete("UnnecessaryName")
+
+        expected_tree = """cmpt2/
+  [ Y ] X1
+  [ P ] k12
+  [ P ] k21
+  [CON] X1:-k12*X1 ->
+  [ P ] ke
+  [CON] X1:-ke*X1 ->"""
+        assert str(cmpt2) == expected_tree
+
+    def test_delete_edge(self, cmpt2):
+        cmpt2.delete("X1:-k12*X1 -> X2:k12*X1")
+
+        # if success, a deleted name must not exist.
+        with pytest.raises(KeyError):
+            cmpt2["X1:-k12*X1 -> X2:k12*X1"]
+
+        expected_tree = """cmpt2/
+  [ Y ] X1
+  [ Y ] X2
+  [ P ] k12
+  [ P ] k21
+  [CON] X2:-k21*X2 -> X1:k21*X2
+  [ P ] ke
+  [CON] X1:-ke*X1 ->"""
+        assert str(cmpt2) == expected_tree
+
+    def test_delete_model(self, cmpt2, str_cmpt2):
+        # add a model with inside items
+        cmpt2.add(ap.Model("box"))
+        cmpt2["box"].add(ap.Y("y_in_box"))
+        cmpt2["box"].add(ap.P("p_in_box"))
+        cmpt2["box"].add(ap.X("x_in_box"))
+        assert str(cmpt2) != str_cmpt2
+
+        # deletion of a model leads to deletion of inside items.
+        cmpt2.delete("box")
+        assert str(cmpt2) == str_cmpt2
+
+    @pytest.mark.skip(reason="not implemented yet")
+    def test_simulation(self, cmpt2):
+        out_time = [float(i) / 100 for i in range(1000)]
+        simulator = ap.Simulator()
+        simres = simulator.run(cmpt2, out_time)
+
+        assert simres.out_t == out_time
+        # assert simres.out_y == data of cmpt2 simulation loaded by fixture
