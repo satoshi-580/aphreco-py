@@ -244,6 +244,7 @@ class Reg(BaseEdge):
             beat=self.beat,
             term=self.term,
             name=self.name,
+            _is_default_name=self._is_default_name,
         )
         edge.parent = parent
         return edge, is_done
@@ -320,6 +321,7 @@ class Reg(BaseEdge):
             beat=copied_beat,
             term=copied_term,
             name=copied_name,
+            _is_default_name=self._is_default_name,
         )
 
         return copied_edge
