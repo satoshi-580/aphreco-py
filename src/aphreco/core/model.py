@@ -5,7 +5,10 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
-from .base import BaseComponent, BaseEdge, BaseItem
+from .base import BaseEdge, BaseItem
+from .utils.colors import PColor
+
+SEPARATOR = "\\"
 
 
 class Model(BaseItem):
@@ -36,7 +39,7 @@ class Model(BaseItem):
         hide=False,
     ):
         self.parent = None
-        self.name = name
+        self._name = name
         self.hide = hide
 
         self.children: Dict[str, BaseItem] = OrderedDict()
@@ -51,10 +54,18 @@ class Model(BaseItem):
         return self._name
 
     @name.setter
-    def name(self, name):
-        if (self.parent is not None) and (name in self.parent.children.keys()):
-            raise DuplicatedNameError(name)
+    def name(self, name: str):
+        if self.parent is None:
+            self._name = name
+            return
+
+        check_model_name_duplication(self.parent, name)
         self._name = name
+
+        sibships: Dict[str, BaseItem] = OrderedDict()
+        for _, item in self.parent.children.items():
+            sibships[item.name] = item
+        self.parent.children = sibships
 
     def add(self, items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
         """adds items
@@ -249,17 +260,27 @@ class Model(BaseItem):
             structure = list()
 
         if not self.hide:
-            structure.append(f"{indent}{self.name}/")
+            structure.append(f"{indent}{self.name}\\")
             for _, item in self:
                 structure = item.tree(indent + "  ", structure)
         else:
-            structure.append(f"{indent}{self.name}/...")
+            structure.append(f"{indent}{self.name}\\...")
 
         return structure
 
     def __str__(self):
         """connects a tree items via line feeds."""
-        return "\n".join(self.tree())
+        tree = list()
+        for node in self.tree():
+            if "[ Y ]" in node:
+                tree.append(node.replace("[ Y ]", PColor.R + "[ Y ]" + PColor.RESET))
+            elif "[CON]" in node:
+                tree.append(node.replace("[CON]", PColor.B + "[CON]" + PColor.RESET))
+            elif "[REG]" in node:
+                tree.append(node.replace("[REG]", PColor.B + "[REG]" + PColor.RESET))
+            else:
+                tree.append(node)
+        return "\n".join(tree)
 
     def copy(
         self,
@@ -314,14 +335,14 @@ class Model(BaseItem):
         return copied_model
 
     def __getitem__(self, name: str):
-        if "/" not in name:
+        if SEPARATOR not in name:
             dq_path = self._find_path_by_name(name, deque([]))
             if dq_path is None:
                 raise KeyError(f"'{name}' not found.")
             dq_path.popleft()
 
         else:
-            dq_path = deque(name.split(sep="/"))
+            dq_path = deque(name.split(sep=SEPARATOR))
             if dq_path[0] == "":
                 dq_path.popleft()
 
@@ -350,14 +371,14 @@ class Model(BaseItem):
             self.parent.delete(name)
 
         else:
-            if "/" not in name:
+            if SEPARATOR not in name:
                 dq_path = self._find_path_by_name(name, deque([]))
                 if dq_path is None:
                     raise KeyError(f"'{name}' not found.")
                 dq_path.popleft()
 
             else:
-                dq_path = deque(name.split(sep="/"))
+                dq_path = deque(name.split(sep=SEPARATOR))
                 if dq_path[0] == "":
                     dq_path.popleft()
                 # check if the path is valid
@@ -423,7 +444,7 @@ class Model(BaseItem):
 
     def _rename_self(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
-            self.name = repmap[self.name]
+            self._name = repmap[self.name]
 
         renamed_children: Dict[str, BaseItem] = OrderedDict()
         for _, item in self.children.items():
@@ -443,7 +464,7 @@ class Model(BaseItem):
         if dq_path is None:
             return None
 
-        return "/".join(dq_path)
+        return SEPARATOR.join(dq_path)
 
     def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
         ans = None

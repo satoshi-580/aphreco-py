@@ -39,9 +39,9 @@ class Con(BaseEdge):
         str_to = ""
         for name, term in term.items():
             if term.lstrip()[0] == "-":
-                str_from += name + ":" + term + ","
+                str_from += "deriv_" + name + "=" + term + ","
             else:
-                str_to += name + ":" + term + ","
+                str_to += "deriv_" + name + "=" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
         name = name.strip()
         return name
@@ -205,16 +205,23 @@ class Reg(BaseEdge):
         beat: Tuple[str, str, str],
         term: Dict[str, str],
         name: str = None,
+        _is_default_name: bool = None,
     ):
         self.beat = beat
         self.term = term
         self._type = ItemType.REG
         self.parent = None
 
-        if name is not None:
-            self._name = name
-        else:
+        if name is None:
             self._name = self._create_name_from_term(term)
+            if _is_default_name is None:
+                _is_default_name = True
+        else:
+            self._name = name
+            if _is_default_name is None:
+                _is_default_name = False
+
+        self._is_default_name = _is_default_name
 
     @property
     def type(self):
@@ -225,9 +232,9 @@ class Reg(BaseEdge):
         str_to = ""
         for name, term in term.items():
             if term.lstrip()[0] == "-":
-                str_from += name + ":" + term + ","
+                str_from += "delta_" + name + "+=" + term + ","
             else:
-                str_to += name + ":" + term + ","
+                str_to += "delta_" + name + "+=" + term + ","
         name = f"{str_from[:-1]} -> {str_to[:-1]}"
         name = name.strip()
         return name
@@ -237,6 +244,7 @@ class Reg(BaseEdge):
             beat=self.beat,
             term=self.term,
             name=self.name,
+            _is_default_name=self._is_default_name,
         )
         edge.parent = parent
         return edge, is_done
@@ -313,16 +321,12 @@ class Reg(BaseEdge):
             beat=copied_beat,
             term=copied_term,
             name=copied_name,
+            _is_default_name=self._is_default_name,
         )
 
         return copied_edge
 
     def _rename_self(self, repmap: Dict[str, str]):
-        if self.name == self._create_name_from_term(self.term):
-            is_default_name = True
-        else:
-            is_default_name = False
-
         start, step, stop = self.beat
         if start in repmap.keys():
             start = repmap[start]
@@ -350,7 +354,7 @@ class Reg(BaseEdge):
                 del renamed_term[yname]
         self.term = renamed_term
 
-        if is_default_name:
+        if self._is_default_name:
             self._name = self._create_name_from_term(self.term)
         return self
 
@@ -361,7 +365,37 @@ class Reg(BaseEdge):
         pass
 
     def _delete_involved(self, name: str):
-        return False
+        """deletes an involved components in beat or term.
+
+        If edge beat has a name to be deleted, the edge itself is to be deleted.
+        """
+        # beat
+        start, step, stop = self.beat
+        if (name == start) or (name == step) or (name == stop):
+            return True, self
+
+        # term
+        del_term = self.term.copy()
+        for yname in self.term.keys():
+            # if name is included as a symbol in term,
+            # the whole term is deleted.
+            symset = extract_symset(del_term[yname])
+            if name in symset:
+                del del_term[yname]
+
+        if name in del_term.keys():
+            del del_term[name]
+
+        self.term = del_term
+        if len(self.term) > 0:
+            is_empty = False
+        else:
+            is_empty = True
+
+        if self._is_default_name and (not is_empty):
+            self._name = self._create_name_from_term(self.term)
+
+        return is_empty, self
 
 
 # class EdgeC(BaseEdge):

@@ -203,7 +203,7 @@ class Variable(BaseComponent):
         return self
 
     def _delete_involved(self, name: str):
-        if (self.term is not None) and (name in self.term.keys()):
+        if (self.term is not None) and (name in self.term):
             self.term = None
             if self.type in (ItemType.Y | ItemType.E | ItemType.A):
                 return True, self

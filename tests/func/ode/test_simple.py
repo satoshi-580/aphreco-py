@@ -29,7 +29,7 @@ class TestSimpleUserExperience:
 
     @pytest.fixture()
     def str_cmpt2(self):
-        return """cmpt2/
+        return """cmpt2\\
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
@@ -51,7 +51,7 @@ class TestSimpleUserExperience:
         with pytest.raises(UnregisteredNameError):
             cmpt2.rename({"NotExistingName": "MeaninglessName"})
 
-    def test_getitem(self, cmpt2):
+    def test_getitem_by_name(self, cmpt2):
         # success Model.__getitem__()
         assert cmpt2["X1"].name == "X1"
         assert cmpt2["X1"].value == 100.0
@@ -67,18 +67,49 @@ class TestSimpleUserExperience:
             cmpt2["X1 "]  # space
             cmpt2[" X1"]  # space
 
-    def test_rename(self, cmpt2):
-        repmap_var = {"X1": "A", "X2": "B"}
-        cmpt2.rename(repmap_var)
-        repmap_edge = {"k12": "k_a2b", "k21": "k_b2a"}
-        cmpt2.rename(repmap_edge)
-        assert cmpt2["A"].name == repmap_var["X1"]
-        assert cmpt2["B"].name == repmap_var["X2"]
-
-        # renamed name does not exist.
+    def test_rename_var(self, cmpt2):
+        # rename variable y
+        repmap_y = {"X1": "A", "X2": "B"}  # repmap = replacement map
+        cmpt2.rename(repmap_y)
+        assert cmpt2["A"].name == repmap_y["X1"]
+        assert cmpt2["B"].name == repmap_y["X2"]
         with pytest.raises(KeyError):
             cmpt2["X1"]
+            cmpt2["X2"]
+
+        # rename variable pd
+        repmap_p = {"k12": "k_a2b", "k21": "k_b2a"}  # repmap: replacement map
+        cmpt2.rename(repmap_p)
+        assert cmpt2["k_a2b"].name == repmap_p["k12"]
+        assert cmpt2["k_b2a"].name == repmap_p["k21"]
+        with pytest.raises(KeyError):
             cmpt2["k12"]
+            cmpt2["k21"]
+
+    @pytest.mark.skip(reason="not implemnted yet")
+    def test_rename_edge(self, cmpt2):
+        pass
+
+    def test_rename_model(self, cmpt2, str_cmpt2):
+        # add a model with inside items
+        cmpt2.add(ap.Model("box"))
+        cmpt2["box"].add(ap.Y("y_in_box"))
+        cmpt2["box"].add(ap.P("p_in_box"))
+        cmpt2["box"].add(ap.X("x_in_box"))
+        assert str(cmpt2) != str_cmpt2
+
+        # lower
+        repmap_m = {"box": "container"}
+        cmpt2["box"].name = repmap_m["box"]
+        with pytest.raises(KeyError):
+            cmpt2["box"]
+
+        # top
+        repmap_m = {"cmpt2": "renamed_model"}
+        cmpt2.name = repmap_m["cmpt2"]
+        assert cmpt2.tree()[0] == repmap_m["cmpt2"] + "\\"
+        assert cmpt2.name == "renamed_model"
+        assert cmpt2.name != "cmpt2"
 
     def test_delete_var(self, cmpt2):
         # deletion of a variable leads to deletion of edge/variable
@@ -93,7 +124,7 @@ class TestSimpleUserExperience:
         with pytest.raises(KeyError):
             cmpt2.delete("UnnecessaryName")
 
-        expected_tree = """cmpt2/
+        expected_tree = """cmpt2\\
   [ Y ] X1
   [ P ] k12
   [ P ] k21
@@ -109,7 +140,7 @@ class TestSimpleUserExperience:
         with pytest.raises(KeyError):
             cmpt2["X1:-k12*X1 -> X2:k12*X1"]
 
-        expected_tree = """cmpt2/
+        expected_tree = """cmpt2\\
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
@@ -120,7 +151,7 @@ class TestSimpleUserExperience:
         assert str(cmpt2) == expected_tree
 
     def test_delete_model(self, cmpt2, str_cmpt2):
-        # add model with inside items
+        # add a model with inside items
         cmpt2.add(ap.Model("box"))
         cmpt2["box"].add(ap.Y("y_in_box"))
         cmpt2["box"].add(ap.P("p_in_box"))
