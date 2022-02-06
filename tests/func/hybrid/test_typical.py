@@ -5,7 +5,8 @@ from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 class TestTypicalUserExperience:
     def test_print_tree(self, model, str_model):
-        assert str(model) == str_model
+        tree = "\n".join(model.tree())
+        assert tree == str_model
 
     def test_name_check(self, model):
         with pytest.raises(DuplicatedNameError):
@@ -19,7 +20,7 @@ class TestTypicalUserExperience:
     def test_getitem_by_name(self, model):
         # success Model.__getitem__()
         assert model["V_cent"].name == "V_cent"
-        assert model["V_hb"].value == 0.0
+        assert model["V_hb"].name == "V_hb"
         assert type(model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]) == type(
             ap.Con(term={"_": "_"})
         )
@@ -35,16 +36,16 @@ class TestTypicalUserExperience:
     def test_getitem_by_path(self, model):
         # success Model.__getitem__()
         assert model["\\V_cent"].name == "V_cent"
-        assert model["\\liver\\X_hb"].name == "X_hb"
+        assert model["\\Liver\\X_hb"].name == "X_hb"
         assert isinstance(
             model["C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb"], ap.Reg
         )
 
         # fail Model.__getitem__() when a model does not have the designated name.
         with pytest.raises(KeyError):
-            model["\\model"]  # self
+            model["\\Model"]  # self
             model["\\V_cent\\"]  # with separator at the end
-            model["\\ liver \\ X_hb"]  # with spaces
+            model["\\ Liver \\ X_hb"]  # with spaces
 
     def test_rename_var(self, model):
         # rename variable y
@@ -71,16 +72,16 @@ class TestTypicalUserExperience:
 
     def test_rename_model(self, model):
         # lower
-        model["liver"].name = "box"
-        assert model["box"].name == "box"
+        model["Liver"].name = "Box"
+        assert model["Box"].name == "Box"
         with pytest.raises(KeyError):
-            model["liver"]
+            model["Liver"]
 
         # top
-        model.name = "new_model"
-        assert model.tree()[0] == "new_model" + "\\"
-        assert model.name == "new_model"
-        assert model.name != "model"
+        model.name = "RenamedModel"
+        assert model.tree()[0] == "RenamedModel" + "\\"
+        assert model.name == "RenamedModel"
+        assert model.name != "Model"
 
     def test_delete_var(self, model):
         # deletion of a variable leads to deletion of edge/variable
@@ -93,22 +94,27 @@ class TestTypicalUserExperience:
         with pytest.raises(KeyError):
             model.delete("UnnecessaryName")
 
-        expected_tree = """model\\
+        tree = "\n".join(model.tree())
+        expected_tree = """Model\\
+  Times\\
+    [ P ] timezero
+    [ P ] endless
+    [ P ] onlyonce
   [ Y ] C_cent
   [ X ] V_cent
-  liver\\
+  Liver\\
     [ P ] V_hb
     [ P ] Vf_hb
-    [ X ] Km
-    [ X ] Vmax
-    [ P ] ini_t
-    [ P ] end_t
+    HepElim\\
+      [ X ] Km
+      [ X ] Vmax
     [ P ] tau_hb
     [REG] C_cent:-C_cent*V_hb/V_cent ->
-  [ P ] X_dose
-  [REG] -> C_cent:X_dose/V_cent"""
+  Dosing\\
+    [ P ] X_dose
+    [REG] -> C_cent:X_dose/V_cent"""
 
-        assert str(model) == expected_tree
+        assert tree == expected_tree
 
     def test_delete_edge(self, model):
         assert type(model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]) == type(
@@ -118,37 +124,44 @@ class TestTypicalUserExperience:
         with pytest.raises(KeyError):
             model["X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->"]
 
-        expected_tree = """model\\
+        tree = "\n".join(model.tree())
+        expected_tree = """Model\\
+  Times\\
+    [ P ] timezero
+    [ P ] endless
+    [ P ] onlyonce
   [ Y ] C_cent
   [ X ] V_cent
-  liver\\
+  Liver\\
     [ Y ] X_hb
     [ P ] V_hb
     [ Y ] C_hb = X_hb/V_hb
     [ P ] Vf_hb
-    [ X ] Km
-    [ X ] Vmax
-    [ P ] ini_t
-    [ P ] end_t
+    HepElim\\
+      [ X ] Km
+      [ X ] Vmax
     [ P ] tau_hb
     [REG] C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb
     [REG] X_hb:-X_hb -> C_cent:X_hb/V_cent
-  [ P ] X_dose
-  [REG] -> C_cent:X_dose/V_cent"""
+  Dosing\\
+    [ P ] X_dose
+    [REG] -> C_cent:X_dose/V_cent"""
 
-        assert str(model) == expected_tree
+        assert tree == expected_tree
 
     def test_delete_model(self, model, str_model):
         # add a model with inside items
-        model.add(ap.Model("box"))
-        model["box"].add(ap.Y("y_in_box"))
-        model["box"].add(ap.P("p_in_box"))
-        model["box"].add(ap.X("x_in_box"))
-        assert str(model) != str_model
+        model.add(ap.Model("Add"))
+        model["Add"].add(ap.Y("y_in_box"))
+        model["Add"].add(ap.P("p_in_box"))
+        model["Add"].add(ap.X("x_in_box"))
+        tree = "\n".join(model.tree())
+        assert tree != str_model
 
         # deletion of a model leads to deletion of inside items.
-        model.delete("box")
-        assert str(model) == str_model
+        model.delete("Add")
+        tree = "\n".join(model.tree())
+        assert tree == str_model
 
     @pytest.mark.skip(reason="not implemented yet")
     def test_simulation(self, model):

@@ -4,39 +4,44 @@ import pytest
 
 @pytest.fixture()
 def model():
-    model = ap.Model("model")
-    model.add([ap.Y("C_cent"), ap.P("V_cent")])
+    model = ap.Model("Model")
+    times = ap.Model("Times")
+    times.add([ap.P("timezero", 0.0), ap.P("endless", 1e12), ap.P("onlyonce", 1e12)])
+    model.add(times)
+    model.add([ap.Y("C_cent"), ap.X("V_cent", 4000.0)])
 
-    liver = ap.Model("liver")
+    liver = ap.Model("Liver")
     liver.add(
         [
             ap.Y("X_hb"),
-            ap.P("V_hb"),
+            ap.P("V_hb", 120),
             ap.Y("C_hb", term="X_hb/V_hb"),
-            ap.P("Vf_hb"),
+            ap.P("Vf_hb", 120),
         ]
     )
-    liver.add(
+    liver.add(ap.Model("HepElim"))
+    liver["HepElim"].add(
         [
-            ap.P("Km"),
-            ap.P("Vmax"),
+            ap.X("Km", 0.1),
+            ap.X("Vmax", 2500.0),
             ap.Con({"X_hb": "-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb)"}),
         ]
     )
+
     model.add(liver)
 
-    model["liver"].add([ap.P("ini_t"), ap.P("end_t"), ap.P("tau_hb")])
-    model["liver"].add(
+    model["Liver"].add(ap.P("tau_hb", 0.025))
+    model["Liver"].add(
         [
             ap.Reg(
-                beat=("ini_t", "end_t", "tau_hb"),
+                beat=("timezero", "endless", "tau_hb"),
                 term={
                     "C_cent": "-C_cent*V_hb/V_cent",
                     "X_hb": "C_cent*V_hb",
                 },
             ),
             ap.Reg(
-                beat=("ini_t", "end_t", "tau_hb"),
+                beat=("timezero", "endless", "tau_hb"),
                 term={
                     "X_hb": "-X_hb",
                     "C_cent": "X_hb/V_cent",
@@ -45,41 +50,42 @@ def model():
         ]
     )
 
-    model.add(ap.P("X_dose"))
-    model.add(
+    dosing = ap.Model("Dosing")
+    model.add(dosing)
+    model["Dosing"].add(ap.P("X_dose", 10000.0))
+    model["Dosing"].add(
         ap.Reg(
-            beat=("ini_t", "end_t", "end_t"),
+            beat=("timezero", "endless", "onlyonce"),
             term={
                 "C_cent": "X_dose/V_cent",
             },
         )
     )
 
-    model["Km"].type = ap.ItemType.X
-    model["Vmax"].type = ap.ItemType.X
-    model["V_cent"].type = ap.ItemType.X
-
-    model["X_dose"].value = 1000.0
     return model
 
 
 @pytest.fixture()
 def str_model():
-    return """model\\
+    return """Model\\
+  Times\\
+    [ P ] timezero
+    [ P ] endless
+    [ P ] onlyonce
   [ Y ] C_cent
   [ X ] V_cent
-  liver\\
+  Liver\\
     [ Y ] X_hb
     [ P ] V_hb
     [ Y ] C_hb = X_hb/V_hb
     [ P ] Vf_hb
-    [ X ] Km
-    [ X ] Vmax
-    [CON] X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->
-    [ P ] ini_t
-    [ P ] end_t
+    HepElim\\
+      [ X ] Km
+      [ X ] Vmax
+      [CON] X_hb:-Vmax*(X_hb/V_hb)/(Km+X_hb/V_hb) ->
     [ P ] tau_hb
     [REG] C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb
     [REG] X_hb:-X_hb -> C_cent:X_hb/V_cent
-  [ P ] X_dose
-  [REG] -> C_cent:X_dose/V_cent"""
+  Dosing\\
+    [ P ] X_dose
+    [REG] -> C_cent:X_dose/V_cent"""
