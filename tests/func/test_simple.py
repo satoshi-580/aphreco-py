@@ -29,7 +29,7 @@ class TestSimpleUserExperience:
 
     @pytest.fixture()
     def str_cmpt2(self):
-        return """cmpt2/
+        return """cmpt2\\
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
@@ -107,7 +107,7 @@ class TestSimpleUserExperience:
         # top
         repmap_m = {"cmpt2": "renamed_model"}
         cmpt2.name = repmap_m["cmpt2"]
-        assert cmpt2.tree()[0] == repmap_m["cmpt2"] + "/"
+        assert cmpt2.tree()[0] == repmap_m["cmpt2"] + "\\"
         assert cmpt2.name == "renamed_model"
         assert cmpt2.name != "cmpt2"
 
@@ -124,7 +124,7 @@ class TestSimpleUserExperience:
         with pytest.raises(KeyError):
             cmpt2.delete("UnnecessaryName")
 
-        expected_tree = """cmpt2/
+        expected_tree = """cmpt2\\
   [ Y ] X1
   [ P ] k12
   [ P ] k21
@@ -140,7 +140,7 @@ class TestSimpleUserExperience:
         with pytest.raises(KeyError):
             cmpt2["X1:-k12*X1 -> X2:k12*X1"]
 
-        expected_tree = """cmpt2/
+        expected_tree = """cmpt2\\
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
