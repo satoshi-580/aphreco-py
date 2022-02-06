@@ -67,6 +67,23 @@ class TestTypicalUserExperience:
             cmpt2["X1 "]  # space
             cmpt2[" X1"]  # space
 
+    # @pytest.mark.skip(reason="unstable")
+    def test_getitem_by_path(self, cmpt2):
+        # success Model.__getitem__()
+        # assert cmpt2["/cmpt2/X1"].name == "X1"
+        # assert cmpt2["X1"].value == 100.0
+        # assert type(cmpt2["X1:-k12*X1 -> X2:k12*X1"]) == type(
+        #     ap.Con(term={"dummy": "nothing"})
+        # )
+        pass
+        # # fail Model.__getitem__() when a model does not have the designated name.
+        # with pytest.raises(KeyError):
+        #     cmpt2["Nothing"]
+        #     cmpt2["_k12"]  # underscore
+        #     cmpt2["k12_"]  # underscore
+        #     cmpt2["X1 "]  # space
+        #     cmpt2[" X1"]  # space
+
     def test_rename_var(self, cmpt2):
         # rename variable y
         repmap_y = {"X1": "A", "X2": "B"}  # repmap = replacement map
