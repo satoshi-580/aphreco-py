@@ -5,7 +5,8 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
-from .base import BaseComponent, BaseEdge, BaseItem
+from .base import BaseEdge, BaseItem
+from .variable import P
 
 SEPARATOR = "\\"
 
@@ -38,7 +39,7 @@ class Model(BaseItem):
         hide=False,
     ):
         self.parent = None
-        self.name = name
+        self._name = name
         self.hide = hide
 
         self.children: Dict[str, BaseItem] = OrderedDict()
@@ -53,10 +54,18 @@ class Model(BaseItem):
         return self._name
 
     @name.setter
-    def name(self, name):
-        if (self.parent is not None) and (name in self.parent.children.keys()):
-            raise DuplicatedNameError(name)
+    def name(self, name: str):
+        if self.parent is None:
+            self._name = name
+            return
+
+        check_model_name_duplication(self.parent, name)
         self._name = name
+
+        sibships: Dict[str, BaseItem] = OrderedDict()
+        for _, item in self.parent.children.items():
+            sibships[item.name] = item
+        self.parent.children = sibships
 
     def add(self, items: Union[BaseItem, List[BaseItem]], duplicate: str = "error"):
         """adds items
@@ -425,7 +434,7 @@ class Model(BaseItem):
 
     def _rename_self(self, repmap: Dict[str, str]):
         if self.name in repmap.keys():
-            self.name = repmap[self.name]
+            self._name = repmap[self.name]
 
         renamed_children: Dict[str, BaseItem] = OrderedDict()
         for _, item in self.children.items():
