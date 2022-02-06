@@ -32,22 +32,19 @@ class TestTypicalUserExperience:
             model["V_cent "]  # space
             model[" V_cent"]  # space
 
-    @pytest.mark.skip(reason="unstable")
     def test_getitem_by_path(self, model):
         # success Model.__getitem__()
-        # assert model["/model/X1"].name == "X1"
-        # assert model["X1"].value == 100.0
-        # assert type(model["X1:-k12*X1 -> X2:k12*X1"]) == type(
-        #     ap.Con(term={"dummy": "nothing"})
-        # )
-        pass
-        # # fail Model.__getitem__() when a model does not have the designated name.
-        # with pytest.raises(KeyError):
-        #     model["Nothing"]
-        #     model["_k12"]  # underscore
-        #     model["k12_"]  # underscore
-        #     model["X1 "]  # space
-        #     model[" X1"]  # space
+        assert model["\\V_cent"].name == "V_cent"
+        assert model["\\liver\\X_hb"].name == "X_hb"
+        assert isinstance(
+            model["C_cent:-C_cent*V_hb/V_cent -> X_hb:C_cent*V_hb"], ap.Reg
+        )
+
+        # fail Model.__getitem__() when a model does not have the designated name.
+        with pytest.raises(KeyError):
+            model["\\model"]  # self
+            model["\\V_cent\\"]  # with separator at the end
+            model["\\ liver \\ X_hb"]  # with spaces
 
     def test_rename_var(self, model):
         # rename variable y
@@ -72,21 +69,19 @@ class TestTypicalUserExperience:
     def test_rename_edge(self, model):
         pass
 
-    @pytest.mark.skip(reason="unstable")
     def test_rename_model(self, model):
         # lower
-        repmap_m = {"liver": "container"}
-        model["liver"].name = repmap_m["liver"]
-        assert model["container"].name == repmap_m["liver"]
+        model["liver"].name = "box"
+        assert model["box"].name == "box"
         with pytest.raises(KeyError):
             model["liver"]
 
         # top
-        repmap_m = {"model": "renamed_model"}
-        model.name = repmap_m["model"]
-        assert model.tree()[0] == repmap_m["model"] + "\\"
-        assert model.name == "renamed_model"
-        assert model.name != "model"
+        # repmap_m = {"model": "renamed_model"}
+        # model.name = repmap_m["model"]
+        # assert model.tree()[0] == repmap_m["model"] + "\\"
+        # assert model.name == "renamed_model"
+        # assert model.name != "model"
 
     def test_delete_var(self, model):
         # deletion of a variable leads to deletion of edge/variable
