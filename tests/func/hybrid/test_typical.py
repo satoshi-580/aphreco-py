@@ -77,11 +77,10 @@ class TestTypicalUserExperience:
             model["liver"]
 
         # top
-        # repmap_m = {"model": "renamed_model"}
-        # model.name = repmap_m["model"]
-        # assert model.tree()[0] == repmap_m["model"] + "\\"
-        # assert model.name == "renamed_model"
-        # assert model.name != "model"
+        model.name = "new_model"
+        assert model.tree()[0] == "new_model" + "\\"
+        assert model.name == "new_model"
+        assert model.name != "model"
 
     def test_delete_var(self, model):
         # deletion of a variable leads to deletion of edge/variable
