@@ -7,6 +7,8 @@ from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 from .base import BaseComponent, BaseEdge, BaseItem
 
+SEPARATOR = "\\"
+
 
 class Model(BaseItem):
     """Model represents a composite of items in a model tree.
@@ -249,11 +251,11 @@ class Model(BaseItem):
             structure = list()
 
         if not self.hide:
-            structure.append(f"{indent}{self.name}/")
+            structure.append(f"{indent}{self.name}\\")
             for _, item in self:
                 structure = item.tree(indent + "  ", structure)
         else:
-            structure.append(f"{indent}{self.name}/...")
+            structure.append(f"{indent}{self.name}\\...")
 
         return structure
 
@@ -314,14 +316,14 @@ class Model(BaseItem):
         return copied_model
 
     def __getitem__(self, name: str):
-        if "/" not in name:
+        if SEPARATOR not in name:
             dq_path = self._find_path_by_name(name, deque([]))
             if dq_path is None:
                 raise KeyError(f"'{name}' not found.")
             dq_path.popleft()
 
         else:
-            dq_path = deque(name.split(sep="/"))
+            dq_path = deque(name.split(sep=SEPARATOR))
             if dq_path[0] == "":
                 dq_path.popleft()
 
@@ -350,14 +352,14 @@ class Model(BaseItem):
             self.parent.delete(name)
 
         else:
-            if "/" not in name:
+            if SEPARATOR not in name:
                 dq_path = self._find_path_by_name(name, deque([]))
                 if dq_path is None:
                     raise KeyError(f"'{name}' not found.")
                 dq_path.popleft()
 
             else:
-                dq_path = deque(name.split(sep="/"))
+                dq_path = deque(name.split(sep=SEPARATOR))
                 if dq_path[0] == "":
                     dq_path.popleft()
                 # check if the path is valid
@@ -443,7 +445,7 @@ class Model(BaseItem):
         if dq_path is None:
             return None
 
-        return "/".join(dq_path)
+        return SEPARATOR.join(dq_path)
 
     def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
         ans = None
