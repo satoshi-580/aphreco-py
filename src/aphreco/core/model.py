@@ -7,7 +7,6 @@ from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 from .base import BaseEdge, BaseItem
 from .utils.colors import PColor
-from .variable import P
 
 SEPARATOR = "\\"
 
