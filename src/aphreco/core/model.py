@@ -6,6 +6,7 @@ from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 from .base import BaseEdge, BaseItem
+from .utils.colors import PColor
 from .variable import P
 
 SEPARATOR = "\\"
@@ -270,7 +271,19 @@ class Model(BaseItem):
 
     def __str__(self):
         """connects a tree items via line feeds."""
-        return "\n".join(self.tree())
+        tree = list()
+        for node in self.tree():
+            if "[ Y ]" in node:
+                tree.append(node.replace("[ Y ]", PColor.R + "[ Y ]" + PColor.RESET))
+            elif "[ X ]" in node:
+                tree.append(node.replace("[ X ]", PColor.G + "[ X ]" + PColor.RESET))
+            elif "[CON]" in node:
+                tree.append(node.replace("[CON]", PColor.B + "[CON]" + PColor.RESET))
+            elif "[REG]" in node:
+                tree.append(node.replace("[REG]", PColor.B + "[REG]" + PColor.RESET))
+            else:
+                tree.append(node)
+        return "\n".join(tree)
 
     def copy(
         self,
