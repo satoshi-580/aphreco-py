@@ -89,3 +89,56 @@ def str_model():
   Dosing\\
     [ P ] X_dose
     [REG] -> delta_C_cent+=X_dose/V_cent"""
+
+
+@pytest.fixture()
+def str_dose_escalation_model():
+    return """DoseEscalation\\
+  Model_10mg\\
+    Times\\
+      [ P ] timezero
+      [ P ] endless
+      [ P ] onlyonce
+    [ Y ] C_cent_10mg
+    [ X ] V_cent
+    Liver\\
+      [ Y ] X_hb_10mg
+      [ P ] V_hb
+      [ Y ] C_hb_10mg = X_hb_10mg/V_hb
+      [ P ] Vf_hb
+      HepElim\\
+        [ X ] Km
+        [ X ] Vmax
+        [CON] deriv_X_hb_10mg=-Vmax*(X_hb_10mg/V_hb)/(Km+X_hb_10mg/V_hb) ->
+      [ P ] tau_hb
+      [REG] delta_C_cent_10mg+=-C_cent_10mg*V_hb/V_cent -> delta_X_hb_10mg+=C_cent_10mg*V_hb
+      [REG] delta_X_hb_10mg+=-X_hb_10mg -> delta_C_cent_10mg+=X_hb_10mg/V_cent
+    Dosing\\
+      [ P ] X_dose_10mg
+      [REG] -> delta_C_cent_10mg+=X_dose_10mg/V_cent
+  Model_50mg\\
+    Times\\
+    [ Y ] C_cent_50mg
+    Liver\\
+      [ Y ] X_hb_50mg
+      [ Y ] C_hb_50mg = X_hb_50mg/V_hb
+      HepElim\\
+        [CON] deriv_X_hb_50mg=-Vmax*(X_hb_50mg/V_hb)/(Km+X_hb_50mg/V_hb) ->
+      [REG] delta_C_cent_50mg+=-C_cent_50mg*V_hb/V_cent -> delta_X_hb_50mg+=C_cent_50mg*V_hb
+      [REG] delta_X_hb_50mg+=-X_hb_50mg -> delta_C_cent_50mg+=X_hb_50mg/V_cent
+    Dosing\\
+      [ P ] X_dose_50mg
+      [REG] -> delta_C_cent_50mg+=X_dose_50mg/V_cent
+  Model_200mg\\
+    Times\\
+    [ Y ] C_cent_200mg
+    Liver\\
+      [ Y ] X_hb_200mg
+      [ Y ] C_hb_200mg = X_hb_200mg/V_hb
+      HepElim\\
+        [CON] deriv_X_hb_200mg=-Vmax*(X_hb_200mg/V_hb)/(Km+X_hb_200mg/V_hb) ->
+      [REG] delta_C_cent_200mg+=-C_cent_200mg*V_hb/V_cent -> delta_X_hb_200mg+=C_cent_200mg*V_hb
+      [REG] delta_X_hb_200mg+=-X_hb_200mg -> delta_C_cent_200mg+=X_hb_200mg/V_cent
+    Dosing\\
+      [ P ] X_dose_200mg
+      [REG] -> delta_C_cent_200mg+=X_dose_200mg/V_cent"""
