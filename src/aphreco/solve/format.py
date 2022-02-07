@@ -1,4 +1,3 @@
-import abc
 from typing import Dict, List, Tuple
 
 import sympy
@@ -21,7 +20,7 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
     return rhs
 
 
-class BaseFormatter(abc.ABC):
+class BaseFormatter:
     @property
     def simplify_eq(self):
         return self._simplify_eq
