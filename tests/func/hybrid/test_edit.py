@@ -98,7 +98,7 @@ class TestTypicalUserExperience:
         tree = "\n".join(model.tree())
         expected_tree = """Model\\
   Times\\
-    [ P ] timezero
+    [ P ] starttime
     [ P ] endless
     [ P ] onlyonce
   [ Y ] C_cent
@@ -127,7 +127,7 @@ class TestTypicalUserExperience:
         tree = "\n".join(model.tree())
         expected_tree = """Model\\
   Times\\
-    [ P ] timezero
+    [ P ] starttime
     [ P ] endless
     [ P ] onlyonce
   [ Y ] C_cent
