@@ -66,6 +66,21 @@ def model():
 
 
 @pytest.fixture()
+def phase1(model):
+    exclusive = ["X_dose"]
+    suffix_list = ["_10mg", "_30mg", "_100mg", "_300mg", "_1000mg"]
+    dose_list = [10.0, 30.0, 100.0, 300.0, 1000.0]
+
+    arms = [model.copy(suffix=suffix, exclusive=exclusive) for suffix in suffix_list]
+    for arm, suffix, dose in zip(arms, suffix_list, dose_list):
+        arm["X_dose" + suffix].value = dose
+
+    phase1 = ap.Model("DoseEscalation")
+    phase1.add(arms, duplicate="skip")
+    return phase1
+
+
+@pytest.fixture()
 def str_model():
     return """Model\\
   Times\\
