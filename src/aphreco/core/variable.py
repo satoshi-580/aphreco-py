@@ -115,7 +115,7 @@ class Variable(BaseComponent):
 
         return var, is_done
 
-    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
         names_dict[self.name] = (self.type, -1)
         return names_dict
 
@@ -209,6 +209,10 @@ class Variable(BaseComponent):
                 return True, self
 
         return False, self
+
+    def collect_values(self, vals_dict):
+        vals_dict[self.name] = self.value
+        return vals_dict
 
 
 # class Var(BaseComponent):

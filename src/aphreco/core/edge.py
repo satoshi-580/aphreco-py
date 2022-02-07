@@ -55,7 +55,7 @@ class Con(BaseEdge):
         edge.parent = parent
         return edge, is_done
 
-    def _collect_names(self, _):
+    def collect_names(self, _):
         pass
 
     def _collect_names_in_terms(self, used_names_set: Set[str]):
@@ -174,10 +174,10 @@ class Con(BaseEdge):
 
         return is_empty, self
 
-    def collect_eq(self):
-        pass
+    def collect_values(self, vals_dict):
+        return vals_dict
 
-    def collect_val(self):
+    def collect_terms(self):
         pass
 
 
@@ -249,7 +249,7 @@ class Reg(BaseEdge):
         edge.parent = parent
         return edge, is_done
 
-    def _collect_names(self, _):
+    def collect_names(self, _):
         pass
 
     def _collect_names_in_terms(self, used_names_set: Set[str]):
@@ -358,12 +358,6 @@ class Reg(BaseEdge):
             self._name = self._create_name_from_term(self.term)
         return self
 
-    def collect_eq(self):
-        pass
-
-    def collect_val(self):
-        pass
-
     def _delete_involved(self, name: str):
         """deletes an involved components in beat or term.
 
@@ -396,6 +390,12 @@ class Reg(BaseEdge):
             self._name = self._create_name_from_term(self.term)
 
         return is_empty, self
+
+    def collect_terms(self):
+        pass
+
+    def collect_values(self):
+        pass
 
 
 # class EdgeC(BaseEdge):

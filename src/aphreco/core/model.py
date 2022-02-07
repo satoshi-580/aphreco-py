@@ -176,7 +176,7 @@ class Model(BaseItem):
             if isinstance(new_item, BaseEdge):
                 continue
 
-            new_names_dict = new_item._collect_names(OrderedDict())
+            new_names_dict = new_item.collect_names(OrderedDict())
             new_names_dict_list.append(new_names_dict)
 
         return new_names_dict_list
@@ -216,11 +216,11 @@ class Model(BaseItem):
                 names_dict[name, (itemtype, index)]
         """
         if self.parent is None:
-            return self._collect_names(OrderedDict())
+            return self.collect_names(OrderedDict())
         else:
             return self.parent._collect_existing_names()
 
-    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
         """recursively collects names of Y, P, X, E in lower layers than the current model.
 
         This method is an abstractmethod defined in and forced by BaseItem.
@@ -247,7 +247,7 @@ class Model(BaseItem):
                 continue
 
             # collect from Variable, or go to lower Model
-            names_dict = item._collect_names(names_dict)
+            names_dict = item.collect_names(names_dict)
         return names_dict
 
     def tree(
@@ -482,6 +482,39 @@ class Model(BaseItem):
                 break
         return ans
 
+    def set_yp_index(
+        self, names_dict: Dict[str, Tuple[ItemType, int]]
+    ) -> Dict[str, Tuple[ItemType, int]]:
+        y_index = 0
+        p_index = 0
+        for name, (itemtype, _) in names_dict.items():
+            if itemtype == ItemType.Y:
+                names_dict[name] = (itemtype, y_index)
+                y_index += 1
+            elif itemtype in (ItemType.P | ItemType.X):
+                names_dict[name] = (itemtype, p_index)
+                p_index += 1
+            else:
+                continue
+        return names_dict
+
+    def collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """collects values of Variables in a model.
+
+        Args:
+            val_dicts Dict[str, Dict]: The dictionary of a name (key) and a value (value) of Variables.
+                values Dict[str, value]: {"value", "lb", "ub"}
+        """
+        for _, item in self.children.items():
+            if isinstance(item, BaseEdge):
+                continue
+            else:
+                val_dicts = item.collect_values(val_dicts)
+        return val_dicts
+
+    def collect_terms(self, terms_dict: Dict[str, Dict]):
+        return terms_dict
+
 
 # class Model(BaseComponent):
 #     def _get_item(self, dq_path: deque) -> Optional[BaseItem]:
@@ -499,17 +532,6 @@ class Model(BaseItem):
 #             else:
 #                 return None
 
-#     def _find_name(self, name, path: str) -> Optional[str]:
-#         ans = None
-#         for key, item in self:
-#             if key == name:
-#                 ans = f"{path}{self._name}/"
-#                 break
-#             elif isinstance(item, BaseModel):
-#                 ans = item._find_name(name, f"{path}{self._name}/")
-#                 if ans is not None:
-#                     break
-#         return ans
 
 #     def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
 #         """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
@@ -526,22 +548,6 @@ class Model(BaseItem):
 #             elif isinstance(item, BaseEdge):
 #                 eq_dicts = item._formulate(eq_dicts)
 #         return eq_dicts
-
-#     def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
-#         """Collect values of Var objects in a model by Depth-First Search.
-#         val_dicts: Dict['y': dict_y, 'p': dict_p, 'x': dict_x]
-#             dict_y: Dict[name, y0 (initial state value)]
-#             dict_p: Dict[name, p (constant value)]
-#             dict_x: Dict[name, (value, bounds)]
-#         """
-#         for _, item in self:
-#             if isinstance(item, BaseModel):
-#                 val_dicts = item._collect_values(val_dicts)
-#             elif isinstance(item, Var):
-#                 val_dicts = item._collect_values(val_dicts)
-#             elif isinstance(item, BaseEdge):
-#                 continue
-#         return val_dicts
 
 
 def check_duplication_within_new(
