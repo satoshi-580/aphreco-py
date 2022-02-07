@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 from aphreco.core import Model
-from aphreco.enums import ItemType
 
 from .format import SimFormatter
 from .simulate.base import BaseStepMethod
