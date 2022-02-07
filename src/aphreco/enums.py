@@ -23,3 +23,8 @@ class ItemType(enum.Flag):
 
     # Item
     ITEM = COMPONENT | MODEL
+
+
+class SimType(enum.Flag):
+    Dopri45 = enum.auto()
+    Rk4 = enum.auto()
