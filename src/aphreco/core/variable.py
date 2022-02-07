@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
 
 from .base import BaseComponent
+from .func.collect import ImplCollectForVariable
 from .func.rename import rename_all
 from .func.symbolize import extract_symset
 
@@ -17,7 +18,7 @@ VTYPES = {
 }
 
 
-class Variable(BaseComponent):
+class Variable(ImplCollectForVariable, BaseComponent):
     """Variable represents a dependent/independent variable in a model.
 
     Attributes:
@@ -115,22 +116,6 @@ class Variable(BaseComponent):
 
         return var, is_done
 
-    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
-        names_dict[self.name] = (self.type, -1)
-        return names_dict
-
-    def _collect_names_in_terms(self, used_names_set: Set[str]):
-        if self.term is None:
-            return used_names_set
-        else:
-            used_names: Set[str] = set()
-
-            symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
-
-            return used_names_set | used_names
-
     def tree(
         self,
         indent: str = "",
@@ -209,10 +194,6 @@ class Variable(BaseComponent):
                 return True, self
 
         return False, self
-
-    def collect_values(self, vals_dict):
-        vals_dict[self.name] = self.value
-        return vals_dict
 
 
 # class Var(BaseComponent):
@@ -339,31 +320,3 @@ class A:
             Variable: The variable object with its type set to ItemType.A.
         """
         return Variable(name=name, type="a", term=term, share=share)
-
-
-# class Beat:
-#     def __new__(
-#         cls,
-#         name: Tuple[str, str, str],
-#         value: Tuple[float, float, float],
-#     ):
-#         if isinstance(name, (list, tuple)):
-#             name_start = name[0]
-#             name_stop = name[1]
-#             name_interval = name[2]
-#         else:
-#             raise ValueError(
-#                 f"name must be string or tuple/list of three string objects."
-#             )
-
-#         if isinstance(value, (list, tuple)):
-#             value_start = value[0]
-#             value_stop = value[1]
-#             value_interval = value[2]
-
-#         beat = [
-#             Var(name=name_start, value=value_start, vtype="p"),
-#             Var(name=name_stop, value=value_stop, vtype="p"),
-#             Var(name=name_interval, value=value_interval, vtype="p"),
-#         ]
-#         return beat

@@ -6,12 +6,13 @@ from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 from .base import BaseEdge, BaseItem
+from .func.collect import ImplCollectForModel
 from .utils.colors import PColor
 
 SEPARATOR = "\\"
 
 
-class Model(BaseItem):
+class Model(ImplCollectForModel, BaseItem):
     """Model represents a composite of items in a model tree.
 
     A Model object can contain objects of Variable, Edge, and Model itself.
@@ -219,36 +220,6 @@ class Model(BaseItem):
             return self.collect_names(OrderedDict())
         else:
             return self.parent._collect_existing_names()
-
-    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
-        """recursively collects names of Y, P, X, E in lower layers than the current model.
-
-        This method is an abstractmethod defined in and forced by BaseItem.
-        Variable and Edge classes also have this method.
-        The names collected in this method does not collect Model.name,
-        because Model.name is not needed to be unique in a whole tree;
-        Duplication of Model.names in a whole tree does not matter as long as
-        it is unique within a single model.
-
-        Args:
-            names_dict (OrderedDict[str, (ItemType, int)]): The argument in which
-                the function collects and stores tree items.
-                The key of this dictionary indicates the name of Variable (str), and
-                the value of this dictionary is a tuple of ItemType and index in Y or P.
-                All indices are set to -1 in the collection phase and
-                will be update in replacement phase.
-        """
-        if len(self.children) == 0:
-            return names_dict
-
-        for _, item in self.children.items():
-            # does not collect from Edge
-            if isinstance(item, BaseEdge):
-                continue
-
-            # collect from Variable, or go to lower Model
-            names_dict = item.collect_names(names_dict)
-        return names_dict
 
     def tree(
         self,

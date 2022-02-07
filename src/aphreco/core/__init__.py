@@ -1,6 +1,7 @@
 from .base import BaseComponent, BaseEdge, BaseItem
-from .edge import Con, Reg
+from .continuous import Con
 from .model import Model
+from .regular import Reg
 from .variable import A, P, Variable, X, Y
 
 # from .base import BaseComponent, BaseEdge, BaseItem, BaseModel
