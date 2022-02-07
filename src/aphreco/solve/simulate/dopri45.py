@@ -5,8 +5,6 @@ from .base import BaseStepMethod
 
 class Dopri45(BaseStepMethod):
     def __init__(self, **options):
-        self._name = "Dopri45"
-        self.simtype = SimType.Dopri45
         self.is_default = True
         self.options = {
             "h0": 1e-5,
@@ -18,3 +16,11 @@ class Dopri45(BaseStepMethod):
 
         if options:
             self.set_options(**options)
+
+    @property
+    def name(self):
+        return SimType.Dopri45.name
+
+    @property
+    def type(self):
+        return SimType.Dopri45

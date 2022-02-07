@@ -17,7 +17,91 @@ VTYPES = {
 }
 
 
-class Variable(BaseComponent):
+class BaseVariable(BaseComponent):
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type: Union[str, ItemType]):
+        if isinstance(type, ItemType):
+            self._type = type
+        else:
+            if type not in VTYPES.keys():
+                raise ValueError(
+                    f"invalid variable type: {type} \
+                    \nvtype must be chosen from {tuple(VTYPES.keys())}"
+                )
+
+            self._type = VTYPES[type]
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+
+class ImplCollectForVariable(BaseVariable):
+    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        names_dict[self.name] = (self.type, -1)
+        return names_dict
+
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
+        if self.term is None:
+            return used_names_set
+        else:
+            used_names: Set[str] = set()
+
+            symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
+            str_symbols_set = {str(symbol) for symbol in symbols_set}
+            used_names = used_names | str_symbols_set
+
+            return used_names_set | used_names
+
+    def collect_values(self, vals_dict: Dict[str, float]) -> Dict[str, float]:
+        vals_dict[self.name] = self.value
+        return vals_dict
+
+    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+        if self.term is None:
+            return terms_dict
+
+        cre = terms_dict["cre"]
+
+        if self.name not in cre.keys():
+            cre[self.name] = self.term
+        else:
+            raise ValueError(
+                f"multiple CREs was found for a single variable '{self.name}'."
+            )
+
+        terms_dict["cre"] = cre
+        return terms_dict
+
+
+class ImplRenameForVariable(BaseVariable):
+    def _rename_self(self, repmap: Dict[str, str]):
+        if self.name in repmap.keys():
+            self._name = repmap[self.name]
+
+        if self.term is not None:
+            symset = extract_symset(self.term)
+            intersect = symset & repmap.keys()
+
+            if intersect != set():
+                for old in intersect:
+                    self.term = rename_all(
+                        term=self.term,
+                        old=old,
+                        new=repmap[old],
+                    )
+        return self
+
+
+class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
     """Variable represents a dependent/independent variable in a model.
 
     Attributes:
@@ -73,23 +157,6 @@ class Variable(BaseComponent):
                 )
             self.term = term
 
-    @property
-    def type(self):
-        return self._type
-
-    @type.setter
-    def type(self, type: Union[str, ItemType]):
-        if isinstance(type, ItemType):
-            self._type = type
-        else:
-            if type not in VTYPES.keys():
-                raise ValueError(
-                    f"invalid variable type: {type} \
-                    \nvtype must be chosen from {tuple(VTYPES.keys())}"
-                )
-
-            self._type = VTYPES[type]
-
     def _add_or_skip(self, parent, is_done):
         if is_done is not None and is_done[self.name]:
             # if duplicate == "error", is_done is None.
@@ -114,22 +181,6 @@ class Variable(BaseComponent):
             is_done[var.name] = True  # skip this name next time
 
         return var, is_done
-
-    def _collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
-        names_dict[self.name] = (self.type, -1)
-        return names_dict
-
-    def _collect_names_in_terms(self, used_names_set: Set[str]):
-        if self.term is None:
-            return used_names_set
-        else:
-            used_names: Set[str] = set()
-
-            symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
-
-            return used_names_set | used_names
 
     def tree(
         self,
@@ -185,23 +236,6 @@ class Variable(BaseComponent):
         )
         return copied_var
 
-    def _rename_self(self, repmap: Dict[str, str]):
-        if self.name in repmap.keys():
-            self._name = repmap[self.name]
-
-        if self.term is not None:
-            symset = extract_symset(self.term)
-            intersect = symset & repmap.keys()
-
-            if intersect != set():
-                for old in intersect:
-                    self.term = rename_all(
-                        term=self.term,
-                        old=old,
-                        new=repmap[old],
-                    )
-        return self
-
     def _delete_involved(self, name: str):
         if (self.term is not None) and (name in self.term):
             self.term = None
@@ -209,51 +243,6 @@ class Variable(BaseComponent):
                 return True, self
 
         return False, self
-
-
-# class Var(BaseComponent):
-#     def _get_symbols(self):
-#         return sympy.sympify(self.name)
-
-#     def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
-#         if self.term is None:
-#             return eq_dicts
-
-#         dict_cre = eq_dicts["cre"]
-
-#         if self.name not in dict_cre.keys():
-#             dict_cre[self.name] = self.term
-#         else:
-#             raise ValueError(
-#                 f"multiple CREs was found for a single variable '{self.name}'."
-#             )
-
-#         eq_dicts["cre"] = dict_cre
-#         return eq_dicts
-
-#     def _collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
-#         if self.type == ItemType.Y:
-#             dict_y = val_dicts["y"]
-#             if self.name in dict_y.keys():
-#                 raise ValueError(f"name duplication: {self.name}")
-#             dict_y[self.name] = self.value
-#             val_dicts["y"] = dict_y
-
-#         elif self.type in (ItemType.P | ItemType.X):
-#             dict_p = val_dicts["p"]
-#             if self.name in dict_p.keys():
-#                 raise ValueError(f"name duplication: {self.name}")
-#             dict_p[self.name] = self.value
-#             val_dicts["p"] = dict_p
-
-#         if self.type == ItemType.X:
-#             dict_x = val_dicts["x"]
-#             if self.name in dict_x.keys():
-#                 raise ValueError(f"name duplication: {self.name}")
-#             dict_x[self.name] = (self.value, self.bounds)
-#             val_dicts["x"] = dict_x
-
-#         return val_dicts
 
 
 class Y:
@@ -335,31 +324,3 @@ class A:
             Variable: The variable object with its type set to ItemType.A.
         """
         return Variable(name=name, type="a", term=term, share=share)
-
-
-# class Beat:
-#     def __new__(
-#         cls,
-#         name: Tuple[str, str, str],
-#         value: Tuple[float, float, float],
-#     ):
-#         if isinstance(name, (list, tuple)):
-#             name_start = name[0]
-#             name_stop = name[1]
-#             name_interval = name[2]
-#         else:
-#             raise ValueError(
-#                 f"name must be string or tuple/list of three string objects."
-#             )
-
-#         if isinstance(value, (list, tuple)):
-#             value_start = value[0]
-#             value_stop = value[1]
-#             value_interval = value[2]
-
-#         beat = [
-#             Var(name=name_start, value=value_start, vtype="p"),
-#             Var(name=name_stop, value=value_stop, vtype="p"),
-#             Var(name=name_interval, value=value_interval, vtype="p"),
-#         ]
-#         return beat

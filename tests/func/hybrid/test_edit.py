@@ -5,7 +5,6 @@ from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 class TestTypicalUserExperience:
     def test_print_tree(self, model, str_model):
-        print(model)
         tree = "\n".join(model.tree())
         assert tree == str_model
 
@@ -99,7 +98,7 @@ class TestTypicalUserExperience:
         tree = "\n".join(model.tree())
         expected_tree = """Model\\
   Times\\
-    [ P ] timezero
+    [ P ] starttime
     [ P ] endless
     [ P ] onlyonce
   [ Y ] C_cent
@@ -128,7 +127,7 @@ class TestTypicalUserExperience:
         tree = "\n".join(model.tree())
         expected_tree = """Model\\
   Times\\
-    [ P ] timezero
+    [ P ] starttime
     [ P ] endless
     [ P ] onlyonce
   [ Y ] C_cent
@@ -164,11 +163,13 @@ class TestTypicalUserExperience:
         tree = "\n".join(model.tree())
         assert tree == str_model
 
-    @pytest.mark.skip(reason="not implemented yet")
-    def test_simulation(self, model):
-        out_time = [float(i) / 100 for i in range(1000)]
-        simulator = ap.Simulator()
-        simres = simulator.run(model, out_time)
+    def test_copy_model(self, model, str_dose_escalation_model):
+        model_10mg = model.copy(suffix="_10mg", exclusive=["X_dose"])
+        model_50mg = model.copy(suffix="_50mg", exclusive=["X_dose"])
+        model_200mg = model.copy(suffix="_200mg", exclusive=["X_dose"])
 
-        assert simres.out_t == out_time
-        # assert simres.out_y == data of model simulation loaded by fixture
+        escalate = ap.Model("DoseEscalation")
+        escalate.add([model_10mg, model_50mg, model_200mg], duplicate="skip")
+
+        tree = "\n".join(escalate.tree())
+        assert tree == str_dose_escalation_model

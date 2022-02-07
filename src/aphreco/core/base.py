@@ -19,9 +19,6 @@ class BaseItem(abc.ABC):
     def __str__(self):
         return f"{self.name}"
 
-    def __iter__(self):
-        return iter([])
-
     @abc.abstractmethod
     def _add_or_skip(self, parent, is_done):
         """creates a BaseItem object to be added, or else skip.
@@ -47,8 +44,18 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _collect_names(self, names_dict):
+    def collect_names(self, names_dict):
         """collects names defined by Variable objects."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def collect_values(self, vals_dict):
+        """collects {names: values} of Variables."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def collect_terms(self, terms_dict):
+        """collects terms in Edges(for ode/rec) or Variable(for cre)."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -80,16 +87,24 @@ class BaseComponent(BaseItem):
         else:
             return None
 
+    @property
+    def term(self):
+        return self._term
+
+    @term.setter
+    def term(self, term):
+        self._term = term
+
 
 class BaseEdge(BaseComponent):
     @abc.abstractmethod
     def _create_name_from_term(self, term):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def collect_eq(self):
-        raise NotImplementedError
+    @property
+    def _is_default_name(self):
+        return self.__is_default_name
 
-    @abc.abstractmethod
-    def collect_val(self):
-        raise NotImplementedError
+    @_is_default_name.setter
+    def _is_default_name(self, _is_default_name):
+        self.__is_default_name = _is_default_name
