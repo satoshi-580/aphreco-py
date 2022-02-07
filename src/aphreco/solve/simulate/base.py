@@ -1,6 +1,13 @@
 import abc
 
 
+def check_option_type(old_value, new_value):
+    if type(old_value) != type(new_value):
+        raise TypeError(
+            f"invalid option value: {new_value}\nexpected {type(old_value)}"
+        )
+
+
 def set_option(options, key, value):
     if key in options.keys():
         check_option_type(options[key], value)
@@ -10,18 +17,7 @@ def set_option(options, key, value):
     return options
 
 
-def check_option_type(old_value, new_value):
-    if type(old_value) != type(new_value):
-        raise TypeError(
-            f"invalid option value: {new_value}\nexpected {type(old_value)}"
-        )
-
-
 class BaseStepMethod(abc.ABC):
-    @property
-    def name(self):
-        return self._name
-
     @property
     def is_default(self):
         return self._is_default
@@ -38,11 +34,3 @@ class BaseStepMethod(abc.ABC):
 
     def collect_options(self):
         return str(self.options)
-
-
-class Simulator:
-    def __init__(self, stepper: BaseStepMethod):
-        if isinstance(stepper, BaseStepMethod):
-            self.stepper = stepper
-        else:
-            raise TypeError("invalid stepper type")
