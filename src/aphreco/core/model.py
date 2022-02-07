@@ -6,13 +6,156 @@ from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 from .base import BaseEdge, BaseItem
-from .func.collect import ImplCollectForModel
 from .utils.colors import PColor
 
 SEPARATOR = "\\"
 
 
-class Model(ImplCollectForModel, BaseItem):
+class BaseModel(BaseItem):
+    @property
+    def children(self):
+        return self._children
+
+    @children.setter
+    def children(self, children):
+        self._children = children
+
+
+class ImplCollectForModel(BaseModel):
+    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+        """recursively collects names of Y, P, X, E in lower layers than the current model.
+
+        This method is an abstractmethod defined in and forced by BaseItem.
+        Variable and Edge classes also have this method.
+        The names collected in this method does not collect Model.name,
+        because Model.name is not needed to be unique in a whole tree;
+        Duplication of Model.names in a whole tree does not matter as long as
+        it is unique within a single model.
+
+        Args:
+            names_dict (OrderedDict[str, (ItemType, int)]): The argument in which
+                the function collects and stores tree items.
+                The key of this dictionary indicates the name of Variable (str), and
+                the value of this dictionary is a tuple of ItemType and index in Y or P.
+                All indices are set to -1 in the collection phase and
+                will be update in replacement phase.
+        """
+        if len(self.children) == 0:
+            return names_dict
+
+        for _, item in self.children.items():
+            # does not collect from Edge
+            if isinstance(item, BaseEdge):
+                continue
+
+            # collect from Variable, or go to lower Model
+            names_dict = item.collect_names(names_dict)
+        return names_dict
+
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
+        if len(self.children) == 0:
+            return used_names_set
+
+        for _, item in self.children.items():
+            # collect from Edge and Variable with cre, or go to lower Model
+            used_names_set = item._collect_names_in_terms(used_names_set)
+        return used_names_set
+
+    def _collect_existing_names(self):
+        """collects variable names in a model.
+
+        Even though this method is called by a model in a middle layer,
+        the method goes up to the top layer and start collecting names from a root model.
+
+        Returns:
+            Dict[str, (ItemType, int)]: names_dict with a name as a key, and
+                a tuple of (itemtype, index) as value.
+                All indices are set to -1 until Replacer.run().
+                names_dict[name, (itemtype, index)]
+        """
+        if self.parent is not None:
+            # go up to a top of a tree
+            return self.parent._collect_existing_names()
+        else:
+            return self.collect_names(OrderedDict())
+
+    def collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+        """collects values of Variables in a model.
+
+        Args:
+            val_dicts Dict[str, Dict]: The dictionary of a name (key) and a value (value) of Variables.
+                values Dict[str, value]: {"value", "lb", "ub"}
+        """
+        for _, item in self.children.items():
+            if isinstance(item, BaseEdge):
+                continue
+            else:
+                val_dicts = item.collect_values(val_dicts)
+        return val_dicts
+
+    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+        """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
+
+        Args:
+            terms_dict: Dict[
+                'ode': Dict[yname(str), rhs(str)],
+                'rec': Dict[(start, stop, step), Dict[yname(str), rhs(str)]],
+                'cre': Dict[yname(str), rhs(str)],
+            ]
+        """
+        for _, item in self.children.items():
+            terms_dict = item.collect_terms(terms_dict)
+
+        return terms_dict
+
+    def _collect_new_names(self, new_items: List[BaseItem]):
+        """
+        Model.collect_names(noargs) -> names_dict
+        Variable.collect_names(names_dict) -> names_dict
+        """
+        # collect new_names from new_items
+        new_names_dict_list = list()
+
+        for new_item in new_items:
+            # does not collect from Edge
+            if isinstance(new_item, BaseEdge):
+                continue
+
+            new_names_dict = new_item.collect_names(OrderedDict())
+            new_names_dict_list.append(new_names_dict)
+
+        return new_names_dict_list
+
+    def collect_names_in_new_terms(self, new_items: List[BaseItem]):
+        """
+        Model._collect_names_in_terms() -> go to lower layers recursively
+        Variable._collect_names_in_terms() -> return with no change
+        Edge._collect_names_in_terms() -> collect
+        """
+        used_names_set: Set[str] = set()
+        for new_item in new_items:
+            used_names_set = used_names_set | new_item._collect_names_in_terms(
+                used_names_set
+            )
+        return used_names_set
+
+
+class ImplRenameForModel(BaseModel):
+    def _rename_self(self, repmap: Dict[str, str]):
+        if self.name in repmap.keys():
+            self._name = repmap[self.name]
+
+        renamed_children: Dict[str, BaseItem] = OrderedDict()
+        for _, item in self.children.items():
+            renamed_child = item._rename_self(repmap)
+            renamed_children[renamed_child.name] = renamed_child
+
+        self.children = renamed_children
+
+        return self
+
+
+class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
     """Model represents a composite of items in a model tree.
 
     A Model object can contain objects of Variable, Edge, and Model itself.
@@ -163,63 +306,6 @@ class Model(ImplCollectForModel, BaseItem):
             if child is not None:
                 model.children[name] = child
         return model, is_done
-
-    def _collect_new_names(self, new_items: List[BaseItem]):
-        """
-        Model.collect_names(noargs) -> names_dict
-        Variable.collect_names(names_dict) -> names_dict
-        """
-        # collect new_names from new_items
-        new_names_dict_list = list()
-
-        for new_item in new_items:
-            # does not collect from Edge
-            if isinstance(new_item, BaseEdge):
-                continue
-
-            new_names_dict = new_item.collect_names(OrderedDict())
-            new_names_dict_list.append(new_names_dict)
-
-        return new_names_dict_list
-
-    def collect_names_in_new_terms(self, new_items: List[BaseItem]):
-        """
-        Model._collect_names_in_terms() -> go to lower layers recursively
-        Variable._collect_names_in_terms() -> return with no change
-        Edge._collect_names_in_terms() -> collect
-        """
-        used_names_set: Set[str] = set()
-        for new_item in new_items:
-            used_names_set = used_names_set | new_item._collect_names_in_terms(
-                used_names_set
-            )
-        return used_names_set
-
-    def _collect_names_in_terms(self, used_names_set: Set[str]):
-        if len(self.children) == 0:
-            return used_names_set
-
-        for _, item in self.children.items():
-            # collect from Edge and Variable with cre, or go to lower Model
-            used_names_set = item._collect_names_in_terms(used_names_set)
-        return used_names_set
-
-    def _collect_existing_names(self):
-        """collects variable names in a model.
-
-        Even though this method is called by a model in a middle layer,
-        the method goes up to the top layer and start collecting names from a root model.
-
-        Returns:
-            Dict[str, (ItemType, int)]: names_dict with a name as a key, and
-                a tuple of (itemtype, index) as value.
-                All indices are set to -1 until Replacer.run().
-                names_dict[name, (itemtype, index)]
-        """
-        if self.parent is None:
-            return self.collect_names(OrderedDict())
-        else:
-            return self.parent._collect_existing_names()
 
     def tree(
         self,
@@ -413,19 +499,6 @@ class Model(ImplCollectForModel, BaseItem):
             # rename
             self._rename_self(repmap)
 
-    def _rename_self(self, repmap: Dict[str, str]):
-        if self.name in repmap.keys():
-            self._name = repmap[self.name]
-
-        renamed_children: Dict[str, BaseItem] = OrderedDict()
-        for _, item in self.children.items():
-            renamed_child = item._rename_self(repmap)
-            renamed_children[renamed_child.name] = renamed_child
-
-        self.children = renamed_children
-
-        return self
-
     def find(self, name: str) -> Optional[str]:
         if name == self.name:
             return name
@@ -468,57 +541,6 @@ class Model(ImplCollectForModel, BaseItem):
             else:
                 continue
         return names_dict
-
-    def collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
-        """collects values of Variables in a model.
-
-        Args:
-            val_dicts Dict[str, Dict]: The dictionary of a name (key) and a value (value) of Variables.
-                values Dict[str, value]: {"value", "lb", "ub"}
-        """
-        for _, item in self.children.items():
-            if isinstance(item, BaseEdge):
-                continue
-            else:
-                val_dicts = item.collect_values(val_dicts)
-        return val_dicts
-
-    def collect_terms(self, terms_dict: Dict[str, Dict]):
-        return terms_dict
-
-
-# class Model(BaseComponent):
-#     def _get_item(self, dq_path: deque) -> Optional[BaseItem]:
-#         name = dq_path.popleft()
-#         if name not in self.items.keys():
-#             return None
-#         elif len(dq_path) == 0:
-#             return self.items[name]
-#         else:
-#             next_item = self.items[name]
-#             if isinstance(next_item, (Var, BaseEdge)):
-#                 raise ValueError(f"item '{name}' is a component, not a model")
-#             elif isinstance(next_item, BaseModel):
-#                 return next_item._get_item(dq_path)
-#             else:
-#                 return None
-
-
-#     def _formulate(self, eq_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
-#         """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
-#         eq_dicts: Dict['ode': dict_ode, 'rec': dict_rec, 'cre': dict_cre]
-#             dict_ode: Dict[lhs, rhs]
-#             dict_rec: Dict[(start, stop, step): Dict[lhs, rhs]]
-#             dict_cre: Dict[lhs, rhs]
-#         """
-#         for _, item in self:
-#             if isinstance(item, BaseModel):
-#                 eq_dicts = item._formulate(eq_dicts)
-#             elif isinstance(item, Var):
-#                 eq_dicts = item._formulate(eq_dicts)
-#             elif isinstance(item, BaseEdge):
-#                 eq_dicts = item._formulate(eq_dicts)
-#         return eq_dicts
 
 
 def check_duplication_within_new(

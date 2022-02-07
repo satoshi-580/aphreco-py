@@ -59,7 +59,27 @@ class Simulator:
         #     'rec': Dict[(start, stop, step), Dict[yname(str), rhs(str)]],
         #     'cre': Dict[yname(str), rhs(str)],
         # ]
-        terms_dict = model.collect_terms(OrderedDict())
+        terms_dict = model.collect_terms(
+            OrderedDict(
+                ode=OrderedDict(),
+                rec=OrderedDict(),
+                cre=OrderedDict(),
+            )
+        )
+
+        # ===== for debugging =====
+        # print()  # debug terms_dict["ode"]
+        # for lhs, rhs in terms_dict["ode"].items():
+        #     print("deriv_" + lhs, "=", rhs)
+        # print()  # debug terms_dict["rec"]
+        # for beat, d in terms_dict["rec"].items():
+        #     print("   ===", beat, "===")
+        #     for lhs, rhs in d.items():
+        #         print("delta_" + lhs, "+=", rhs)
+        # print()  # debug terms_dict["cre"]
+        # for lhs, rhs in terms_dict["cre"].items():
+        #     print(lhs, "=", rhs)
+        # =====================
 
         # unks_dicts = model.collect_unknowns(OrderedDict()) in Optimization
 
@@ -68,10 +88,10 @@ class Simulator:
         source.lines["y"] = self.formatter.line_y(names_dict, vals_dict)
         source.lines["p"] = self.formatter.line_p(names_dict, vals_dict)
 
-        print()
-        print(source.lines["y"])
-        print()
-        print(source.lines["p"])
+        # print()
+        # print(source.lines["y"])
+        # print()
+        # print(source.lines["p"])
 
     def _execute(self):
         return SimResult(None)

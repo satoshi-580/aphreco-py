@@ -1,15 +1,85 @@
 from collections import OrderedDict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
-from .func.collect import ImplCollectForCon
 from .func.rename import rename_all
-from .func.symbolize import extract_symset
+from .func.symbolize import extract_symset, str_symbol_name
 
 
-class Con(ImplCollectForCon, BaseEdge):
+class BaseCon(BaseEdge):
+    pass
+
+
+class ImplCollectForCon(BaseCon):
+    def collect_names(self, _):
+        pass
+
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
+        """collects all names used in terms of this edge.
+
+        This method is called when this object is added to a model
+        to check if unregistered names are used in terms of this edge or not.
+        """
+        used_names = set()
+        for yname, term in self.term.items():
+            used_names.add(str_symbol_name(yname))
+
+            symset = extract_symset(term)
+            used_names = used_names | symset
+
+        return used_names_set | used_names
+
+    def collect_values(self, vals_dict):
+        return vals_dict
+
+    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+        ode = terms_dict["ode"]
+
+        for yname, rhs in self.term.items():
+            if yname not in ode.keys():
+                ode[yname] = rhs
+            else:
+                ode[yname] += f" + {rhs}"
+
+        terms_dict["ode"] = ode
+        return terms_dict
+
+
+class ImplRenameForCon(BaseCon):
+    def _rename_self(self, repmap: Dict[str, str]):
+        renamed_term = self.term.copy()
+        for yname in self.term.keys():
+            # extract a set of symbols (names) from a term
+            # filter the set to be replaced.
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+
+            # replace all positions in a term while other inclusive names
+            # are not replaced. For example, when replacing 'X0', neither
+            # 'prefix_X0' nor 'X0_suffix' will be replaced.
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                renamed_term[new_name] = renamed_term[yname]
+                del renamed_term[yname]
+        self.term = renamed_term
+
+        if self._is_default_name:
+            self._name = self._create_name_from_term(self.term)
+
+        return self
+
+
+class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
     def __init__(
         self,
         term: Dict[str, str],
@@ -30,10 +100,6 @@ class Con(ImplCollectForCon, BaseEdge):
                 _is_default_name = False
 
         self._is_default_name = _is_default_name
-
-    @property
-    def type(self):
-        return self._type
 
     def _create_name_from_term(self, term):
         str_from = ""
@@ -100,40 +166,6 @@ class Con(ImplCollectForCon, BaseEdge):
         )
         return copied_edge
 
-    def _rename_self(self, repmap: Dict[str, str]):
-        if not self._is_default_name:
-            if self._name in repmap.keys():
-                self._name = repmap[self._name]
-
-        renamed_term = self.term.copy()
-        for yname in self.term.keys():
-            # extract a set of symbols (names) from a term
-            # filter the set to be replaced.
-            symset = extract_symset(renamed_term[yname])
-            intersect = symset & repmap.keys()
-
-            # replace all positions in a term while other inclusive names
-            # are not replaced. For example, when replacing 'X0', neither
-            # 'prefix_X0' nor 'X0_suffix' will be replaced.
-            if intersect != set():
-                for old in intersect:
-                    renamed_term[yname] = rename_all(
-                        term=renamed_term[yname],
-                        old=old,
-                        new=repmap[old],
-                    )
-
-            if yname in repmap.keys():
-                new_name = repmap[yname]
-                renamed_term[new_name] = renamed_term[yname]
-                del renamed_term[yname]
-        self.term = renamed_term
-
-        if self._is_default_name:
-            self._name = self._create_name_from_term(self.term)
-
-        return self
-
     def _delete_involved(self, name: str):
         del_term = self.term.copy()
         for yname in self.term.keys():
@@ -165,15 +197,3 @@ class Con(ImplCollectForCon, BaseEdge):
 #             symbols.add(sympy.sympify(k))
 #             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
 #         return symbols
-
-#     def _formulate(self, eq_dicts):
-#         dict_ode = eq_dicts["ode"]
-
-#         for key, term in self.term.items():
-#             if key not in dict_ode.keys():
-#                 dict_ode[key] = term
-#             else:
-#                 dict_ode[key] += f" + {term}"
-
-#         eq_dicts["ode"] = dict_ode
-#         return eq_dicts

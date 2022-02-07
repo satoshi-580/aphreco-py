@@ -4,12 +4,94 @@ from typing import Dict, List, Optional, Set, Tuple
 from aphreco.enums import ItemType
 
 from .base import BaseEdge
-from .func.collect import ImplCollectForReg
 from .func.rename import rename_all
-from .func.symbolize import extract_symset
+from .func.symbolize import extract_symset, str_symbol_name
 
 
-class Reg(ImplCollectForReg, BaseEdge):
+class BaseReg(BaseEdge):
+    @property
+    def beat(self):
+        return self._beat
+
+    @beat.setter
+    def beat(self, beat):
+        self._beat = beat
+
+
+class ImplCollectForReg(BaseReg):
+    def collect_names(self, _):
+        pass
+
+    def _collect_names_in_terms(self, used_names_set: Set[str]):
+        """collects all names used in terms and a beat of this edge.
+
+        This method is called when this object is added to a model
+        to check if unregistered names are used in terms of this edge or not.
+        """
+        # beat
+        used_names = {name for name in self.beat}
+        # terms
+        for yname, term in self.term.items():
+            used_names.add(str_symbol_name(yname))
+            symset = extract_symset(term)
+            used_names = used_names | symset
+
+        return used_names_set | used_names
+
+    def collect_values(self):
+        pass
+
+    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+        rec = terms_dict["rec"]
+
+        if self.beat not in rec.keys():
+            rec[self.beat] = OrderedDict()
+
+        for yname, rhs in self.term.items():
+            if yname not in rec[self.beat].keys():
+                rec[self.beat][yname] = rhs
+            else:
+                rec[self.beat][yname] += f" + {rhs}"
+
+        terms_dict["rec"] = rec
+        return terms_dict
+
+
+class ImplRenameForReg(BaseReg):
+    def _rename_self(self, repmap: Dict[str, str]):
+        start, step, stop = self.beat
+        if start in repmap.keys():
+            start = repmap[start]
+        if stop in repmap.keys():
+            stop = repmap[stop]
+        if step in repmap.keys():
+            step = repmap[step]
+        self.beat = (start, stop, step)
+
+        renamed_term: Dict[str, str] = self.term.copy()
+        for yname in self.term.keys():
+            symset = extract_symset(renamed_term[yname])
+            intersect = symset & repmap.keys()
+            if intersect != set():
+                for old in intersect:
+                    renamed_term[yname] = rename_all(
+                        term=renamed_term[yname],
+                        old=old,
+                        new=repmap[old],
+                    )
+
+            if yname in repmap.keys():
+                new_name = repmap[yname]
+                renamed_term[new_name] = renamed_term[yname]
+                del renamed_term[yname]
+        self.term = renamed_term
+
+        if self._is_default_name:
+            self._name = self._create_name_from_term(self.term)
+        return self
+
+
+class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
     """Reg represents a edge item connecting Y variables in a model.
 
     Attributes:
@@ -50,10 +132,6 @@ class Reg(ImplCollectForReg, BaseEdge):
                 _is_default_name = False
 
         self._is_default_name = _is_default_name
-
-    @property
-    def type(self):
-        return self._type
 
     def _create_name_from_term(self, term):
         str_from = ""
@@ -135,38 +213,6 @@ class Reg(ImplCollectForReg, BaseEdge):
 
         return copied_edge
 
-    def _rename_self(self, repmap: Dict[str, str]):
-        start, step, stop = self.beat
-        if start in repmap.keys():
-            start = repmap[start]
-        if stop in repmap.keys():
-            stop = repmap[stop]
-        if step in repmap.keys():
-            step = repmap[step]
-        self.beat = (start, stop, step)
-
-        renamed_term: Dict[str, str] = self.term.copy()
-        for yname in self.term.keys():
-            symset = extract_symset(renamed_term[yname])
-            intersect = symset & repmap.keys()
-            if intersect != set():
-                for old in intersect:
-                    renamed_term[yname] = rename_all(
-                        term=renamed_term[yname],
-                        old=old,
-                        new=repmap[old],
-                    )
-
-            if yname in repmap.keys():
-                new_name = repmap[yname]
-                renamed_term[new_name] = renamed_term[yname]
-                del renamed_term[yname]
-        self.term = renamed_term
-
-        if self._is_default_name:
-            self._name = self._create_name_from_term(self.term)
-        return self
-
     def _delete_involved(self, name: str):
         """deletes an involved components in beat or term.
 
@@ -199,34 +245,3 @@ class Reg(ImplCollectForReg, BaseEdge):
             self._name = self._create_name_from_term(self.term)
 
         return is_empty, self
-
-
-# class EdgeR(BaseEdge):
-#     def _get_symbols(self):
-#         symbols = set()
-
-#         for b in self.beat:
-#             symbols.add(sympy.sympify(b))
-
-#         for k, term in self.term.items():
-#             symbols.add(sympy.sympify(k))
-#             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
-#         return symbols
-
-#     def _formulate(
-#         self,
-#         eq_dicts: Dict[str, Dict],
-#     ):
-#         dict_rec = eq_dicts["rec"]
-
-#         if self.beat not in dict_rec.keys():
-#             dict_rec[self.beat] = OrderedDict()
-
-#         for key, term in self.term.items():
-#             if key not in dict_rec[self.beat].keys():
-#                 dict_rec[self.beat][key] = term
-#             else:
-#                 dict_rec[self.beat][key] += f" + {term}"
-
-#         eq_dicts["rec"] = dict_rec
-#         return eq_dicts

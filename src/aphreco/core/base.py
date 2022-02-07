@@ -54,6 +54,11 @@ class BaseItem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def collect_terms(self, terms_dict):
+        """collects terms in Edges(for ode/rec) or Variable(for cre)."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def _collect_names_in_terms(self, used_names_set):
         raise NotImplementedError
 
@@ -82,8 +87,32 @@ class BaseComponent(BaseItem):
         else:
             return None
 
+    @property
+    def term(self):
+        return self._term
+
+    @term.setter
+    def term(self, term):
+        self._term = term
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        self._type = type
+
 
 class BaseEdge(BaseComponent):
     @abc.abstractmethod
     def _create_name_from_term(self, term):
         raise NotImplementedError
+
+    @property
+    def _is_default_name(self):
+        return self.__is_default_name
+
+    @_is_default_name.setter
+    def _is_default_name(self, _is_default_name):
+        self.__is_default_name = _is_default_name
