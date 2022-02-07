@@ -16,12 +16,18 @@ class SimResult:
 
 
 class Simulator:
-    def __init__(self, stepper: BaseStepMethod = Dopri45()):
+    def __init__(
+        self,
+        stepper: BaseStepMethod = Dopri45(),
+        stepper_options=None,
+        starttime="starttime",
+    ):
         if isinstance(stepper, BaseStepMethod):
             self.stepper = stepper
         else:
             raise TypeError("invalid stepper type")
 
+        self.starttime = starttime
         self.formatter = SimFormatter()
         # self.replacer = SimReplacer()
         # self.writer = SimWriter()
@@ -93,8 +99,11 @@ class Simulator:
 
         # Format collected dicts into lines
         source = Source()
+
+        source.lines["t"] = vals_dict[self.starttime]
         source.lines["y"] = self.formatter.line_y(names_dict, vals_dict)
         source.lines["p"] = self.formatter.line_p(names_dict, vals_dict)
+
         source.lines["ode"] = self.formatter.arrange_ode(terms_dict["ode"])
         str_rec, str_cond, str_beat = self.formatter.arrange_rec(terms_dict["rec"])
         source.lines["rec"] = str_rec
@@ -102,7 +111,14 @@ class Simulator:
         source.lines["beat"] = str_beat
         source.lines["cre"] = self.formatter.arrange_cre(terms_dict["cre"])
 
-        print()
+        # stepper, stepper_options,
+        stepper, stepper_options = self._arrange_stepper()
+        source.lines["stepper"] = stepper
+        source.lines["stepper_options"] = stepper_options
+
+        # ===== for debugging =====
+        # print()
+        # print(source.lines["t"])
         # print(source.lines["y"])
         # print(source.lines["p"])
         # print(source.lines["ode"])
@@ -110,6 +126,24 @@ class Simulator:
         # print(source.lines["cond"])
         # print(source.lines["beat"])
         # print(source.lines["cre"])
+        # print(source.lines["stepper"])
+        # print(source.lines["stepper_options"])
+        # =====================
+
+    def _arrange_stepper(self):
+        """
+        simulator: Simulator
+            .options: Dict[str, value]
+        """
+        if self.stepper.is_default:
+            stepper_options = "default"
+        else:
+            stepper_options = ""
+            for key, value in self.stepper.options.items():
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                stepper_options += key + ": " + str(value) + ",\n"
+        return self.stepper.name, stepper_options
 
     def _execute(self):
         return SimResult(None)
