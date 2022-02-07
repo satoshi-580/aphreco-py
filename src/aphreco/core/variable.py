@@ -35,6 +35,14 @@ class BaseVariable(BaseComponent):
 
             self._type = VTYPES[type]
 
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
 
 class ImplCollectForVariable(BaseVariable):
     def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
@@ -53,7 +61,7 @@ class ImplCollectForVariable(BaseVariable):
 
             return used_names_set | used_names
 
-    def collect_values(self, vals_dict):
+    def collect_values(self, vals_dict: Dict[str, float]) -> Dict[str, float]:
         vals_dict[self.name] = self.value
         return vals_dict
 
