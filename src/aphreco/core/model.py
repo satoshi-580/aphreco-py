@@ -79,11 +79,11 @@ class ImplCollectForModel(BaseModel):
         else:
             return self.collect_names(OrderedDict())
 
-    def collect_values(self, val_dicts: Dict[str, Dict]) -> Dict[str, Dict]:
+    def collect_values(self, val_dicts: Dict[str, float]) -> Dict[str, float]:
         """collects values of Variables in a model.
 
         Args:
-            val_dicts Dict[str, Dict]: The dictionary of a name (key) and a value (value) of Variables.
+            val_dicts Dict[str, float]: The dictionary of a name (key) and a value (value) of Variables.
                 values Dict[str, value]: {"value", "lb", "ub"}
         """
         for _, item in self.children.items():
