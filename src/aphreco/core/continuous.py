@@ -9,7 +9,13 @@ from .func.symbolize import extract_symset, str_symbol_name
 
 
 class BaseCon(BaseEdge):
-    pass
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        self._type = type
 
 
 class ImplCollectForCon(BaseCon):

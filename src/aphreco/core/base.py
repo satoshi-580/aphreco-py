@@ -95,14 +95,6 @@ class BaseComponent(BaseItem):
     def term(self, term):
         self._term = term
 
-    @property
-    def type(self):
-        return self._type
-
-    @type.setter
-    def type(self, type):
-        self._type = type
-
 
 class BaseEdge(BaseComponent):
     @abc.abstractmethod

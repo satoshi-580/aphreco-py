@@ -10,6 +10,14 @@ from .func.symbolize import extract_symset, str_symbol_name
 
 class BaseReg(BaseEdge):
     @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        self._type = type
+
+    @property
     def beat(self):
         return self._beat
 
