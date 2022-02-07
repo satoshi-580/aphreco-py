@@ -27,6 +27,14 @@ class Simulator:
         # self.writer = SimWriter()
         # self.commander = SimCommander()
 
+    @property
+    def simplify_eq(self):
+        return self.formatter.simplify_eq
+
+    @simplify_eq.setter
+    def simplify_eq(self, simplify_eq):
+        self.formatter.simplify_eq = simplify_eq
+
     def run(self, model: Model, outtime):
         """generate a simulation code and run it immediately.
 
@@ -87,11 +95,21 @@ class Simulator:
         source = Source()
         source.lines["y"] = self.formatter.line_y(names_dict, vals_dict)
         source.lines["p"] = self.formatter.line_p(names_dict, vals_dict)
+        source.lines["ode"] = self.formatter.arrange_ode(terms_dict["ode"])
+        str_rec, str_cond, str_beat = self.formatter.arrange_rec(terms_dict["rec"])
+        source.lines["rec"] = str_rec
+        source.lines["cond"] = str_cond
+        source.lines["beat"] = str_beat
+        source.lines["cre"] = self.formatter.arrange_cre(terms_dict["cre"])
 
-        # print()
+        print()
         # print(source.lines["y"])
-        # print()
         # print(source.lines["p"])
+        # print(source.lines["ode"])
+        # print(source.lines["rec"])
+        # print(source.lines["cond"])
+        # print(source.lines["beat"])
+        # print(source.lines["cre"])
 
     def _execute(self):
         return SimResult(None)

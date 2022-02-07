@@ -1,10 +1,11 @@
 import abc
-from typing import List
+from typing import Dict, List, Tuple
 
+import sympy
 from aphreco.enums import ItemType
 
 
-def _replace_space(lines: List, sub: str, max_vallen: int):
+def _replace_space(lines: List[str], sub: str, max_vallen: int) -> List[str]:
     for i, line in enumerate(lines):
         vallen = line.find(sub)
         num_space = max_vallen - vallen + 1
@@ -12,20 +13,50 @@ def _replace_space(lines: List, sub: str, max_vallen: int):
     return lines
 
 
+def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
+    if simplify_eq:
+        rhs = str(sympy.simplify(sympy.sympify(rhs)))
+    else:
+        rhs = str(sympy.sympify(rhs))
+    return rhs
+
+
 class BaseFormatter(abc.ABC):
-    pass
+    @property
+    def simplify_eq(self):
+        return self._simplify_eq
+
+    @simplify_eq.setter
+    def simplify_eq(self, simplify_eq):
+        self._simplify_eq = simplify_eq
 
 
 class SimFormatter(BaseFormatter):
     """"""
 
-    def line_y(self, names_dict, vals_dict):
+    def __init__(self, simplify_eq=False):
+        self.simplify_eq = simplify_eq
+
+    def line_y(
+        self,
+        names_dict: Dict[str, Tuple[ItemType, int]],
+        vals_dict: Dict[str, float],
+    ) -> str:
         return self._line_yp(names_dict, vals_dict, ItemType.Y)
 
-    def line_p(self, names_dict, vals_dict):
+    def line_p(
+        self,
+        names_dict: Dict[str, Tuple[ItemType, int]],
+        vals_dict: Dict[str, float],
+    ) -> str:
         return self._line_yp(names_dict, vals_dict, (ItemType.P | ItemType.X))
 
-    def _line_yp(self, names_dict, vals_dict, cur_type):
+    def _line_yp(
+        self,
+        names_dict: Dict[str, Tuple[ItemType, int]],
+        vals_dict: Dict[str, float],
+        cur_type: ItemType,
+    ):
         yp = "y" if cur_type == ItemType.Y else "p"
         lines = list()
         max_vallen = 0
@@ -37,6 +68,53 @@ class SimFormatter(BaseFormatter):
                 max_vallen = vallen if max_vallen < vallen else max_vallen
 
         lines = _replace_space(lines, ",", max_vallen)
+        return "".join(lines)
+
+    def arrange_ode(self, ode_dict: Dict[str, str]) -> str:
+        lines = list()
+        for lhs, rhs in ode_dict.items():
+            rhs = _sympify_simplify(rhs, self.simplify_eq)
+            eq = "deriv_" + lhs + " = " + rhs + "\n"
+            lines.append(eq)
+        return "".join(lines)
+
+    def arrange_rec(
+        self, rec_dict: Dict[Tuple[str, str, str], Dict[str, str]]
+    ) -> Tuple[str, str, str]:
+
+        rec_lines = list()
+        cond_lines = list()
+        beat_lines = list()
+
+        for i, (beat, rec) in enumerate(rec_dict.items()):
+            # rec
+            rec_lines.append(f"=== {i}: {beat}\n")
+            for lhs, rhs in rec.items():
+                rhs = _sympify_simplify(rhs, self.simplify_eq)
+                rec_line = "delta_" + lhs + " += " + rhs + "\n"
+                rec_lines.append(rec_line)
+
+            # condition
+            cond_lines.append(
+                f"act[{i}] = if *dec_t == next_t[{i}] {{ true }} else {{ false }}\n"
+            )
+
+            # beat
+            beat_lines.append(
+                "beat![" + beat[0] + ", " + beat[1] + ", " + beat[2] + "],\n"
+            )
+
+        str_rec = "".join(rec_lines)
+        str_cond = "".join(cond_lines)
+        str_beat = "".join(beat_lines)
+        return str_rec, str_cond, str_beat
+
+    def arrange_cre(self, cre_dict: Dict[str, str]) -> str:
+        lines = list()
+        for lhs, rhs in cre_dict.items():
+            rhs = _sympify_simplify(rhs, self.simplify_eq)
+            eq = lhs + " = " + rhs + "\n"
+            lines.append(eq)
         return "".join(lines)
 
 
@@ -94,78 +172,6 @@ class SimFormatter(BaseFormatter):
 #         source.lines["stepper"] = stepper
 #         source.lines["stepper_options"] = stepper_options
 #         return source, eq_dicts, val_dicts
-
-#     @classmethod
-#     def collect_eqdicts(cls, model: BaseModel):
-#         # dict_ode: Dict[lhs('deriv_' not yet added), rhs]
-#         # dict_rec: Dict[(start, stop, step), Dict[lhs('delta_' not yet added), rhs]]
-#         # dict_cre: Dict[lhs, rhs]
-#         return model._formulate(
-#             OrderedDict(ode=OrderedDict(), rec=OrderedDict(), cre=OrderedDict())
-#         )
-
-#     @classmethod
-#     def arrange_ode(cls, dict_ode):
-#         ode_lines = list()
-#         for lhs, rhs in dict_ode.items():
-#             ode_line = "deriv_" + lhs + " = " + str(sympy.sympify(rhs)) + "\n"
-#             ode_lines.append(ode_line)
-#         return "".join(ode_lines)
-
-#     @classmethod
-#     def arrange_rec(cls, dict_rec):
-#         rec_lines = list()
-#         cond_lines = list()
-#         beat_lines = list()
-#         for i, (beat, rec) in enumerate(dict_rec.items()):
-#             # rec
-#             rec_lines.append(f"=== {i}: {beat}\n")
-#             for lhs, rhs in rec.items():
-#                 rec_line = "delta_" + lhs + " += " + str(sympy.sympify(rhs)) + "\n"
-#                 rec_lines.append(rec_line)
-
-#             # condition
-#             cond_lines.append(
-#                 f"act[{i}] = if *dec_t == next_t[{i}] {{ true }} else {{ false }}"
-#             )
-
-#             # beat
-#             beat_lines.append(
-#                 "beat![" + beat[0] + ", " + beat[1] + ", " + beat[2] + "],\n"
-#             )
-
-#         str_rec = "".join(rec_lines)
-#         str_cond = "".join(cond_lines)
-#         str_beat = "".join(beat_lines)
-#         return str_rec, str_cond, str_beat
-
-#     @classmethod
-#     def arrange_cre(cls, dict_cre):
-#         cre_lines = list()
-#         for lhs, rhs in dict_cre.items():
-#             cre_line = lhs + " = " + str(sympy.sympify(rhs)) + "\n"
-#             cre_lines.append(cre_line)
-#         return "".join(cre_lines)
-
-#     @classmethod
-#     def collect_values(cls, model: BaseModel):
-#         return model._collect_values(
-#             OrderedDict(y=OrderedDict(), p=OrderedDict(), x=OrderedDict())
-#         )
-
-#     @classmethod
-#     def arrange_y(cls, dict_y, symbols: Symbols):
-#         y_lines = list()
-#         max_vallen = 0
-#         for i, (name, value) in enumerate(dict_y.items()):
-#             symbols.set_index(name, i)
-#             # '//' indicates a comment in Rust lang.
-#             y_lines.append(f"{value},***space***// y[{i}] {name}\n")
-#             vallen = len(str(value))
-#             max_vallen = vallen if max_vallen < vallen else max_vallen
-
-#         y_lines = replace_space(y_lines, ",", max_vallen)
-#         return "".join(y_lines)
 
 
 #     @classmethod
