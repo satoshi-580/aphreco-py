@@ -173,12 +173,3 @@ class TestTypicalUserExperience:
 
         tree = "\n".join(escalate.tree())
         assert tree == str_dose_escalation_model
-
-    @pytest.mark.skip(reason="not implemented yet")
-    def test_simulation(self, model):
-        out_time = [float(i) / 100 for i in range(1000)]
-        simulator = ap.Simulator()
-        simres = simulator.run(model, out_time)
-
-        assert simres.out_t == out_time
-        # assert simres.out_y == data of model simulation loaded by fixture
