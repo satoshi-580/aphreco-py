@@ -1,11 +1,13 @@
 from collections import OrderedDict
+from typing import Dict, Tuple
 
 from aphreco.core import Model
+from aphreco.enums import ItemType
 
 from .format import SimFormatter
+from .replace import SimReplacer
 from .simulate.base import BaseStepMethod
 from .simulate.dopri45 import Dopri45
-from .source import Source
 
 
 class SimResult:
@@ -29,7 +31,7 @@ class Simulator:
 
         self.starttime = starttime
         self.formatter = SimFormatter()
-        # self.replacer = SimReplacer()
+        self.replacer = SimReplacer()
         # self.writer = SimWriter()
         # self.commander = SimCommander()
 
@@ -53,14 +55,21 @@ class Simulator:
 
         """
 
-        self._prepare(model)
+        dicts = self._collect_dicts(model)
+        lines = self._arrange_lines(dicts)
+        rep_lines = self._replace_lines(lines, dicts[0])
+        # codes = self._write_codes(rep_lines)
+        # for k, v in rep_lines.items():
+        #     print("\n===", k, "===")
+        #     print(v)
+
         simres = self._execute()
         return SimResult(outtime)
 
     def export(self, model: Model, outtime):
         print("just save a Rust code to run in another environment.")
 
-    def _prepare(self, model: Model):
+    def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
         # Collect dicts from model items
         # names_dict: Dict[name(str), Tuple[itemtype(enums.ItemType), index(int)]]
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
@@ -96,25 +105,27 @@ class Simulator:
         # =====================
 
         # unks_dicts = model.collect_unknowns(OrderedDict()) in Optimization
+        return names_dict, vals_dict, terms_dict
 
+    def _arrange_lines(self, dicts: Tuple[Dict, Dict, Dict]) -> Dict[str, str]:
+        names_dict, vals_dict, terms_dict = dicts
+        lines = OrderedDict()
         # Format collected dicts into lines
-        source = Source()
+        lines["t"] = vals_dict[self.starttime]
+        lines["y"] = self.formatter.line_y(names_dict, vals_dict)
+        lines["p"] = self.formatter.line_p(names_dict, vals_dict)
 
-        source.lines["t"] = vals_dict[self.starttime]
-        source.lines["y"] = self.formatter.line_y(names_dict, vals_dict)
-        source.lines["p"] = self.formatter.line_p(names_dict, vals_dict)
-
-        source.lines["ode"] = self.formatter.arrange_ode(terms_dict["ode"])
+        lines["ode"] = self.formatter.arrange_ode(terms_dict["ode"])
         str_rec, str_cond, str_beat = self.formatter.arrange_rec(terms_dict["rec"])
-        source.lines["rec"] = str_rec
-        source.lines["cond"] = str_cond
-        source.lines["beat"] = str_beat
-        source.lines["cre"] = self.formatter.arrange_cre(terms_dict["cre"])
+        lines["rec"] = str_rec
+        lines["cond"] = str_cond
+        lines["beat"] = str_beat
+        lines["cre"] = self.formatter.arrange_cre(terms_dict["cre"])
 
         # stepper, stepper_options,
         stepper, stepper_options = self._arrange_stepper()
-        source.lines["stepper"] = stepper
-        source.lines["stepper_options"] = stepper_options
+        lines["stepper"] = stepper
+        lines["stepper_options"] = stepper_options
 
         # ===== for debugging =====
         # print()
@@ -129,6 +140,7 @@ class Simulator:
         # print(source.lines["stepper"])
         # print(source.lines["stepper_options"])
         # =====================
+        return lines
 
     def _arrange_stepper(self):
         """
@@ -144,6 +156,15 @@ class Simulator:
                     value = str(value).lower()
                 stepper_options += key + ": " + str(value) + ",\n"
         return self.stepper.name, stepper_options
+
+    def _replace_lines(
+        self,
+        lines: Dict[str, str],
+        names_dict: Dict[str, Tuple[ItemType, int]],
+    ):
+        repmap = self.replacer.create_repmap(names_dict)
+        rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
+        return rep_lines
 
     def _execute(self):
         return SimResult(None)
