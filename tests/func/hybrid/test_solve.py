@@ -1,6 +1,8 @@
 import aphreco as ap
+import pytest
 
 
+@pytest.mark.hybrid
 class TestTypicalSolve:
     def test_outtime_format(self, phase1):
         step = 0.1
