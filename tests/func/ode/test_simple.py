@@ -3,44 +3,10 @@ import pytest
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 
+@pytest.mark.ode
 class TestSimpleUserExperience:
-    @pytest.fixture()
-    def cmpt2(self):
-        # model
-        cmpt2 = ap.Model("cmpt2")
-
-        # dep/indep parameters
-        cmpt2.add(
-            [
-                ap.Y("X1", value=100.0),
-                ap.Y("X2"),
-                ap.P("k12"),
-                ap.P("k21"),
-            ]
-        )
-
-        # distribution
-        cmpt2.add(ap.Con({"X1": "-k12*X1", "X2": "k12*X1"}))
-        cmpt2.add(ap.Con({"X2": "-k21*X2", "X1": "k21*X2"}))
-
-        # elimination
-        cmpt2.add([ap.P("ke"), ap.Con({"X1": "-ke*X1"})])
-        return cmpt2
-
-    @pytest.fixture()
-    def str_cmpt2(self):
-        return """cmpt2\\
-  [ Y ] X1
-  [ Y ] X2
-  [ P ] k12
-  [ P ] k21
-  [CON] X1:-k12*X1 -> X2:k12*X1
-  [CON] X2:-k21*X2 -> X1:k21*X2
-  [ P ] ke
-  [CON] X1:-ke*X1 ->"""
-
     def test_print_tree(self, cmpt2, str_cmpt2):
-        assert str(cmpt2) == str_cmpt2
+        assert "\n".join(cmpt2.tree()) == str_cmpt2
 
     def test_name_check(self, cmpt2):
         with pytest.raises(DuplicatedNameError):
@@ -55,7 +21,7 @@ class TestSimpleUserExperience:
         # success Model.__getitem__()
         assert cmpt2["X1"].name == "X1"
         assert cmpt2["X1"].value == 100.0
-        assert type(cmpt2["X1:-k12*X1 -> X2:k12*X1"]) == type(
+        assert type(cmpt2["deriv_X1=-k12*X1 -> deriv_X2=k12*X1"]) == type(
             ap.Con(term={"dummy": "nothing"})
         )
 
@@ -96,7 +62,7 @@ class TestSimpleUserExperience:
         cmpt2["box"].add(ap.Y("y_in_box"))
         cmpt2["box"].add(ap.P("p_in_box"))
         cmpt2["box"].add(ap.X("x_in_box"))
-        assert str(cmpt2) != str_cmpt2
+        assert "\n".join(cmpt2.tree()) != str_cmpt2
 
         # lower
         repmap_m = {"box": "container"}
@@ -124,31 +90,31 @@ class TestSimpleUserExperience:
         with pytest.raises(KeyError):
             cmpt2.delete("UnnecessaryName")
 
-        expected_tree = """cmpt2\\
+        expected_tree = """Cmpt2\\
   [ Y ] X1
   [ P ] k12
   [ P ] k21
-  [CON] X1:-k12*X1 ->
+  [CON] deriv_X1=-k12*X1 ->
   [ P ] ke
-  [CON] X1:-ke*X1 ->"""
-        assert str(cmpt2) == expected_tree
+  [CON] deriv_X1=-ke*X1 ->"""
+        assert "\n".join(cmpt2.tree()) == expected_tree
 
     def test_delete_edge(self, cmpt2):
-        cmpt2.delete("X1:-k12*X1 -> X2:k12*X1")
+        cmpt2.delete("deriv_X1=-k12*X1 -> deriv_X2=k12*X1")
 
         # if success, a deleted name must not exist.
         with pytest.raises(KeyError):
-            cmpt2["X1:-k12*X1 -> X2:k12*X1"]
+            cmpt2["deriv_X1=-k12*X1 -> deriv_X2=k12*X1"]
 
-        expected_tree = """cmpt2\\
+        expected_tree = """Cmpt2\\
   [ Y ] X1
   [ Y ] X2
   [ P ] k12
   [ P ] k21
-  [CON] X2:-k21*X2 -> X1:k21*X2
+  [CON] deriv_X2=-k21*X2 -> deriv_X1=k21*X2
   [ P ] ke
-  [CON] X1:-ke*X1 ->"""
-        assert str(cmpt2) == expected_tree
+  [CON] deriv_X1=-ke*X1 ->"""
+        assert "\n".join(cmpt2.tree()) == expected_tree
 
     def test_delete_model(self, cmpt2, str_cmpt2):
         # add a model with inside items
@@ -156,11 +122,11 @@ class TestSimpleUserExperience:
         cmpt2["box"].add(ap.Y("y_in_box"))
         cmpt2["box"].add(ap.P("p_in_box"))
         cmpt2["box"].add(ap.X("x_in_box"))
-        assert str(cmpt2) != str_cmpt2
+        assert "\n".join(cmpt2.tree()) != str_cmpt2
 
         # deletion of a model leads to deletion of inside items.
         cmpt2.delete("box")
-        assert str(cmpt2) == str_cmpt2
+        assert "\n".join(cmpt2.tree()) == str_cmpt2
 
     @pytest.mark.skip(reason="not implemented yet")
     def test_simulation(self, cmpt2):
