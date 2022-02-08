@@ -3,6 +3,7 @@ import pytest
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
 
 
+@pytest.mark.hybrid
 class TestTypicalUserExperience:
     def test_print_tree(self, model, str_model):
         tree = "\n".join(model.tree())
