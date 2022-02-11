@@ -1,47 +1,67 @@
 from pathlib import Path
 
+CARGO_TOML = """[package]
+name = "aphrecode"
+version = "0.1.0"
+edition = "2021"
 
-class Exporter:
-    def __init__(self, path="."):
+[dependencies]
+aphreco = "0.1.*"
+"""
+
+
+def _save_content_as(filepath, content):
+    with open(filepath, "w") as f:
+        f.write(content)
+
+
+class BaseExporter:
+    def __init__(self, path):
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        if not path.exists():
+            raise ValueError(f"directory not found.")
+
         self.path = path
 
+    def _mkdir_if_not_exists(self, dirname: str):
+        path_src = self.path / dirname
+        if not path_src.exists():
+            path_src.mkdir()
+
+    def _mk_cargo_toml_if_not_exists(self):
+        # create Cargo.toml
+        path_cargo_toml = self.path / "Cargo.toml"
+        if not path_cargo_toml.exists():
+            _save_content_as(path_cargo_toml, CARGO_TOML)
+
+
+class SimExporter(BaseExporter):
+    def __init__(self, path=Path.cwd()):
+        super().__init__(path)
+
     def check_env(self):
-        return Path("./res").exists()
+        self._mk_cargo_toml_if_not_exists()
+        self._mkdir_if_not_exists("src")
+        self._mkdir_if_not_exists("simres")
 
-    def mkdir_res(self):
-        pass
+    def create_main(self, codes):
+        # save the source code as main.rs
+        path_main = self.path / "src" / "main.rs"
+        _save_content_as(path_main, codes)
 
-    def mk_cargo_toml(self):
-        pass
 
+class OptExporter(BaseExporter):
+    def __init__(self, path=Path.cwd()):
+        super().__init__(path)
 
-#     def save(self, code: str):
-#         path = Path.cwd()
+    def check_env(self):
+        self._mk_cargo_toml_if_not_exists()
+        self._mkdir_if_not_exists("src")
+        self._mkdir_if_not_exists("optres")
 
-#         # create Cargo.toml
-#         path_cargo_toml = path / "Cargo.toml"
-#         if not path_cargo_toml.exists():
-#             rs_cargo.create_toml(path_cargo_toml)
-
-#         # create src directory
-#         path_src = path / "src"
-#         if not path_src.exists():
-#             path_src.mkdir()
-
-#         # create res directory
-#         path_res = path / "res"
-#         if not path_res.exists():
-#             path_res.mkdir()
-
-#         # save the source code as main.rs
-#         file_name = "main.rs"
-#         with open(path_src / file_name, "w") as f:
-#             f.write(code)
-
-#         # save a backup file in res
-#         str_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-#         file_name = "aphrecode_" + str_now + ".rs"
-#         with open(path_res / file_name, "w") as f:
-#             f.write(code)
-
-#         return file_name
+    def create_main(self, codes):
+        # save the source code as main.rs
+        path_main = self.path / "src" / "main.rs"
+        _save_content_as(path_main, codes)
