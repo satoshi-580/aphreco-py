@@ -1,46 +1,52 @@
-from typing import Dict, List
+from typing import Dict
 
 from .rust import rs_parts
 
 
 class BaseWriter:
-    def use_aphreco(self):
+    def use_aphreco(self) -> str:
         return rs_parts.APHRECO_PRELUDE
 
-    def model_in_main(self):
+    def start_main(self) -> str:
+        return rs_parts.OPEN_MAIN
+
+    def model_in_main(self) -> str:
         return rs_parts.LET_MODEL
 
-    def struct(self):
+    def close_main(self) -> str:
+        return rs_parts.CLOSE_MAIN
+
+    def struct(self) -> str:
         return rs_parts.STRUCT
+
+    def open_simtrait(self) -> str:
+        return rs_parts.OPEN_SIMTRAIT
+
+    def close_simtrait(self) -> str:
+        return rs_parts.CLOSE_SIMTRAIT
 
 
 class SimWriter(BaseWriter):
     def __init__(self):
         pass
 
-    def start_main(self):
-        return rs_parts.OPEN_MAIN
-
-    def simulator_in_main(self, rep_lines: Dict[str, str]):
+    def simulator_in_main(self, rep_lines: Dict[str, str]) -> str:
         method = rep_lines["stepper"]
         options = rep_lines["stepper_options"]
         codes_sim = rs_parts._let_stepper(method, options)
         codes_sim.append(rs_parts.LET_SIMULATOR)
         return "".join(codes_sim)
 
-    def smptime_in_main(self):
+    def smptime_in_main(self) -> str:
         return rs_parts.LET_SMPTIME
 
-    def runsim_in_main(self):
+    def runsim_in_main(self) -> str:
         return rs_parts.RUN_SIMULATOR
 
-    def save_simres_in_main(self):
-        return rs_parts.SAVE_SIMRES
+    def save_simres_in_main(self, dirpath: str) -> str:
+        return rs_parts._save_simres(dirpath)
 
-    def close_main(self):
-        return rs_parts.CLOSE_MAIN
-
-    def consts_ypb(self, rep_lines: Dict[str, str]):
+    def consts_ypb(self, rep_lines: Dict[str, str]) -> str:
         return "".join(
             [
                 rs_parts._const_param_length("Y", rep_lines["y"]),
@@ -49,34 +55,28 @@ class SimWriter(BaseWriter):
             ]
         )
 
-    def open_simtrait(self):
-        return rs_parts.OPEN_SIMTRAIT
-
-    def fn_new(self, p_lines):
+    def fn_new(self, p_lines: str) -> str:
         return rs_parts._fn_new(p_lines)
 
-    def fn_init(self, t_lines, y_lines):
+    def fn_init(self, t_lines: str, y_lines: str) -> str:
         return rs_parts._fn_init(t_lines, y_lines)
 
-    def fn_ode(self, ode_lines):
+    def fn_ode(self, ode_lines: str) -> str:
         return rs_parts._fn_ode(ode_lines)
 
-    def fn_rec(self, rec_lines):
+    def fn_rec(self, rec_lines: str) -> str:
         return rs_parts._fn_rec(rec_lines)
 
-    def fn_cond(self, reg_cond_lines):
+    def fn_cond(self, reg_cond_lines: str) -> str:
         return rs_parts._fn_cond(reg_cond_lines)
 
-    def fn_beat(self, beat_lines):
+    def fn_beat(self, beat_lines: str) -> str:
         return rs_parts._fn_beat(beat_lines)
 
-    def fn_cre(self, cre_lines):
+    def fn_cre(self, cre_lines: str) -> str:
         return rs_parts._fn_cre(cre_lines)
 
-    def close_simtrait(self):
-        return rs_parts.CLOSE_SIMTRAIT
-
-    def fn_smptime(self, smptime_lines):
+    def fn_smptime(self, smptime_lines: str) -> str:
         return rs_parts._fn_smptime(smptime_lines)
 
 
