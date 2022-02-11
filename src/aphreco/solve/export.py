@@ -15,8 +15,8 @@ def _save_content_as(filepath, content):
         f.write(content)
 
 
-class BaseExporter:
-    def __init__(self, path):
+class Exporter:
+    def __init__(self, path=Path.cwd()):
         if not isinstance(path, Path):
             path = Path(path)
 
@@ -36,30 +36,10 @@ class BaseExporter:
         if not path_cargo_toml.exists():
             _save_content_as(path_cargo_toml, CARGO_TOML)
 
-
-class SimExporter(BaseExporter):
-    def __init__(self, path=Path.cwd()):
-        super().__init__(path)
-
     def check_env(self):
         self._mk_cargo_toml_if_not_exists()
         self._mkdir_if_not_exists("src")
-        self._mkdir_if_not_exists("simres")
-
-    def create_main(self, codes):
-        # save the source code as main.rs
-        path_main = self.path / "src" / "main.rs"
-        _save_content_as(path_main, codes)
-
-
-class OptExporter(BaseExporter):
-    def __init__(self, path=Path.cwd()):
-        super().__init__(path)
-
-    def check_env(self):
-        self._mk_cargo_toml_if_not_exists()
-        self._mkdir_if_not_exists("src")
-        self._mkdir_if_not_exists("optres")
+        self._mkdir_if_not_exists("res")
 
     def create_main(self, codes):
         # save the source code as main.rs
