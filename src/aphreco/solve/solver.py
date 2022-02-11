@@ -5,6 +5,8 @@ from typing import Dict, List, Tuple, Union
 from aphreco.core import Model
 from aphreco.enums import ItemType
 
+from .command import Command
+from .export import Exporter
 from .format import SimFormatter
 from .replace import SimReplacer
 from .simulate.base import BaseStepMethod
@@ -21,24 +23,17 @@ def range_f2s(start: float, stop: float, step: float):
         yield str(dec_start + i * dec_step)
 
 
-class SimResult:
-    def __init__(self, t):
-        self.t = t
-        self.y = None
-        self.nfev = None
-
-
 class Simulator:
     def __init__(
         self,
         stepper: BaseStepMethod = Dopri45(),
-        starttime="starttime",
+        t0name="t0",
         **options,
     ):
         if not isinstance(stepper, BaseStepMethod):
             raise TypeError("invalid stepper type")
 
-        self.starttime = starttime
+        self.t0name = t0name
 
         self.stepper = stepper
         if options:
@@ -47,7 +42,8 @@ class Simulator:
         self.formatter = SimFormatter()
         self.replacer = SimReplacer()
         self.writer = SimWriter()
-        # self.commander = SimCommander()
+        self.exporter = Exporter()
+        self.command = Command()
 
     @property
     def simplify_eq(self):
@@ -61,6 +57,7 @@ class Simulator:
         self,
         model: Model,
         smptime: Union[Tuple[float, float, float], List[float]],
+        release=False,
     ):
         """generate a simulation code and run it immediately.
 
@@ -80,14 +77,10 @@ class Simulator:
         lines = self._arrange_lines(dicts, smptime)
         rep_lines = self._replace_names(lines, dicts[0])
         codes = self._write_codes(rep_lines)
-        print()
-        print(codes)
-
-        simres = self._execute()
-        return SimResult(smptime)
-
-    def export(self, model: Model, smptime):
-        print("just save a Rust code to run in another environment.")
+        self._export_codes(codes)
+        self._execute(release)
+        simres = ""
+        return simres
 
     def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
         # Collect dicts from model items
@@ -135,7 +128,9 @@ class Simulator:
         names_dict, vals_dict, terms_dict = dicts
         lines = OrderedDict()
         # Format collected dicts into lines
-        lines["t"] = str(vals_dict[self.starttime])
+        if self.t0name not in vals_dict.keys():
+            raise KeyError(f"Variable '{self.t0name}' is not in a model.")
+        lines["t"] = str(vals_dict[self.t0name])
         lines["y"] = self.formatter.line_y(names_dict, vals_dict)
         lines["p"] = self.formatter.line_p(names_dict, vals_dict)
 
@@ -193,10 +188,10 @@ class Simulator:
         elif isinstance(smptime, list):
             smptime_list = [str(float(t)) for t in smptime]
         else:
-            raise ValueError(
-                f"'smptime' must be a tuple of three values (start, stop, step) or \
-                a list of values [t0, t1, t2, ...]"
-            )
+            try:
+                smptime_list = [str(t) for t in smptime]
+            except:
+                raise ValueError
 
         return ", ".join(smptime_list)
 
@@ -220,6 +215,7 @@ class Simulator:
         main_parts.extend(self.writer.simulator_in_main(rep_lines))
         main_parts.extend(self.writer.smptime_in_main())
         main_parts.extend(self.writer.run_simulator_in_main())
+        main_parts.extend(self.writer.save_simres_in_main())
         main_parts.extend(self.writer.close_main())
 
         # model definition
@@ -248,5 +244,17 @@ class Simulator:
         codes_list = import_parts + main_parts + model_parts + smptime_parts
         return "".join(codes_list)
 
-    def _execute(self):
-        return SimResult(None)
+    def _export_codes(self, codes: str):
+        self.exporter.check_env()
+        self.exporter.create_main(codes)
+
+    def _execute(self, release):
+        if release:
+            self.command.release()
+        else:
+            self.command.compile()
+
+
+class Optimizer:
+    def __init__(self):
+        pass

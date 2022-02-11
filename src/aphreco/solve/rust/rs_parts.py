@@ -52,7 +52,8 @@ RUN_SIMULATOR = """  let simres = simulator.run(&smptime);
 """
 
 # save
-SAVE_SIMRES = """  simres.save("./res")"""
+SAVE_SIMRES = """  simres.save("./res");
+"""
 
 # close main function
 CLOSE_MAIN = """}
@@ -263,6 +264,6 @@ CLOSE_SMPTIME = """   vec_smptime
 
 def _fn_smptime(smptime_lines: str):
     header = OPEN_SMPTIME
-    body = "".join(["""  let mut vec_smptime = vec![""", smptime_lines, """];\n"""])
+    body = "".join(["""  let vec_smptime = vec![""", smptime_lines, """];\n"""])
     footer = CLOSE_SMPTIME
     return header + body + footer
