@@ -23,13 +23,6 @@ def range_f2s(start: float, stop: float, step: float):
         yield str(dec_start + i * dec_step)
 
 
-class SimResult:
-    def __init__(self, t):
-        self.t = t
-        self.y = None
-        self.nfev = None
-
-
 class Simulator:
     def __init__(
         self,
@@ -86,8 +79,8 @@ class Simulator:
         codes = self._write_codes(rep_lines)
         self._export_codes(codes)
         self._execute(release)
-
-        return SimResult(smptime)
+        simres = ""
+        return simres
 
     def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
         # Collect dicts from model items
@@ -260,3 +253,8 @@ class Simulator:
             self.command.release()
         else:
             self.command.compile()
+
+
+class Optimizer:
+    def __init__(self):
+        pass
