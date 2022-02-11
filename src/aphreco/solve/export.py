@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 CARGO_TOML = """[package]
@@ -45,3 +46,12 @@ class Exporter:
         # save the source code as main.rs
         path_main = self.path / "src" / "main.rs"
         _save_content_as(path_main, codes)
+
+    def mkdir_new_res(self):
+        str_now = "Sim_" + datetime.now().strftime("%y%m%d-%H%M%S")
+        path_new_res = self.path / "res" / str_now
+        if not path_new_res.exists():
+            path_new_res.mkdir()
+            return path_new_res
+        else:
+            raise ValueError(f"failed to mkdir")
