@@ -5,13 +5,13 @@ from .rust import rs_parts
 
 class BaseWriter:
     def use_aphreco(self):
-        return [rs_parts.APHRECO_PRELUDE]
+        return rs_parts.APHRECO_PRELUDE
 
     def model_in_main(self):
-        return [rs_parts.LET_MODEL]
+        return rs_parts.LET_MODEL
 
     def struct(self):
-        return [rs_parts.STRUCT]
+        return rs_parts.STRUCT
 
 
 class SimWriter(BaseWriter):
@@ -19,63 +19,65 @@ class SimWriter(BaseWriter):
         pass
 
     def start_main(self):
-        return [rs_parts.OPEN_MAIN]
+        return rs_parts.OPEN_MAIN
 
     def simulator_in_main(self, rep_lines: Dict[str, str]):
         method = rep_lines["stepper"]
         options = rep_lines["stepper_options"]
         codes_sim = rs_parts._let_stepper(method, options)
         codes_sim.append(rs_parts.LET_SIMULATOR)
-        return codes_sim
+        return "".join(codes_sim)
 
     def smptime_in_main(self):
-        return [rs_parts.LET_SMPTIME]
+        return rs_parts.LET_SMPTIME
 
-    def run_simulator_in_main(self):
-        return [rs_parts.RUN_SIMULATOR]
+    def runsim_in_main(self):
+        return rs_parts.RUN_SIMULATOR
 
     def save_simres_in_main(self):
-        return [rs_parts.SAVE_SIMRES]
+        return rs_parts.SAVE_SIMRES
 
     def close_main(self):
-        return [rs_parts.CLOSE_MAIN]
+        return rs_parts.CLOSE_MAIN
 
     def consts_ypb(self, rep_lines: Dict[str, str]):
-        return [
-            rs_parts._const_param_length("Y", rep_lines["y"]),
-            rs_parts._const_param_length("P", rep_lines["p"]),
-            rs_parts._const_param_length("B", rep_lines["beat"]),
-        ]
+        return "".join(
+            [
+                rs_parts._const_param_length("Y", rep_lines["y"]),
+                rs_parts._const_param_length("P", rep_lines["p"]),
+                rs_parts._const_param_length("B", rep_lines["beat"]),
+            ]
+        )
 
     def open_simtrait(self):
-        return [rs_parts.OPEN_SIMTRAIT]
+        return rs_parts.OPEN_SIMTRAIT
 
     def fn_new(self, p_lines):
-        return [rs_parts._fn_new(p_lines)]
+        return rs_parts._fn_new(p_lines)
 
     def fn_init(self, t_lines, y_lines):
-        return [rs_parts._fn_init(t_lines, y_lines)]
+        return rs_parts._fn_init(t_lines, y_lines)
 
     def fn_ode(self, ode_lines):
-        return [rs_parts._fn_ode(ode_lines)]
+        return rs_parts._fn_ode(ode_lines)
 
     def fn_rec(self, rec_lines):
-        return [rs_parts._fn_rec(rec_lines)]
+        return rs_parts._fn_rec(rec_lines)
 
     def fn_cond(self, reg_cond_lines):
-        return [rs_parts._fn_cond(reg_cond_lines)]
+        return rs_parts._fn_cond(reg_cond_lines)
 
     def fn_beat(self, beat_lines):
-        return [rs_parts._fn_beat(beat_lines)]
+        return rs_parts._fn_beat(beat_lines)
 
     def fn_cre(self, cre_lines):
-        return [rs_parts._fn_cre(cre_lines)]
+        return rs_parts._fn_cre(cre_lines)
 
     def close_simtrait(self):
-        return [rs_parts.CLOSE_SIMTRAIT]
+        return rs_parts.CLOSE_SIMTRAIT
 
     def fn_smptime(self, smptime_lines):
-        return [rs_parts._fn_smptime(smptime_lines)]
+        return rs_parts._fn_smptime(smptime_lines)
 
 
 # class OptWriter(SimWriter):
