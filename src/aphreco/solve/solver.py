@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from decimal import Decimal
+from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 from aphreco.core import Model
@@ -8,6 +9,7 @@ from aphreco.enums import ItemType
 from .command import Command
 from .export import Exporter
 from .format import SimFormatter
+from .read import SimResReader
 from .replace import SimReplacer
 from .simulate.base import BaseStepMethod
 from .simulate.dopri45 import Dopri45
@@ -44,6 +46,7 @@ class Simulator:
         self.writer = SimWriter()
         self.exporter = Exporter()
         self.command = Command()
+        self.reader = SimResReader()
 
     @property
     def simplify_eq(self):
@@ -76,10 +79,17 @@ class Simulator:
         dicts = self._collect_dicts(model)
         lines = self._arrange_lines(dicts, smptime)
         rep_lines = self._replace_names(lines, dicts[0])
-        codes = self._write_codes(rep_lines)
+
+        # make a directory for export
+        # and the directory path is embedded to a rust code.
+        self.dirpath = self.exporter.mkdir_new_res()
+
+        codes = self._write_codes(rep_lines, self.dirpath)
         self._export_codes(codes)
         self._execute(release)
-        simres = ""
+
+        # read simulated results
+        simres = self.read(self.dirpath)
         return simres
 
     def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
@@ -204,7 +214,7 @@ class Simulator:
         rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
         return rep_lines
 
-    def _write_codes(self, rep_lines: Dict[str, str]) -> str:
+    def _write_codes(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
         # import
         import_parts = [self.writer.use_aphreco()]
 
@@ -216,7 +226,7 @@ class Simulator:
             self.writer.simulator_in_main(rep_lines),
             self.writer.smptime_in_main(),
             self.writer.runsim_in_main(),
-            self.writer.save_simres_in_main(),
+            self.writer.save_simres_in_main(dirpath.name),
             self.writer.close_main(),
         ]
 
@@ -257,6 +267,9 @@ class Simulator:
             self.command.release()
         else:
             self.command.compile()
+
+    def read(self, dirpath):
+        return self.reader.read(dirpath)
 
 
 class Optimizer:

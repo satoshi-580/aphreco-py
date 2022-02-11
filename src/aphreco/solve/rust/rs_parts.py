@@ -52,8 +52,10 @@ RUN_SIMULATOR = """  let simres = simulator.run(&smptime);
 """
 
 # save
-SAVE_SIMRES = """  simres.save("./res");
-"""
+def _save_simres(dirpath: str):
+    return f"""  simres.save("./res/{dirpath}/");
+    """
+
 
 # close main function
 CLOSE_MAIN = """}
