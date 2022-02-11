@@ -194,7 +194,8 @@ class Simulator:
             smptime_list = [str(float(t)) for t in smptime]
         else:
             raise ValueError(
-                f"'smptime' must be a tuple of three values (start, stop, step) or a list of values [t0, t1, t2, ...]"
+                f"'smptime' must be a tuple of three values (start, stop, step) or \
+                a list of values [t0, t1, t2, ...]"
             )
 
         return ", ".join(smptime_list)
