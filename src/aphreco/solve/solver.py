@@ -89,7 +89,7 @@ class Simulator:
         self._execute(release)
 
         # read simulated results
-        simres = self.read(self.dirpath)
+        simres = self.read(self.dirpath, model.ynames)
         return simres
 
     def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
@@ -268,8 +268,8 @@ class Simulator:
         else:
             self.command.compile()
 
-    def read(self, dirpath):
-        return self.reader.read(dirpath)
+    def read(self, dirpath, ynames=None):
+        return self.reader.read(dirpath, ynames)
 
 
 class Optimizer:

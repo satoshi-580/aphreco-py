@@ -1,7 +1,7 @@
 import csv
 import glob
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 
 class SimResult:
@@ -39,7 +39,7 @@ class SimResReader(ResReader):
     def __init__(self):
         pass
 
-    def read(self, path_dir: Union[Path, str]):
+    def read(self, path_dir: Union[Path, str], ynames: List[str]):
         if not isinstance(path_dir, Path):
             path_dir = Path(path_dir)
 
@@ -49,6 +49,8 @@ class SimResReader(ResReader):
             ty = pd.read_csv(gb_file[0], header=None)
             t = ty.iloc[:, 0]
             y = ty.iloc[:, 1:]
+            if ynames is not None:
+                y = y.set_axis(ynames, axis="columns")
 
         elif not no_numpy:
             # returns ndarray
@@ -60,13 +62,22 @@ class SimResReader(ResReader):
         else:
             # returns list
             t = list()
-            y = list()
+            y = dict()
             for res_file in path_dir.glob("Sim_*.csv"):
                 with res_file.open("r") as f:
                     csvreader = csv.reader(f)
                     for line in csvreader:
                         t.append(line[0])
-                        y.append(line[1:])
+                        for i, value in enumerate(line[1:]):
+                            if ynames is not None:
+                                key = ynames[i]
+                            else:
+                                key = i
+
+                            if key not in y.keys():
+                                y[key] = [value]
+                            else:
+                                y[key].append(value)
 
         simres = SimResult(t, y)
         return simres
