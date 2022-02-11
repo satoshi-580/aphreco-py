@@ -550,8 +550,8 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
             for name, (itemtype, index) in names_dict.items()
             if itemtype == ItemType.Y
         }
-        tpl_ynames = sorted(dict_ynames.items(), key=lambda k: k[1])
-        ynames = [name for name, _ in tpl_ynames]
+        lst_tpl_ynames = sorted(dict_ynames.items(), key=lambda k: k[1])
+        ynames = [name for name, _ in lst_tpl_ynames]
         return ynames
 
 
