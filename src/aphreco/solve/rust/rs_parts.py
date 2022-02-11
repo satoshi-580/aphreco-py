@@ -52,7 +52,8 @@ RUN_SIMULATOR = """  let simres = simulator.run(&smptime);
 """
 
 # save
-SAVE_SIMRES = """  simres.save("./res")"""
+SAVE_SIMRES = """  simres.save("./res");
+"""
 
 # close main function
 CLOSE_MAIN = """}
