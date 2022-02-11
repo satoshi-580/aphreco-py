@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Union
 from aphreco.core import Model
 from aphreco.enums import ItemType
 
+from .command import Command
 from .export import Exporter
 from .format import SimFormatter
 from .replace import SimReplacer
@@ -49,7 +50,7 @@ class Simulator:
         self.replacer = SimReplacer()
         self.writer = SimWriter()
         self.exporter = Exporter()
-        # self.commander = SimCommander()
+        self.command = Command()
 
     @property
     def simplify_eq(self):
@@ -63,6 +64,7 @@ class Simulator:
         self,
         model: Model,
         smptime: Union[Tuple[float, float, float], List[float]],
+        release=False,
     ):
         """generate a simulation code and run it immediately.
 
@@ -83,6 +85,7 @@ class Simulator:
         rep_lines = self._replace_names(lines, dicts[0])
         codes = self._write_codes(rep_lines)
         self._export_codes(codes)
+        self._execute(release)
 
         return SimResult(smptime)
 
@@ -252,5 +255,8 @@ class Simulator:
         self.exporter.check_env()
         self.exporter.create_main(codes)
 
-    def _execute(self):
-        return SimResult(None)
+    def _execute(self, release):
+        if release:
+            self.command.release()
+        else:
+            self.command.compile()
