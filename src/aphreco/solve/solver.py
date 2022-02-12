@@ -82,6 +82,7 @@ class Simulator:
 
         # make a directory for export
         # and the directory path is embedded to a rust code.
+        self.exporter.setup_env()
         self.dirpath = self.exporter.mkdir_new_res()
 
         codes = self._write_codes(rep_lines, self.dirpath)
@@ -259,7 +260,6 @@ class Simulator:
         return "".join(codes_list)
 
     def _export_codes(self, codes: str):
-        self.exporter.check_env()
         self.exporter.create_main(codes)
 
     def _execute(self, release):
