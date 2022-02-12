@@ -542,6 +542,18 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
                 continue
         return names_dict
 
+    @property
+    def ynames(self) -> List[str]:
+        names_dict = self.set_yp_index(self.collect_names(OrderedDict()))
+        dict_ynames = {
+            name: index
+            for name, (itemtype, index) in names_dict.items()
+            if itemtype == ItemType.Y
+        }
+        lst_tpl_ynames = sorted(dict_ynames.items(), key=lambda k: k[1])
+        ynames = [name for name, _ in lst_tpl_ynames]
+        return ynames
+
 
 def check_duplication_within_new(
     new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]]
