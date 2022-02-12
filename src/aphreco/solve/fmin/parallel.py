@@ -1,12 +1,10 @@
-from aphreco.enums import OptType
+from aphreco.enums import FminType
 
-from .base import BaseOptimizeMethod
+from .base import BaseFminAlgorithm
 
 
-class GeneticAlgorithm(BaseOptimizeMethod):
+class GeneticAlgorithm(BaseFminAlgorithm):
     def __init__(self, **options):
-        self._name = "GeneticAlgorithm"
-        self.opttype = OptType.GeneticAlgorithm
         self.is_default = True
         self.options = {
             "max_gen": 100,
@@ -17,3 +15,11 @@ class GeneticAlgorithm(BaseOptimizeMethod):
 
         if options:
             self.set_options(**options)
+
+    @property
+    def name(self):
+        return FminType.GeneticAlgorithm.name
+
+    @property
+    def type(self):
+        return FminType.GeneticAlgorithm
