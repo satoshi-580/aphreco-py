@@ -205,6 +205,7 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
         exclusive: List[str] = [],
         share: bool = False,
         _repmap: Optional[Dict[str, str]] = None,
+        _is_top: bool = False,
     ):
         copied_name = self.name
         copied_term = self.term

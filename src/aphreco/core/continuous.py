@@ -146,6 +146,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
         exclusive: List[str] = [],
         share: bool = False,
         _repmap: Dict[str, str] = None,
+        _is_top: bool = False,
     ):
         copied_term: Dict[str, str] = OrderedDict()
         for yname, str_rhs in self.term.items():

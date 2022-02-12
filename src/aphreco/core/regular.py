@@ -181,6 +181,7 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
         exclusive: List[str] = [],
         share: bool = False,
         _repmap: Dict[str, str] = None,
+        _is_top: bool = False,
     ):
         # beat
         start, stop, step = self.beat

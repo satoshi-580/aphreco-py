@@ -346,46 +346,55 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
         exclusive: List[str] = [],
         share: bool = True,
         _repmap: Dict[str, str] = None,
+        _is_top: bool = True,
     ):
-        """copies items recursively as adding prefix/suffix to names"""
-        # create repmap Dict[old, new]
-        existing_names_dict = self._collect_existing_names()
-        if _repmap is None:
-            _repmap = OrderedDict()
+        """copies tree items recursively as adding prefix/suffix to names"""
+        if _is_top:
+            parent = self.parent
+            self.parent = None
+            # create repmap Dict[old, new]
+            existing_names_dict = self._collect_existing_names()
+            if _repmap is None:
+                _repmap = OrderedDict()
 
-            for name, item in existing_names_dict.items():
-                if item[0] == ItemType.Y:
-                    _repmap[name] = prefix + name + suffix
-                elif name in exclusive:
-                    _repmap[name] = prefix + name + suffix
-                elif share and not self[name].share:
-                    _repmap[name] = prefix + name + suffix
-                elif (not share) and (exclusive == []):
-                    _repmap[name] = prefix + name + suffix
-                else:
-                    continue
+                for name, item in existing_names_dict.items():
+                    if item[0] == ItemType.Y:
+                        _repmap[name] = prefix + name + suffix
+                    elif name in exclusive:
+                        _repmap[name] = prefix + name + suffix
+                    elif share and not self[name].share:
+                        _repmap[name] = prefix + name + suffix
+                    elif (not share) and (exclusive == []):
+                        _repmap[name] = prefix + name + suffix
+                    else:
+                        continue
 
-        # sort by length of old names
-        _repmap = OrderedDict(
-            sorted(_repmap.items(), key=lambda k: len(k[0]), reverse=True)
-        )
+            # sort by length of old names
+            _repmap = OrderedDict(
+                sorted(_repmap.items(), key=lambda k: len(k[0]), reverse=True)
+            )
 
-        # check duplication of names after adding prefix/suffix
-        new_names_dict_list = [{new_name: None for _, new_name in _repmap.items()}]
-        check_duplication_between_new_and_old(new_names_dict_list, existing_names_dict)
-
-        # add prefix/suffix to a root Model.
-        if self.parent is None:
-            name = prefix + self.name + suffix
-        else:
-            name = self.name
+            # check duplication of names after adding prefix/suffix
+            if prefix != "" and suffix != "":
+                new_names_dict_list = [
+                    {new_name: None for _, new_name in _repmap.items()}
+                ]
+                check_duplication_between_new_and_old(
+                    new_names_dict_list, existing_names_dict
+                )
+            self.parent = parent
 
         # construct copied_model
-        copied_model = Model(name=name, hide=self.hide)
-        copied_model.parent = self.parent
+        if _is_top:
+            copied_model = Model(name=prefix + self.name + suffix, hide=self.hide)
+            copied_model.parent = None
+            _is_top = False
+        else:
+            copied_model = Model(name=self.name, hide=self.hide)
+            copied_model.parent = self.parent
 
         for name, item in self.children.items():
-            child = item.copy(prefix, suffix, exclusive, share, _repmap)
+            child = item.copy(prefix, suffix, exclusive, share, _repmap, _is_top)
             copied_model.children[child.name] = child
             copied_model.children[child.name].parent = copied_model
 
