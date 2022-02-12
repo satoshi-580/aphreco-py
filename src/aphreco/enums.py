@@ -25,6 +25,11 @@ class ItemType(enum.Flag):
     ITEM = COMPONENT | MODEL
 
 
-class SimType(enum.Flag):
+class StepType(enum.Flag):
     Dopri45 = enum.auto()
     Rk4 = enum.auto()
+
+
+class FminType(enum.Flag):
+    NelderMead = enum.auto()
+    GeneticAlgorithm = enum.auto()
