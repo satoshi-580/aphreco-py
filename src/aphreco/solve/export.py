@@ -37,7 +37,7 @@ class Exporter:
         if not path_cargo_toml.exists():
             _save_content_as(path_cargo_toml, CARGO_TOML)
 
-    def check_env(self):
+    def setup_env(self):
         self._mk_cargo_toml_if_not_exists()
         self._mkdir_if_not_exists("src")
         self._mkdir_if_not_exists("res")

@@ -38,7 +38,7 @@ class SimResReader(ResReader):
     def __init__(self):
         pass
 
-    def read(self, path_dir: Union[Path, str], ynames: List[str]):
+    def read(self, dirpath: Union[Path, str], ynames: List[str]):
         """reads a simulated result.
 
         The order of reading t and y of a simulated result is as follows;
@@ -51,22 +51,22 @@ class SimResReader(ResReader):
         'ynames' is not used in the case of numpy.
 
         Args:
-            path_dir Union[Path, str]: The directory path of the simulated result.
+            dirpath Union[Path, str]: The directory path of the simulated result.
                 Recommend not to rename a file 'Sim_***.csv' (*** is a datetime).
 
             ynames (List[str]): The list of names of dependent variables in a model.
                 They can be obtained from 'Model.ynames'.
         """
-        if not isinstance(path_dir, Path):
-            path_dir = Path(path_dir)
+        if not isinstance(dirpath, Path):
+            dirpath = Path(dirpath)
 
         # to be passed to glob and read an only first file.
-        csv_name = "result.csv"
+        csv_name = "simres.csv"
 
         # read a file by pandas, numpy, or a standard way.
         if not no_pandas:
             # returns SimResult with a Series of t and a DataFrame of y.
-            gb_file = glob.glob(str(path_dir / csv_name))
+            gb_file = glob.glob(str(dirpath / csv_name))
             ty = pd.read_csv(gb_file[0], header=None)
             t = ty.iloc[:, 0]
             y = ty.iloc[:, 1:]
@@ -75,7 +75,7 @@ class SimResReader(ResReader):
 
         elif not no_numpy:
             # returns SimResult with ndarray of t and y.
-            gb_file = glob.glob(str(path_dir / csv_name))
+            gb_file = glob.glob(str(dirpath / csv_name))
             ty = np.loadtxt(str(gb_file[0]), delimiter=",")
             t = ty[:, 0]
             y = ty[:, 1:]
@@ -84,7 +84,7 @@ class SimResReader(ResReader):
             # returns SimResult with a list of t and a dict of y.
             t = list()
             y = dict()
-            gb_file = glob.glob(str(path_dir / csv_name))
+            gb_file = glob.glob(str(dirpath / csv_name))
             with open(str(gb_file[0]), "r") as f:
                 csvreader = csv.reader(f)
                 for line in csvreader:
