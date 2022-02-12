@@ -1,6 +1,6 @@
 import abc
 
-from aphreco.solve.utils import set_option
+from aphreco.solve.option import set_option
 
 
 class BaseStepMethod(abc.ABC):
