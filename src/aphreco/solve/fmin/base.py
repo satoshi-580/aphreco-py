@@ -1,6 +1,6 @@
 import abc
 
-from aphreco.solve.utils import set_option
+from aphreco.src.aphreco.solve.options import set_option
 
 
 class BaseFminAlgorithm(abc.ABC):
