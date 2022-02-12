@@ -11,8 +11,8 @@ from .export import Exporter
 from .format import SimFormatter
 from .read import SimResReader
 from .replace import SimReplacer
-from .simulate.base import BaseStepMethod
-from .simulate.dopri45 import Dopri45
+from .step.base import BaseStepMethod
+from .step.dopri45 import Dopri45
 from .write import SimWriter
 
 
@@ -270,8 +270,3 @@ class Simulator:
 
     def read(self, dirpath, ynames=None):
         return self.reader.read(dirpath, ynames)
-
-
-class Optimizer:
-    def __init__(self):
-        pass
