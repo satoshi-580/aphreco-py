@@ -1,12 +1,18 @@
-from collections import OrderedDict
-from decimal import Decimal
-from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Optional
+
+from .fmin.base import BaseFminAlgorithm
+from .fmin.serial import NelderMead
 
 
 class Optimizer:
-    def __init__(self, method):
-        self.method = method
+    def __init__(
+        self,
+        fmin: Optional[BaseFminAlgorithm] = NelderMead(),
+        **options,
+    ):
+        if not isinstance(fmin, BaseFminAlgorithm):
+            raise TypeError("invalid  type")
 
-    def run(self):
-        pass
+        self.fmin = fmin
+        if options:
+            self.fmin.set_options(**options)
