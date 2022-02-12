@@ -1,4 +1,4 @@
-from aphreco.enums import SimType
+from aphreco.enums import StepType
 
 from .base import BaseStepMethod
 
@@ -19,8 +19,8 @@ class Dopri45(BaseStepMethod):
 
     @property
     def name(self):
-        return SimType.Dopri45.name
+        return StepType.Dopri45.name
 
     @property
     def type(self):
-        return SimType.Dopri45
+        return StepType.Dopri45
