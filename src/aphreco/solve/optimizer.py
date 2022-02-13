@@ -4,9 +4,9 @@ from typing import Dict
 from aphreco.core import Model
 
 from .base import BaseSolver
-from .fmin.base import BaseFminAlgorithm
-from .fmin.serial import NelderMead
 from .format import OptFormatter
+from .opt.base import BaseFminAlgorithm
+from .opt.serial import NelderMead
 from .simulator import Simulator
 
 

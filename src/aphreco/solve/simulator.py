@@ -10,8 +10,8 @@ from .export import Exporter
 from .format import SimFormatter
 from .read import SimResReader
 from .replace import SimReplacer
-from .step.base import BaseStepMethod
-from .step.dopri45 import Dopri45
+from .sim.base import BaseStepMethod
+from .sim.dopri45 import Dopri45
 from .write import SimWriter
 
 
