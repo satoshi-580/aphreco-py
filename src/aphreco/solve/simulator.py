@@ -9,7 +9,7 @@ from .command import Command
 from .export import Exporter
 from .format import SimFormatter
 from .read import SimResReader
-from .replace import SimReplacer
+from .replace import Replacer
 from .step.base import BaseStepMethod
 from .step.dopri45 import Dopri45
 from .write import SimWriter
@@ -29,7 +29,7 @@ class Simulator(BaseSolver):
             self.stepper.set_options(**options)
 
         self.formatter = SimFormatter()
-        self.replacer = SimReplacer()
+        self.replacer = Replacer()
         self.writer = SimWriter()
         self.exporter = Exporter()
         self.command = Command()

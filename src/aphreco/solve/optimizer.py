@@ -7,6 +7,7 @@ from .base import BaseSolver
 from .fmin.base import BaseFminAlgorithm
 from .fmin.serial import NelderMead
 from .format import OptFormatter
+from .replace import Replacer
 from .simulator import Simulator
 
 
@@ -29,7 +30,7 @@ class Optimizer(BaseSolver):
 
         self.simulator = simulator
         self.formatter = OptFormatter()
-        # self.replacer = SimReplacer()
+        self.replacer = Replacer()
         # self.writer = SimWriter()
         # self.exporter = Exporter()
         # self.command = Command()
@@ -85,4 +86,10 @@ class Optimizer(BaseSolver):
         for _, line in lines.items():
             print(line)
 
-        # rep_lines = self._replace_names(lines, dicts[0])
+        # ====================
+        # replace lines
+        rep_lines = self._replace_names(lines, names_dict)
+        print(rep_lines)
+
+        if now:
+            return True
