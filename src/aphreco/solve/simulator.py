@@ -1,6 +1,6 @@
-from decimal import Decimal
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict
 
 from aphreco.core import Model
 
@@ -15,26 +15,14 @@ from .step.dopri45 import Dopri45
 from .write import SimWriter
 
 
-def range_f2s(start: float, stop: float, step: float):
-    dec_start = Decimal(str(start))
-    dec_stop = Decimal(str(stop))
-    dec_step = Decimal(str(step))
-
-    for i in range(int((dec_stop - dec_start) / dec_step)):
-        yield str(dec_start + i * dec_step)
-
-
 class Simulator(BaseSolver):
     def __init__(
         self,
         stepper: BaseStepMethod = Dopri45(),
-        t0name="t0",
         **options,
     ):
         if not isinstance(stepper, BaseStepMethod):
             raise TypeError("invalid stepper type")
-
-        self.t0name = t0name
 
         self.stepper = stepper
         if options:
@@ -59,6 +47,7 @@ class Simulator(BaseSolver):
         self,
         model: Model,
         smptime,
+        now=True,
         release=False,
     ):
         """generate a simulation code and run it immediately.
@@ -68,16 +57,41 @@ class Simulator(BaseSolver):
             smptime Union[Tuple[float, float, float], List[float]]: The output times of simulation.
                 A tuple is interpreted as (start, stop, step).
                 A list is interpreted as a vector of time points.
+            now (bool): Execute a generated code now if True.
 
         Returns:
             SimResult: The simulated result
 
         """
+        # check args
+        if not isinstance(model, Model):
+            raise TypeError("invalid type: 'model'")
 
+        # ====================
         # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).
-        dicts = self._collect_dicts(model)
-        lines = self._arrange_lines(dicts, smptime)
-        rep_lines = self._replace_names(lines, dicts[0])
+        names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
+        vals_dict = model.collect_values(OrderedDict())
+        terms_dict = model.collect_terms(
+            OrderedDict(
+                ode=OrderedDict(),
+                rec=OrderedDict(),
+                cre=OrderedDict(),
+            )
+        )
+
+        # ====================
+        # format lines
+        # generate lines with t/y/p/ode/rec/cond/beat/cre.
+        lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dict))
+        # lines for simulator (stepper) settings
+        lines = self.formatter.format_simulator_info(lines, self.stepper)
+        # unique lines: in the case of simulation, add the following keys,
+        #     lines["smptime"]: sampling times
+        lines = self.formatter.format_smptime_info(lines, smptime)
+
+        # ====================
+        # replace lines
+        rep_lines = self._replace_names(lines, names_dict)
 
         # make a directory for export
         # and the directory path is embedded to a rust code.
@@ -86,53 +100,13 @@ class Simulator(BaseSolver):
 
         codes = self._write_codes(rep_lines, self.dirpath)
         self._export_codes(codes)
-        self._execute(release)
 
-        # read simulated results
-        simres = self.read(self.dirpath, model.ynames)
-        return simres
+        if now:
+            self._execute(release)
 
-    def _collect_dicts(self, model: Model) -> Tuple:
-        names_dict, vals_dict, terms_dict = super()._collect_dicts(model)
-        return names_dict, vals_dict, terms_dict
-
-    def _arrange_lines(
-        self,
-        dicts: Tuple,
-        smptime: Union[Tuple[float, float, float], List[float], None] = None,
-    ) -> Dict[str, str]:
-        # in BaseSolver._arrange_lines,
-        # generate lines with y/p/ode/rec/cond/beat/cre/stepper/stepper_options.
-        lines = super()._arrange_lines(dicts)
-
-        # initial time of simulation
-        vals_dict = dicts[1]
-        if self.t0name not in vals_dict.keys():
-            raise KeyError(f"Variable '{self.t0name}' is not in a model.")
-        lines["t"] = str(vals_dict[self.t0name])
-
-        # smptime (sampling time)
-        if smptime is None:
-            raise TypeError("invalid smptime")
-        lines["smptime"] = self._arrange_smptime(smptime)
-
-        return lines
-
-    def _arrange_smptime(self, smptime: Union[Tuple[float, float, float], List[float]]):
-        if isinstance(smptime, tuple) and len(smptime) == 3:
-            start = float(smptime[0])
-            stop = float(smptime[1])
-            step = float(smptime[2])
-            smptime_list = range_f2s(start, stop, step)
-        elif isinstance(smptime, list):
-            smptime_list = [str(float(t)) for t in smptime]
-        else:
-            try:
-                smptime_list = [str(t) for t in smptime]
-            except:
-                raise ValueError
-
-        return ", ".join(smptime_list)
+            # read simulated results
+            simres = self.read(self.dirpath, model.ynames)
+            return simres
 
     def _write_codes(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
         # import

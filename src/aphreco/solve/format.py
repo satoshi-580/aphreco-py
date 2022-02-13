@@ -1,4 +1,6 @@
-from typing import Dict, List, Tuple
+from collections import OrderedDict
+from decimal import Decimal
+from typing import Dict, List, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
@@ -20,7 +22,19 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
     return rhs
 
 
+def range_f2s(start: float, stop: float, step: float):
+    dec_start = Decimal(str(start))
+    dec_stop = Decimal(str(stop))
+    dec_step = Decimal(str(step))
+
+    for i in range(int((dec_stop - dec_start) / dec_step)):
+        yield str(dec_start + i * dec_step)
+
+
 class BaseFormatter:
+    def __init__(self, simplify_eq=False):
+        self.simplify_eq = simplify_eq
+
     @property
     def simplify_eq(self):
         return self._simplify_eq
@@ -33,8 +47,28 @@ class BaseFormatter:
 class SimFormatter(BaseFormatter):
     """"""
 
-    def __init__(self, simplify_eq=False):
-        self.simplify_eq = simplify_eq
+    def format_model_info(self, dicts: Tuple) -> Dict[str, str]:
+        names_dict, vals_dict, terms_dict = dicts
+        lines = OrderedDict()
+        # Format collected dicts into lines
+        lines["t"] = self.line_t(vals_dict)
+        lines["y"] = self.line_y(names_dict, vals_dict)
+        lines["p"] = self.line_p(names_dict, vals_dict)
+
+        lines["ode"] = self.arrange_ode(terms_dict["ode"])
+        str_rec, str_cond, str_beat = self.arrange_rec(terms_dict["rec"])
+        lines["rec"] = str_rec
+        lines["cond"] = str_cond
+        lines["beat"] = str_beat
+        lines["cre"] = self.arrange_cre(terms_dict["cre"])
+
+        return lines
+
+    def line_t(self, vals_dict: Dict[str, float]) -> str:
+        initime = "initime"
+        if initime not in vals_dict.keys():
+            raise KeyError(f"Variable '{initime}' is not in a model.")
+        return str(vals_dict[initime])
 
     def line_y(
         self,
@@ -115,6 +149,69 @@ class SimFormatter(BaseFormatter):
             eq = lhs + " = " + rhs + "\n"
             lines.append(eq)
         return "".join(lines)
+
+    def format_simulator_info(self, lines, stepper):
+        """
+        Returns:
+            Tuple[str, str]
+        """
+        if stepper.is_default:
+            stepper_options = "default"
+        else:
+            stepper_options = ""
+            for key, value in stepper.options.items():
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                stepper_options += key + ": " + str(value) + ",\n"
+
+        lines["stepper"] = stepper.name
+        lines["stepper_options"] = stepper_options
+        return lines
+
+    def format_smptime_info(
+        self,
+        lines: Dict[str, str],
+        smptime: Union[Tuple[float, float, float], List[float]],
+    ):
+        """create lines for sampling times, which is unique to simulation."""
+
+        # smptime
+        if isinstance(smptime, tuple) and len(smptime) == 3:
+            start = float(smptime[0])
+            stop = float(smptime[1])
+            step = float(smptime[2])
+            smptime_list = range_f2s(start, stop, step)
+        elif isinstance(smptime, list):
+            smptime_list = [str(float(t)) for t in smptime]
+        else:
+            try:
+                smptime_list = [str(t) for t in smptime]
+            except:
+                raise ValueError
+        lines["smptime"] = ", ".join(smptime_list)
+
+        return lines
+
+
+class OptFormatter(SimFormatter):
+    def format_model_info(self, dicts: Tuple) -> Dict[str, str]:
+        names_dict, vals_dict, terms_dict, unks_dict = dicts
+        lines = super().format_model_info((names_dict, vals_dict, terms_dict))
+        lines["x_index"] = self._arrange_x_index(unks_dict)
+        lines["x_bounds"] = self._arrange_x_bounds(unks_dict)
+        return lines
+
+    def _arrange_x_index(self, unks_dict: Dict[str, str]) -> str:
+        return ""
+
+    def _arrange_x_bounds(self, unks_dict: Dict[str, str]):
+        return ""
+
+    def format_optimizer_info(self, optimizer):
+        pass
+
+    def format_obs_info(self, lines, obs):
+        return lines
 
 
 # class OptCollector(SimCollector):

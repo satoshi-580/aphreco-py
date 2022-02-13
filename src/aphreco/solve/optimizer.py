@@ -1,70 +1,82 @@
 from collections import OrderedDict
-from typing import Dict, Tuple
+from typing import Dict
 
 from aphreco.core import Model
 
+from .base import BaseSolver
 from .fmin.base import BaseFminAlgorithm
 from .fmin.serial import NelderMead
+from .format import OptFormatter
 from .simulator import Simulator
 
 
-class Optimizer(Simulator):
+class Optimizer(BaseSolver):
     def __init__(
         self,
-        algo: BaseFminAlgorithm = NelderMead(),
+        algorithm: BaseFminAlgorithm = NelderMead(),
         simulator: Simulator = Simulator(),
         **options,
     ):
-        if not isinstance(algo, BaseFminAlgorithm):
+        if not isinstance(algorithm, BaseFminAlgorithm):
             raise TypeError("invalid  type of algo")
 
-        self.algo = algo
+        self.algorithm = algorithm
         if options:
-            self.algo.set_options(**options)
+            self.algorithm.set_options(**options)
 
         if not isinstance(simulator, Simulator):
             raise TypeError("invalid  type of simulator")
 
         self.simulator = simulator
+        self.formatter = OptFormatter()
+        # self.replacer = SimReplacer()
+        # self.writer = SimWriter()
+        # self.exporter = Exporter()
+        # self.command = Command()
+        # self.reader = SimResReader()
 
     def run(
         self,
         model: Model,
-        data,
+        obs,
+        now=True,
         release=False,
     ):
         """generate a optimization code and run it immediately.
 
         Args:
             model (Model): The model object.
+            data (??): The observation data used in fmin.
 
         Returns:
             OptResult: The simulated result
 
         """
         # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).
-        dicts = self._collect_dicts(model)
-        # lines = self._arrange_lines(dicts, smptime)
+        names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
+        vals_dict = model.collect_values(OrderedDict())
+        terms_dict = model.collect_terms(
+            OrderedDict(
+                ode=OrderedDict(),
+                rec=OrderedDict(),
+                cre=OrderedDict(),
+            )
+        )
+        unks_dict: Dict[str, float] = OrderedDict()
+
+        # ====================
+        # format lines
+        # generate lines with t/y/p/ode/rec/cond/beat/cre.
+        lines = self.formatter.format_model_info(
+            (names_dict, vals_dict, terms_dict, unks_dict)
+        )
+        # lines for simulator (stepper) settings
+        lines = self.formatter.format_simulator_info(lines, self.simulator.stepper)
+        # unique lines: in the case of simulation, add the following keys,
+        #     lines["x_index"]: initial time
+        #     lines["x_bounds"]: sampling times
+        lines = self.formatter.format_obs_info(lines, obs)
+        lines = self.formatter.format_optimizer_info(self)
+
+        # print(lines)
         # rep_lines = self._replace_names(lines, dicts[0])
-
-    def _collect_dicts(self, model: Model) -> Tuple:
-        names_dict, vals_dict, terms_dict = super()._collect_dicts(model)
-        # unk_dict = model.collect_unknowns()
-        unk_dict: Dict[str, float] = OrderedDict()
-        return names_dict, vals_dict, terms_dict, unk_dict
-
-    def _arrange_lines(
-        self,
-        dicts: Tuple,
-        _=None,
-    ) -> Dict[str, str]:
-        # in BaseSolver._arrange_lines,
-        # generate lines with y/p/ode/rec/cond/beat/cre/stepper/stepper_options.
-        lines = super()._arrange_lines(dicts)
-
-        # initial time of simulation
-        vals_dict = dicts[1]
-        if self.t0name not in vals_dict.keys():
-            raise KeyError(f"Variable '{self.t0name}' is not in a model.")
-
-        return lines
