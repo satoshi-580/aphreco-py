@@ -79,8 +79,8 @@ class Simulator(BaseSolver):
         # format lines
         # generate lines with t/y/p/ode/rec/cond/beat/cre.
         lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dict))
-        # lines for simulator (stepper) settings
-        lines = self.formatter.format_simulator_info(lines, self.stepper)
+        # lines of solver settings
+        lines = self.formatter.format_simulator_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
         #     lines["smptime"]: sampling times
         lines = self.formatter.format_smptime_info(lines, smptime)
