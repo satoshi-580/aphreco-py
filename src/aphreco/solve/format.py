@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from decimal import Decimal
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
@@ -150,21 +150,21 @@ class SimFormatter(BaseFormatter):
             lines.append(eq)
         return "".join(lines)
 
-    def format_simulator_info(self, lines, stepper):
+    def format_simulator_info(self, lines, simulator):
         """
         Returns:
             Tuple[str, str]
         """
-        if stepper.is_default:
+        if simulator.stepper.is_default:
             stepper_options = "default"
         else:
             stepper_options = ""
-            for key, value in stepper.options.items():
+            for key, value in simulator.stepper.options.items():
                 if isinstance(value, bool):
                     value = str(value).lower()
                 stepper_options += key + ": " + str(value) + ",\n"
 
-        lines["stepper"] = stepper.name
+        lines["stepper"] = simulator.stepper.name
         lines["stepper_options"] = stepper_options
         return lines
 
@@ -201,14 +201,39 @@ class OptFormatter(SimFormatter):
         lines["x_bounds"] = self._arrange_x_bounds(unks_dict)
         return lines
 
-    def _arrange_x_index(self, unks_dict: Dict[str, str]) -> str:
-        return ""
+    def _arrange_x_index(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> str:
+        lines = list()
+        max_vallen = 0
+        for i, (name, (_, p_index, _)) in enumerate(unks_dict.items()):
+            lines.append(f"{p_index},***space***// p[index] of x[{i}] {name}\n")
+            vallen = len(str(p_index))
+            max_vallen = vallen if max_vallen < vallen else max_vallen
+        lines = _replace_space(lines, ",", max_vallen)
+        return "".join(lines)
 
-    def _arrange_x_bounds(self, unks_dict: Dict[str, str]):
-        return ""
+    def _arrange_x_bounds(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> str:
+        lines = list()
+        max_vallen = 0
+        for i, (name, (_, p_index, bounds)) in enumerate(unks_dict.items()):
+            if bounds is not None:
+                lines.append(f"{bounds},***space***// x[{i}] {name} (= p[{p_index}])\n")
+                vallen = len(str(bounds))
+                max_vallen = vallen if max_vallen < vallen else max_vallen
 
-    def format_optimizer_info(self, optimizer):
-        pass
+        if len(lines) == 0:
+            return "None"
+        else:
+            lines = _replace_space(lines, ",", max_vallen)
+            return "".join(lines)
+
+    def format_optimizer_info(self, lines, optimizer):
+        return lines
 
     def format_obs_info(self, lines, obs):
         return lines
@@ -239,43 +264,6 @@ class OptFormatter(SimFormatter):
 
 #         return source
 
-#     @classmethod
-#     def arrange_x_index(cls, dict_x, symbols: Symbols):
-#         x_index_list = list()
-#         max_vallen = 0
-
-#         for i, (name, (_, bounds)) in enumerate(dict_x.items()):
-#             # '//' is a comment format in Rust lang.
-#             index = symbols.member[name][1]
-#             x_index_list.append(f"{index},***space***// x[{i}] {name} (= p[{index}])\n")
-#             vallen = len(str(index))
-#             max_vallen = vallen if max_vallen < vallen else max_vallen
-
-#         x_index_list = replace_space(x_index_list, ",", max_vallen)
-#         return "".join(x_index_list)
-
-#     @classmethod
-#     def arrange_x_bounds(cls, dict_x, symbols: Symbols):
-#         x_bounds_list = list()
-#         max_vallen = 0
-
-#         for i, (name, (_, bounds)) in enumerate(dict_x.items()):
-#             # '//' is a comment format in Rust lang.
-#             x_bounds_list.append(
-#                 ""
-#                 if bounds is None
-#                 else f"{bounds},***space***// x[{i}] {name} (= p[{symbols.member[name][1]}])\n"
-#             )
-#             vallen = len(str(bounds))
-#             max_vallen = vallen if max_vallen < vallen else max_vallen
-
-#         if len(x_bounds_list) == 0:
-#             str_x_bounds = "    let x_bounds = None;\n"
-#         else:
-#             x_bounds_list = replace_space(x_bounds_list, ",", max_vallen)
-#             str_x_bounds = "".join(x_bounds_list)
-
-#         return str_x_bounds
 
 #     @classmethod
 #     def collect_optimizer(cls, optimizer: Optimizer):

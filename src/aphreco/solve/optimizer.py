@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 from aphreco.core import Model
 
@@ -67,21 +67,22 @@ class Optimizer(BaseSolver):
                 cre=OrderedDict(),
             )
         )
-        unks_dict: Dict[str, float] = OrderedDict()
+        unks_dict = model.set_x_index(model.collect_unknowns(OrderedDict()), names_dict)
 
         # ====================
         # format lines
-        # generate lines with t/y/p/ode/rec/cond/beat/cre.
+        # generate lines with t/y/p/ode/rec/cond/beat/cre and /x_index/x_bounds.
         lines = self.formatter.format_model_info(
             (names_dict, vals_dict, terms_dict, unks_dict)
         )
-        # lines for simulator (stepper) settings
-        lines = self.formatter.format_simulator_info(lines, self.simulator.stepper)
+        # lines of solver settings
+        lines = self.formatter.format_simulator_info(lines, self.simulator)
+        lines = self.formatter.format_optimizer_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
-        #     lines["x_index"]: initial time
-        #     lines["x_bounds"]: sampling times
+        #     lines["data"]: observation data
         lines = self.formatter.format_obs_info(lines, obs)
-        lines = self.formatter.format_optimizer_info(self)
 
-        # print(lines)
+        for _, line in lines.items():
+            print(line)
+
         # rep_lines = self._replace_names(lines, dicts[0])
