@@ -4,25 +4,25 @@ from typing import Dict, Optional, Tuple
 from aphreco.core import Model
 
 from .base import BaseSolver
+from .fmin.base import BaseFminAlgorithm
+from .fmin.serial import NelderMead
 from .format import OptFormatter
-from .opt.base import BaseFminAlgorithm
-from .opt.serial import NelderMead
 from .simulator import Simulator
 
 
 class Optimizer(BaseSolver):
     def __init__(
         self,
-        algorithm: BaseFminAlgorithm = NelderMead(),
+        method: BaseFminAlgorithm = NelderMead(),
         simulator: Simulator = Simulator(),
         **options,
     ):
-        if not isinstance(algorithm, BaseFminAlgorithm):
+        if not isinstance(method, BaseFminAlgorithm):
             raise TypeError("invalid  type of algo")
 
-        self.algorithm = algorithm
+        self.method = method
         if options:
-            self.algorithm.set_options(**options)
+            self.method.set_options(**options)
 
         if not isinstance(simulator, Simulator):
             raise TypeError("invalid  type of simulator")

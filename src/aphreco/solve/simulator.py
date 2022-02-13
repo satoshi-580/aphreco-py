@@ -10,8 +10,8 @@ from .export import Exporter
 from .format import SimFormatter
 from .read import SimResReader
 from .replace import SimReplacer
-from .sim.base import BaseStepMethod
-from .sim.dopri45 import Dopri45
+from .step.base import BaseStepMethod
+from .step.dopri45 import Dopri45
 from .write import SimWriter
 
 
@@ -89,18 +89,25 @@ class Simulator(BaseSolver):
         # replace lines
         rep_lines = self._replace_names(lines, names_dict)
 
+        # ====================
         # make a directory for export
         # and the directory path is embedded to a rust code.
         self.exporter.setup_env()
         self.dirpath = self.exporter.mkdir_new_res()
 
+        # ====================
+        # assemble string parts into one code
         codes = self._write_codes(rep_lines, self.dirpath)
-        self._export_codes(codes)
+
+        # ====================
+        # save a code string as main.rs
+        self.exporter.create_main(codes)
 
         if now:
+            # execute command 'cargo run' or 'cargo run --release'
             self._execute(release)
 
-            # read simulated results
+            # read and return simulated results
             simres = self.read(self.dirpath, model.ynames)
             return simres
 
