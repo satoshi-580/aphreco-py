@@ -1,11 +1,10 @@
-from collections import OrderedDict
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 from aphreco.core import Model
-from aphreco.enums import ItemType
 
+from .base import BaseSolver
 from .command import Command
 from .export import Exporter
 from .format import SimFormatter
@@ -25,7 +24,7 @@ def range_f2s(start: float, stop: float, step: float):
         yield str(dec_start + i * dec_step)
 
 
-class Simulator:
+class Simulator(BaseSolver):
     def __init__(
         self,
         stepper: BaseStepMethod = Dopri45(),
@@ -59,7 +58,7 @@ class Simulator:
     def run(
         self,
         model: Model,
-        smptime: Union[Tuple[float, float, float], List[float]],
+        smptime,
         release=False,
     ):
         """generate a simulation code and run it immediately.
@@ -93,102 +92,31 @@ class Simulator:
         simres = self.read(self.dirpath, model.ynames)
         return simres
 
-    def _collect_dicts(self, model: Model) -> Tuple[Dict, Dict, Dict]:
-        # Collect dicts from model items
-        # names_dict: Dict[name(str), Tuple[itemtype(enums.ItemType), index(int)]]
-        names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
-
-        # vals_dict : Dict[name(str), value(float)]
-        vals_dict = model.collect_values(OrderedDict())
-
-        # terms_dict: Dict[
-        #     'ode': Dict[yname(str), rhs(str)],
-        #     'rec': Dict[(start, stop, step), Dict[yname(str), rhs(str)]],
-        #     'cre': Dict[yname(str), rhs(str)],
-        # ]
-        terms_dict = model.collect_terms(
-            OrderedDict(
-                ode=OrderedDict(),
-                rec=OrderedDict(),
-                cre=OrderedDict(),
-            )
-        )
-
-        # ===== for debugging =====
-        # print()  # debug terms_dict["ode"]
-        # for lhs, rhs in terms_dict["ode"].items():
-        #     print("deriv_" + lhs, "=", rhs)
-        # print()  # debug terms_dict["rec"]
-        # for beat, d in terms_dict["rec"].items():
-        #     print("   ===", beat, "===")
-        #     for lhs, rhs in d.items():
-        #         print("delta_" + lhs, "+=", rhs)
-        # print()  # debug terms_dict["cre"]
-        # for lhs, rhs in terms_dict["cre"].items():
-        #     print(lhs, "=", rhs)
-        # =====================
-
-        # unks_dicts = model.collect_unknowns(OrderedDict()) in Optimization
+    def _collect_dicts(self, model: Model) -> Tuple:
+        names_dict, vals_dict, terms_dict = super()._collect_dicts(model)
         return names_dict, vals_dict, terms_dict
 
     def _arrange_lines(
         self,
-        dicts: Tuple[Dict, Dict, Dict],
-        smptime: Union[Tuple[float, float, float], List[float]],
+        dicts: Tuple,
+        smptime: Union[Tuple[float, float, float], List[float], None] = None,
     ) -> Dict[str, str]:
-        names_dict, vals_dict, terms_dict = dicts
-        lines = OrderedDict()
-        # Format collected dicts into lines
+        # in BaseSolver._arrange_lines,
+        # generate lines with y/p/ode/rec/cond/beat/cre/stepper/stepper_options.
+        lines = super()._arrange_lines(dicts)
+
+        # initial time of simulation
+        vals_dict = dicts[1]
         if self.t0name not in vals_dict.keys():
             raise KeyError(f"Variable '{self.t0name}' is not in a model.")
         lines["t"] = str(vals_dict[self.t0name])
-        lines["y"] = self.formatter.line_y(names_dict, vals_dict)
-        lines["p"] = self.formatter.line_p(names_dict, vals_dict)
-
-        lines["ode"] = self.formatter.arrange_ode(terms_dict["ode"])
-        str_rec, str_cond, str_beat = self.formatter.arrange_rec(terms_dict["rec"])
-        lines["rec"] = str_rec
-        lines["cond"] = str_cond
-        lines["beat"] = str_beat
-        lines["cre"] = self.formatter.arrange_cre(terms_dict["cre"])
-
-        # stepper, stepper_options,
-        stepper, stepper_options = self._arrange_stepper()
-        lines["stepper"] = stepper
-        lines["stepper_options"] = stepper_options
 
         # smptime (sampling time)
+        if smptime is None:
+            raise TypeError("invalid smptime")
         lines["smptime"] = self._arrange_smptime(smptime)
 
-        # ===== for debugging =====
-        # print()
-        # print(source.lines["t"])
-        # print(source.lines["y"])
-        # print(source.lines["p"])
-        # print(source.lines["ode"])
-        # print(source.lines["rec"])
-        # print(source.lines["cond"])
-        # print(source.lines["beat"])
-        # print(source.lines["cre"])
-        # print(source.lines["stepper"])
-        # print(source.lines["stepper_options"])
-        # =====================
         return lines
-
-    def _arrange_stepper(self):
-        """
-        simulator: Simulator
-            .options: Dict[str, value]
-        """
-        if self.stepper.is_default:
-            stepper_options = "default"
-        else:
-            stepper_options = ""
-            for key, value in self.stepper.options.items():
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                stepper_options += key + ": " + str(value) + ",\n"
-        return self.stepper.name, stepper_options
 
     def _arrange_smptime(self, smptime: Union[Tuple[float, float, float], List[float]]):
         if isinstance(smptime, tuple) and len(smptime) == 3:
@@ -205,15 +133,6 @@ class Simulator:
                 raise ValueError
 
         return ", ".join(smptime_list)
-
-    def _replace_names(
-        self,
-        lines: Dict[str, str],
-        names_dict: Dict[str, Tuple[ItemType, int]],
-    ):
-        repmap = self.replacer.create_repmap(names_dict)
-        rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
-        return rep_lines
 
     def _write_codes(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
         # import
@@ -258,15 +177,3 @@ class Simulator:
 
         codes_list = import_parts + main_parts + model_parts + smptime_parts
         return "".join(codes_list)
-
-    def _export_codes(self, codes: str):
-        self.exporter.create_main(codes)
-
-    def _execute(self, release):
-        if release:
-            self.command.release()
-        else:
-            self.command.compile()
-
-    def read(self, dirpath, ynames=None):
-        return self.reader.read(dirpath, ynames)
