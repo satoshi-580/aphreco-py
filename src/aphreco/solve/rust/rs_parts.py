@@ -57,6 +57,14 @@ def _save_simres(dirpath: str):
     """
 
 
+# data
+LET_DATA = """  let data = Data::new(obs());
+"""
+
+# objective
+LET_OBJECTIVE = """  let mut objective = Objective::new(simulator, data);
+"""
+
 # close main function
 CLOSE_MAIN = """}
 """
