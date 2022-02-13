@@ -139,6 +139,29 @@ class ImplCollectForModel(BaseModel):
             )
         return used_names_set
 
+    def collect_unknowns(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+        """collects unknown parameters.
+
+        Retruns:
+            Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]: The unknown parameters.
+                The key indicates name of x, whereas the tuple contains (value, lower bound, upper bound).
+                The bounds become None if they are not defined.
+        """
+        if len(self.children) == 0:
+            return unks_dict
+
+        for _, item in self.children.items():
+            # does not collect from Edge
+            if isinstance(item, BaseEdge):
+                continue
+
+            # collect from Variable, or go to lower Model
+            unks_dict = item.collect_unknowns(unks_dict)
+        return unks_dict
+
 
 class ImplRenameForModel(BaseModel):
     def _rename_self(self, repmap: Dict[str, str]):
@@ -550,6 +573,20 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
             else:
                 continue
         return names_dict
+
+    def set_x_index(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+        names_dict: Dict[str, Tuple[ItemType, int]],
+    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+        """
+        unks_dict: OrderedDict[name, (value, p_index, (lb, ub))]
+        """
+        x_index = 0
+        for name, (value, _, bounds) in unks_dict.items():
+            unks_dict[name] = (value, names_dict[name][1], bounds)
+            x_index += 1
+        return unks_dict
 
     @property
     def ynames(self) -> List[str]:
