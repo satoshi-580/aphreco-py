@@ -1,1 +1,2 @@
-from .solver import Optimizer, Simulator
+from .optimizer import Optimizer
+from .simulator import Simulator

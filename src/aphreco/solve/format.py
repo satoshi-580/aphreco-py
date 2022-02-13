@@ -1,4 +1,6 @@
-from typing import Dict, List, Tuple
+from collections import OrderedDict
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
@@ -20,7 +22,19 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
     return rhs
 
 
+def range_f2s(start: float, stop: float, step: float):
+    dec_start = Decimal(str(start))
+    dec_stop = Decimal(str(stop))
+    dec_step = Decimal(str(step))
+
+    for i in range(int((dec_stop - dec_start) / dec_step)):
+        yield str(dec_start + i * dec_step)
+
+
 class BaseFormatter:
+    def __init__(self, simplify_eq=False):
+        self.simplify_eq = simplify_eq
+
     @property
     def simplify_eq(self):
         return self._simplify_eq
@@ -33,8 +47,28 @@ class BaseFormatter:
 class SimFormatter(BaseFormatter):
     """"""
 
-    def __init__(self, simplify_eq=False):
-        self.simplify_eq = simplify_eq
+    def format_model_info(self, dicts: Tuple) -> Dict[str, str]:
+        names_dict, vals_dict, terms_dict = dicts
+        lines = OrderedDict()
+        # Format collected dicts into lines
+        lines["t"] = self.line_t(vals_dict)
+        lines["y"] = self.line_y(names_dict, vals_dict)
+        lines["p"] = self.line_p(names_dict, vals_dict)
+
+        lines["ode"] = self.arrange_ode(terms_dict["ode"])
+        str_rec, str_cond, str_beat = self.arrange_rec(terms_dict["rec"])
+        lines["rec"] = str_rec
+        lines["cond"] = str_cond
+        lines["beat"] = str_beat
+        lines["cre"] = self.arrange_cre(terms_dict["cre"])
+
+        return lines
+
+    def line_t(self, vals_dict: Dict[str, float]) -> str:
+        initime = "initime"
+        if initime not in vals_dict.keys():
+            raise KeyError(f"Variable '{initime}' is not in a model.")
+        return str(vals_dict[initime])
 
     def line_y(
         self,
@@ -116,6 +150,94 @@ class SimFormatter(BaseFormatter):
             lines.append(eq)
         return "".join(lines)
 
+    def format_simulator_info(self, lines, simulator):
+        """
+        Returns:
+            Tuple[str, str]
+        """
+        if simulator.stepper.is_default:
+            stepper_options = "default"
+        else:
+            stepper_options = ""
+            for key, value in simulator.stepper.options.items():
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                stepper_options += key + ": " + str(value) + ",\n"
+
+        lines["stepper"] = simulator.stepper.name
+        lines["stepper_options"] = stepper_options
+        return lines
+
+    def format_smptime_info(
+        self,
+        lines: Dict[str, str],
+        smptime: Union[Tuple[float, float, float], List[float]],
+    ):
+        """create lines for sampling times, which is unique to simulation."""
+
+        # smptime
+        if isinstance(smptime, tuple) and len(smptime) == 3:
+            start = float(smptime[0])
+            stop = float(smptime[1])
+            step = float(smptime[2])
+            smptime_list = range_f2s(start, stop, step)
+        elif isinstance(smptime, list):
+            smptime_list = [str(float(t)) for t in smptime]
+        else:
+            try:
+                smptime_list = [str(t) for t in smptime]
+            except:
+                raise ValueError
+        lines["smptime"] = ", ".join(smptime_list)
+
+        return lines
+
+
+class OptFormatter(SimFormatter):
+    def format_model_info(self, dicts: Tuple) -> Dict[str, str]:
+        names_dict, vals_dict, terms_dict, unks_dict = dicts
+        lines = super().format_model_info((names_dict, vals_dict, terms_dict))
+        lines["x_index"] = self._arrange_x_index(unks_dict)
+        lines["x_bounds"] = self._arrange_x_bounds(unks_dict)
+        return lines
+
+    def _arrange_x_index(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> str:
+        lines = list()
+        max_vallen = 0
+        for i, (name, (_, p_index, _)) in enumerate(unks_dict.items()):
+            lines.append(f"{p_index},***space***// p[index] of x[{i}] {name}\n")
+            vallen = len(str(p_index))
+            max_vallen = vallen if max_vallen < vallen else max_vallen
+        lines = _replace_space(lines, ",", max_vallen)
+        return "".join(lines)
+
+    def _arrange_x_bounds(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> str:
+        lines = list()
+        max_vallen = 0
+        for i, (name, (_, p_index, bounds)) in enumerate(unks_dict.items()):
+            if bounds is not None:
+                lines.append(f"{bounds},***space***// x[{i}] {name} (= p[{p_index}])\n")
+                vallen = len(str(bounds))
+                max_vallen = vallen if max_vallen < vallen else max_vallen
+
+        if len(lines) == 0:
+            return "None"
+        else:
+            lines = _replace_space(lines, ",", max_vallen)
+            return "".join(lines)
+
+    def format_optimizer_info(self, lines, optimizer):
+        return lines
+
+    def format_obs_info(self, lines, obs):
+        return lines
+
 
 # class OptCollector(SimCollector):
 #     @classmethod
@@ -142,43 +264,6 @@ class SimFormatter(BaseFormatter):
 
 #         return source
 
-#     @classmethod
-#     def arrange_x_index(cls, dict_x, symbols: Symbols):
-#         x_index_list = list()
-#         max_vallen = 0
-
-#         for i, (name, (_, bounds)) in enumerate(dict_x.items()):
-#             # '//' is a comment format in Rust lang.
-#             index = symbols.member[name][1]
-#             x_index_list.append(f"{index},***space***// x[{i}] {name} (= p[{index}])\n")
-#             vallen = len(str(index))
-#             max_vallen = vallen if max_vallen < vallen else max_vallen
-
-#         x_index_list = replace_space(x_index_list, ",", max_vallen)
-#         return "".join(x_index_list)
-
-#     @classmethod
-#     def arrange_x_bounds(cls, dict_x, symbols: Symbols):
-#         x_bounds_list = list()
-#         max_vallen = 0
-
-#         for i, (name, (_, bounds)) in enumerate(dict_x.items()):
-#             # '//' is a comment format in Rust lang.
-#             x_bounds_list.append(
-#                 ""
-#                 if bounds is None
-#                 else f"{bounds},***space***// x[{i}] {name} (= p[{symbols.member[name][1]}])\n"
-#             )
-#             vallen = len(str(bounds))
-#             max_vallen = vallen if max_vallen < vallen else max_vallen
-
-#         if len(x_bounds_list) == 0:
-#             str_x_bounds = "    let x_bounds = None;\n"
-#         else:
-#             x_bounds_list = replace_space(x_bounds_list, ",", max_vallen)
-#             str_x_bounds = "".join(x_bounds_list)
-
-#         return str_x_bounds
 
 #     @classmethod
 #     def collect_optimizer(cls, optimizer: Optimizer):

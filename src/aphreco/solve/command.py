@@ -7,7 +7,7 @@ class RustError(Exception):
 
 
 class Command:
-    def run(self, cmd):
+    def exe(self, cmd):
         success = True
         with subprocess.Popen(
             shlex.split(cmd),
@@ -30,9 +30,8 @@ class Command:
             raise RustError("rust compilation/execution failed.")
 
     def compile(self):
-        cmd_compile = "cargo run"
-        self.run(cmd_compile)
+        self.exe("cargo run")
 
     def release(self):
-        cmd_release = "cargo build --release && cargo run --release"
-        self.run(cmd_release)
+        self.exe("cargo build --release")
+        self.exe("cargo run --release")

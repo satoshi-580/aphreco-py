@@ -1,12 +1,10 @@
-from aphreco.enums import SimType
+from aphreco.enums import StepType
 
 from .base import BaseStepMethod
 
 
 class Rk4(BaseStepMethod):
     def __init__(self, **options):
-        self._name = "Rk4"
-        self.simtype = SimType.Dopri45
         self.is_default = True
         self.options = {
             "h": 1e-3,
@@ -14,3 +12,11 @@ class Rk4(BaseStepMethod):
 
         if options:
             self.set_options(**options)
+
+    @property
+    def name(self):
+        return StepType.Rk4.name
+
+    @property
+    def type(self):
+        return StepType.Rk4

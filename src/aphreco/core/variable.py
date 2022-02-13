@@ -43,6 +43,14 @@ class BaseVariable(BaseComponent):
     def value(self, value):
         self._value = value
 
+    @property
+    def bounds(self):
+        return self._bounds
+
+    @bounds.setter
+    def bounds(self, bounds):
+        self._bounds: Optional[Tuple[float, float]] = bounds
+
 
 class ImplCollectForVariable(BaseVariable):
     def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
@@ -80,6 +88,15 @@ class ImplCollectForVariable(BaseVariable):
 
         terms_dict["cre"] = cre
         return terms_dict
+
+    def collect_unknowns(
+        self,
+        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
+    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+        """collects (value, lower bound, upper bound) of Variable X."""
+        if self.type == ItemType.X:
+            unks_dict[self.name] = (self.value, -1, self.bounds)
+        return unks_dict
 
 
 class ImplRenameForVariable(BaseVariable):

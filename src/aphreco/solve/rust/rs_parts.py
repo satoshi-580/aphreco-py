@@ -20,8 +20,7 @@ LET_MODEL = """  let model = Model::new();
 LET_STEP_OPTIONS_DEFAULT = """  let step_options = StepOptions::Default;
 """
 LET_STEP_OPTIONS = """  let step_options = StepOptions::***method*** {
-    ***options***
-  };
+    ***options***  };
 """
 LET_STEPPER = """  let stepper = Stepper::***method***(step_options);
 """
@@ -54,8 +53,16 @@ RUN_SIMULATOR = """  let simres = simulator.run(&smptime);
 # save
 def _save_simres(dirpath: str):
     return f"""  simres.save("./res/{dirpath}/");
-    """
+"""
 
+
+# data
+LET_DATA = """  let data = Data::new(obs());
+"""
+
+# objective
+LET_OBJECTIVE = """  let mut objective = Objective::new(simulator, data);
+"""
 
 # close main function
 CLOSE_MAIN = """}

@@ -1,12 +1,12 @@
-from aphreco.enums import OptType
+from aphreco.enums import FminType
 
-from .base import BaseOptimizeMethod
+from .base import BaseFminAlgorithm
 
 
-class NelderMead(BaseOptimizeMethod):
+class NelderMead(BaseFminAlgorithm):
     def __init__(self, **options):
         self._name = "NelderMead"
-        self.opttype = OptType.NelderMead
+        # self.opttype = OptType.NelderMead
         self.is_default = True
         self.options = {
             "max_iter": 0,
@@ -18,3 +18,11 @@ class NelderMead(BaseOptimizeMethod):
 
         if options:
             self.set_options(**options)
+
+    @property
+    def name(self):
+        return FminType.NelderMead.name
+
+    @property
+    def type(self):
+        return FminType.NelderMead
