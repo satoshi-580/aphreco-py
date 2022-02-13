@@ -8,8 +8,8 @@ from .base import BaseSolver
 from .command import Command
 from .export import Exporter
 from .format import SimFormatter
-from .read import SimResReader
 from .replace import SimReplacer
+from .result import SimResReader
 from .step.base import BaseStepMethod
 from .step.dopri45 import Dopri45
 from .write import SimWriter
