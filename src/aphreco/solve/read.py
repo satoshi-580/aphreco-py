@@ -70,6 +70,7 @@ class SimResReader(ResReader):
             ty = pd.read_csv(gb_file[0], header=None)
             t = ty.iloc[:, 0]
             y = ty.iloc[:, 1:]
+            t.name = "t"
             if ynames is not None:
                 y = y.set_axis(ynames, axis="columns")
 
