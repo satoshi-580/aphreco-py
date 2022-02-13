@@ -80,6 +80,23 @@ class SimWriter(BaseWriter):
         return rs_parts._fn_smptime(smptime_lines)
 
 
+class OptWriter(SimWriter):
+    def data_in_main(self):
+        return rs_parts.LET_DATA
+
+    def obj_in_main(self):
+        return rs_parts.LET_OBJECTIVE
+
+    # def optimizer_in_main(self, rep_lines: Dict[str, str]) -> str:
+    #     codes_opt = list()
+    #     list_main.extend(
+    #         self._list_optimizer(
+    #             rep_source.lines["optimizer"], rep_source.lines["optimizer_options"]
+    #         )
+    #     )
+    #     return "".join(codes_sim)
+
+
 # class OptWriter(SimWriter):
 #     def run(self, rep_source: ReplacedSource):
 #         sects = self._common_with_inherited(rep_source)
