@@ -35,20 +35,13 @@ class Simulator(BaseSolver):
         self.command = Command()
         self.reader = SimResReader()
 
-    @property
-    def simplify_eq(self):
-        return self.formatter.simplify_eq
-
-    @simplify_eq.setter
-    def simplify_eq(self, simplify_eq):
-        self.formatter.simplify_eq = simplify_eq
-
     def run(
         self,
         model: Model,
         smptime,
         now=True,
         release=False,
+        simplify=False,
     ):
         """generate a simulation code and run it immediately.
 
@@ -66,6 +59,9 @@ class Simulator(BaseSolver):
         # check args
         if not isinstance(model, Model):
             raise TypeError("invalid type: 'model'")
+
+        if simplify:
+            self.formatter.simplify_eq = True
 
         # ====================
         # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).

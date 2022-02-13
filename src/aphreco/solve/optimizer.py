@@ -41,6 +41,7 @@ class Optimizer(BaseSolver):
         obs,
         now=True,
         release=False,
+        simplify=False,
     ):
         """generate a optimization code and run it immediately.
 
@@ -52,6 +53,10 @@ class Optimizer(BaseSolver):
             OptResult: The simulated result
 
         """
+        # check args
+        if simplify:
+            self.formatter.simplify_eq = True
+
         # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
