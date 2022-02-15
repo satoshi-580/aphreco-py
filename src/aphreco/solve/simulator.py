@@ -30,8 +30,8 @@ class Simulator(BaseSolver):
 
         self.formatter = SimFormatter()
         self.replacer = Replacer()
-        self.writer = SimWriter()
         self.exporter = Exporter()
+        self.writer = SimWriter()
         self.command = Command()
         self.reader = SimResReader()
 
@@ -93,15 +93,15 @@ class Simulator(BaseSolver):
         # make a directory for export
         # and the directory path is embedded to a rust code.
         self.exporter.setup_env()
-        self.dirpath = self.exporter.mkdir_new_res()
+        self.dirpath = self.exporter.mkdir_new_res("Sim_")
 
         # ====================
         # assemble string parts into one code
-        codes = self._write_codes(rep_lines, self.dirpath)
+        code = self.writer.write_code(rep_lines, self.dirpath)
 
         # ====================
         # save a code string as main.rs
-        self.exporter.create_main(codes)
+        self.exporter.create_main(code)
 
         if now:
             # execute command 'cargo run' or 'cargo run --release'
@@ -110,47 +110,3 @@ class Simulator(BaseSolver):
             # read and return simulated results
             simres = self.read(self.dirpath, model.ynames)
             return simres
-
-    def _write_codes(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
-        # import
-        import_parts = [self.writer.use_aphreco()]
-
-        # main function
-        main_parts = [
-            "\n",
-            self.writer.start_main(),
-            self.writer.model_in_main(),
-            self.writer.simulator_in_main(rep_lines),
-            self.writer.smptime_in_main(),
-            self.writer.runsim_in_main(),
-            self.writer.save_simres_in_main(dirpath.name),
-            self.writer.close_main(),
-        ]
-
-        # model definition
-        model_parts = [
-            "\n",
-            self.writer.consts_ypb(rep_lines),
-            self.writer.struct(),
-            self.writer.open_simtrait(),
-            self.writer.fn_new(rep_lines["p"]),
-            "\n",
-            self.writer.fn_init(rep_lines["t"], rep_lines["y"]),
-            "\n",
-            self.writer.fn_ode(rep_lines["ode"]),
-            "\n",
-            self.writer.fn_rec(rep_lines["rec"]),
-            "\n",
-            self.writer.fn_cond(rep_lines["cond"]),
-            "\n",
-            self.writer.fn_beat(rep_lines["beat"]),
-            "\n",
-            self.writer.fn_cre(rep_lines["cre"]),
-            self.writer.close_simtrait(),
-        ]
-
-        # sampling time function
-        smptime_parts = [self.writer.fn_smptime(rep_lines["smptime"])]
-
-        codes_list = import_parts + main_parts + model_parts + smptime_parts
-        return "".join(codes_list)
