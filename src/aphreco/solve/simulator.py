@@ -77,9 +77,9 @@ class Simulator(BaseSolver):
 
         # ====================
         # format lines
-        # generate lines with t/y/p/ode/rec/cond/beat/cre.
+        # generate lines with t/y/p/ode/rec/cond/beat/cre,
+        # and lines of solver settings.
         lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dict))
-        # lines of solver settings
         lines = self.formatter.format_simulator_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
         #     lines["smptime"]: sampling times
@@ -87,7 +87,8 @@ class Simulator(BaseSolver):
 
         # ====================
         # replace lines
-        rep_lines = self._replace_names(lines, names_dict)
+        repmap = self.replacer.create_repmap(names_dict)
+        rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
 
         # ====================
         # make a directory for export
@@ -108,5 +109,5 @@ class Simulator(BaseSolver):
             self._execute(release)
 
             # read and return simulated results
-            simres = self.read(self.dirpath, model.ynames)
+            simres = self.reader.read(self.dirpath, model.ynames)
             return simres

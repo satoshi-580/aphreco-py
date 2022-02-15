@@ -53,20 +53,8 @@ class BaseSolver(abc.ABC):
     def reader(self, reader):
         self._reader = reader
 
-    def _replace_names(
-        self,
-        lines: Dict[str, str],
-        names_dict: Dict[str, Tuple[ItemType, int]],
-    ):
-        repmap = self.replacer.create_repmap(names_dict)
-        rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
-        return rep_lines
-
     def _execute(self, release):
         if release:
             self.command.release()
         else:
             self.command.compile()
-
-    def read(self, dirpath, ynames=None):
-        return self.reader.read(dirpath, ynames)
