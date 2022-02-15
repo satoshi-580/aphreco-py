@@ -46,11 +46,11 @@ LET_SIMULATOR = """  let simulator = Simulator::new(model, stepper);
 LET_SMPTIME = """  let smptime = smptime();
 """
 
-# run
+# run simulator
 RUN_SIMULATOR = """  let simres = simulator.run(&smptime);
 """
 
-# save
+# save simres
 def _save_simres(dirpath: str):
     return f"""  simres.save("./res/{dirpath}/");
 """
@@ -63,6 +63,38 @@ LET_DATA = """  let data = Data::new(obs());
 # objective
 LET_OBJECTIVE = """  let mut objective = Objective::new(simulator, data);
 """
+
+# let optimizer (optimizer_options > optimizer)
+LET_OPTIMIZER_OPTIONS_DEFAULT = """  let opt_options = OptOptions::Default;
+"""
+LET_OPTIMIZER_OPTIONS = """  let opt_options = OptOptions::***method*** {
+    ***options***  };
+"""
+LET_OPTIMIZER = """  let optimizer = Optimizer::***method***(opt_options);
+"""
+
+
+def _let_optimizer(method: str, options: str):
+    if options == "default":
+        str_options = LET_OPTIMIZER_OPTIONS_DEFAULT
+    else:
+        str_options = LET_OPTIMIZER_OPTIONS
+        str_options = str_options.replace("***method***", method)
+        str_options = str_options.replace("***options***", options)
+
+    str_stepper = LET_OPTIMIZER.replace("***method***", method)
+    return [str_options + str_stepper]
+
+
+# run optimizer
+RUN_OPTIMIZER = """  let optres = optimizer.run(&mut objective);
+"""
+
+# save optres
+def _save_optres(dirpath: str):
+    return f"""  optres.save("./res/{dirpath}/");
+"""
+
 
 # close main function
 CLOSE_MAIN = """}
@@ -260,6 +292,65 @@ CLOSE_SIMTRAIT = """}
 
 
 # =======================
+# open OptTrait
+OPEN_OPTTRAIT = """#[allow(dead_code)]
+impl OptModelTrait<LEN_Y, LEN_P, LEN_B, LEN_X> for Model {
+"""
+
+# =======================
+# fn getx() in OptTrait
+GETX_HEADER = """  fn getx(&self) -> (Vec<usize>, Option<Vec<(f64, f64)>>) {
+"""
+GETX_FOOTER = """    (x_index, x_bounds)
+  }
+"""
+
+
+def _fn_getx(x_index_lines: str, x_bounds_lines: str):
+    header = GETX_HEADER
+
+    indent = " " * 6
+
+    x_index = "    let x_index = vec![\n"
+    for line in x_index_lines.splitlines():
+        x_index += indent + line + "\n"
+    x_index += "    ];\n"
+
+    if x_bounds_lines == "None":
+        x_bounds = "    let x_bounds = None;\n"
+    else:
+        x_bounds = "    let x_bounds = Some(vec![\n"
+        for line in x_bounds_lines.splitlines():
+            x_bounds += indent + line + "\n"
+        x_bounds += "    ]);\n"
+
+    footer = GETX_FOOTER
+    return header + x_index + x_bounds + footer
+
+
+# =======================
+# fn getp() in OptTrait
+FN_GETP = """  fn getp(&self) -> &[f64; LEN_P] {
+    &self.p
+  }
+"""
+
+# =======================
+# fn setp() in OptTrait
+FN_SETP = """  fn setp(&mut self, index: usize, value: f64) {
+    self.p[index] = value;
+  }
+"""
+
+
+# =======================
+# close OptTrait
+CLOSE_OPTTRAIT = """}
+
+"""
+
+
+# =======================
 # Sampling Time in Simulation
 # =======================
 OPEN_SMPTIME = """fn smptime() -> Vec<f64> {
@@ -273,4 +364,27 @@ def _fn_smptime(smptime_lines: str):
     header = OPEN_SMPTIME
     body = "".join(["""  vec![""", smptime_lines, """]\n"""])
     footer = CLOSE_SMPTIME
+    return header + body + footer
+
+
+# =======================
+# Observed Data in Optimization
+# =======================
+OBS_HEADER = """#[allow(dead_code)]
+fn obs() -> Vec<(usize, f64, f64, Option<f64>, Option<f64>)> {
+  vec![
+"""
+OBS_FOOTER = """  ]
+}
+
+"""
+
+
+def _fn_obs(data_lines: str):
+    header = OBS_HEADER
+    indent = " " * 4
+    body = ""
+    for line in data_lines.splitlines():
+        body += indent + line + "\n"
+    footer = OBS_FOOTER
     return header + body + footer
