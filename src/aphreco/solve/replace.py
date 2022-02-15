@@ -4,11 +4,7 @@ from typing import Dict, Tuple
 from aphreco.enums import ItemType
 
 
-class BaseReplacer:
-    pass
-
-
-class SimReplacer(BaseReplacer):
+class Replacer:
     def __init__(self):
         pass
 

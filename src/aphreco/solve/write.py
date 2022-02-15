@@ -1,3 +1,5 @@
+import abc
+from pathlib import Path
 from typing import Dict
 
 from .rust import rs_parts
@@ -24,6 +26,10 @@ class BaseWriter:
 
     def close_simtrait(self) -> str:
         return rs_parts.CLOSE_SIMTRAIT
+
+    @abc.abstractmethod
+    def write_code(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
+        raise NotImplementedError
 
 
 class SimWriter(BaseWriter):
@@ -79,6 +85,50 @@ class SimWriter(BaseWriter):
     def fn_smptime(self, smptime_lines: str) -> str:
         return rs_parts._fn_smptime(smptime_lines)
 
+    def write_code(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
+        # import
+        import_parts = [self.use_aphreco()]
+
+        # main function
+        main_parts = [
+            "\n",
+            self.start_main(),
+            self.model_in_main(),
+            self.simulator_in_main(rep_lines),
+            self.smptime_in_main(),
+            self.runsim_in_main(),
+            self.save_simres_in_main(dirpath.name),
+            self.close_main(),
+        ]
+
+        # model definition
+        model_parts = [
+            "\n",
+            self.consts_ypb(rep_lines),
+            self.struct(),
+            self.open_simtrait(),
+            self.fn_new(rep_lines["p"]),
+            "\n",
+            self.fn_init(rep_lines["t"], rep_lines["y"]),
+            "\n",
+            self.fn_ode(rep_lines["ode"]),
+            "\n",
+            self.fn_rec(rep_lines["rec"]),
+            "\n",
+            self.fn_cond(rep_lines["cond"]),
+            "\n",
+            self.fn_beat(rep_lines["beat"]),
+            "\n",
+            self.fn_cre(rep_lines["cre"]),
+            self.close_simtrait(),
+        ]
+
+        # sampling time function
+        smptime_parts = [self.fn_smptime(rep_lines["smptime"])]
+
+        code_list = import_parts + main_parts + model_parts + smptime_parts
+        return "".join(code_list)
+
 
 class OptWriter(SimWriter):
     def data_in_main(self):
@@ -87,67 +137,96 @@ class OptWriter(SimWriter):
     def obj_in_main(self):
         return rs_parts.LET_OBJECTIVE
 
-    # def optimizer_in_main(self, rep_lines: Dict[str, str]) -> str:
-    #     codes_opt = list()
-    #     list_main.extend(
-    #         self._list_optimizer(
-    #             rep_source.lines["optimizer"], rep_source.lines["optimizer_options"]
-    #         )
-    #     )
-    #     return "".join(codes_sim)
+    def optimizer_in_main(self, rep_lines: Dict[str, str]) -> str:
+        method = rep_lines["optimizer"]
+        options = rep_lines["optimizer_options"]
+        code_opt = rs_parts._let_optimizer(method, options)
+        return "".join(code_opt)
 
+    def runopt_in_main(self):
+        return rs_parts.RUN_OPTIMIZER
 
-# class OptWriter(SimWriter):
-#     def run(self, rep_source: ReplacedSource):
-#         sects = self._common_with_inherited(rep_source)
-#         list_import, list_main, list_const, list_model = sects
-#         list_main.append(rs_main.RUN_OPTIMIZER)
-#         list_main.append(self._write_save_result())
-#         list_main = [rs_main.HEADER] + list_main + [rs_main.FOOTER]
-#         list_obs = [self._write_fn_obs(rep_source)]
-#         sections = list_import + list_main + list_const + list_model + list_obs
-#         code = "".join(sections)
-#         self.save(code)
+    def save_optres_in_main(self, dirpath: str) -> str:
+        return rs_parts._save_optres(dirpath)
 
-#     def _common_with_inherited(self, rep_source: ReplacedSource):
-#         sects = super()._common_with_inherited(rep_source)
-#         list_import, list_main, list_const, list_model = sects
+    def const_x(self, rep_lines: Dict[str, str]):
+        return rs_parts._const_param_length("X", rep_lines["x_index"])
 
-#         list_main.extend([rs_main.LET_DATA, rs_main.LET_OBJECTIVE])
-#         list_main.extend(
-#             self._list_optimizer(
-#                 rep_source.lines["optimizer"], rep_source.lines["optimizer_options"]
-#             )
-#         )
+    def open_opttrait(self) -> str:
+        return rs_parts.OPEN_OPTTRAIT
 
-#         list_const.append(rs_const._const_for_length("X", rep_source.lines["x_index"]))
+    def fn_getx(self, rep_lines):
+        return rs_parts._fn_getx(rep_lines["x_index"], rep_lines["x_bounds"])
 
-#         list_model.append(self._write_opt_trait(rep_source))
+    def fn_getp(self):
+        return rs_parts.FN_GETP
 
-#         return list_import, list_main, list_const, list_model
+    def fn_setp(self):
+        return rs_parts.FN_SETP
 
-#     # common parts with ExcWriter class
-#     def _list_optimizer(self, optimizer, optimizer_options):
-#         return rs_main._write_let_optimizer(optimizer, optimizer_options)
+    def close_opttrait(self) -> str:
+        return rs_parts.CLOSE_OPTTRAIT
 
-#     def _write_opt_trait(self, rep_source: ReplacedSource):
-#         opt_trait = [
-#             rs_opt.IMPL_OPTTRAIT,
-#             rs_opt.write_fn_getx(
-#                 rep_source.lines["x_index"], rep_source.lines["x_bounds"]
-#             ),
-#             rs_opt.FN_GETP,
-#             rs_opt.FN_SETP,
-#             rs_opt.END_IMPL_OPTTRAIT,
-#         ]
-#         return "".join(opt_trait)
+    def fn_obs(self, data_lines):
+        return rs_parts._fn_obs(data_lines)
 
-#     # unique
-#     def _write_save_result(self):
-#         return rs_main.SAVE_OPTRES
+    def write_code(self, rep_lines: Dict[str, str], dirpath: Path) -> str:
+        # import
+        import_parts = [self.use_aphreco()]
 
-#     def _write_fn_obs(self, rep_source: ReplacedSource):
-#         return rs_data.write_fn_obs(rep_source.lines["obs"])
+        # main function
+        main_parts = [
+            "\n",
+            self.start_main(),
+            self.model_in_main(),
+            self.simulator_in_main(rep_lines),
+            self.data_in_main(),
+            self.obj_in_main(),
+            "\n",
+            self.optimizer_in_main(rep_lines),
+            self.runopt_in_main(),
+            self.save_optres_in_main(dirpath.name),
+            self.close_main(),
+        ]
+
+        # model definition
+        model_parts = [
+            "\n",
+            self.consts_ypb(rep_lines),
+            self.struct(),
+            # Simulator
+            self.open_simtrait(),
+            self.fn_new(rep_lines["p"]),
+            "\n",
+            self.fn_init(rep_lines["t"], rep_lines["y"]),
+            "\n",
+            self.fn_ode(rep_lines["ode"]),
+            "\n",
+            self.fn_rec(rep_lines["rec"]),
+            "\n",
+            self.fn_cond(rep_lines["cond"]),
+            "\n",
+            self.fn_beat(rep_lines["beat"]),
+            "\n",
+            self.fn_cre(rep_lines["cre"]),
+            self.close_simtrait(),
+            # Optimizer
+            self.const_x(rep_lines),
+            "\n",
+            self.open_opttrait(),
+            self.fn_getx(rep_lines),
+            "\n",
+            self.fn_getp(),
+            "\n",
+            self.fn_setp(),
+            self.close_opttrait(),
+        ]
+
+        # observation function
+        obs_parts = [self.fn_obs(rep_lines["obs"])]
+
+        code_list = import_parts + main_parts + model_parts + obs_parts
+        return "".join(code_list)
 
 
 # class ExvWriter(OptWriter):

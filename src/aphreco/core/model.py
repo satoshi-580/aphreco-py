@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
+from aphreco.types import NamesDict, TermsDict, UnksDict, ValsDict
 
 from .base import BaseEdge, BaseItem
 from .utils.colors import PColor
@@ -22,7 +23,7 @@ class BaseModel(BaseItem):
 
 
 class ImplCollectForModel(BaseModel):
-    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+    def collect_names(self, names_dict: NamesDict):
         """recursively collects names of Y, P, X, E in lower layers than the current model.
 
         This method is an abstractmethod defined in and forced by BaseItem.
@@ -79,11 +80,11 @@ class ImplCollectForModel(BaseModel):
         else:
             return self.collect_names(OrderedDict())
 
-    def collect_values(self, val_dicts: Dict[str, float]) -> Dict[str, float]:
+    def collect_values(self, val_dicts: ValsDict) -> ValsDict:
         """collects values of Variables in a model.
 
         Args:
-            val_dicts Dict[str, float]: The dictionary of a name (key) and a value (value) of Variables.
+            val_dicts ValsDict: The dictionary of a name (key) and a value (value) of Variables.
                 values Dict[str, value]: {"value", "lb", "ub"}
         """
         for _, item in self.children.items():
@@ -93,7 +94,7 @@ class ImplCollectForModel(BaseModel):
                 val_dicts = item.collect_values(val_dicts)
         return val_dicts
 
-    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+    def collect_terms(self, terms_dict: TermsDict) -> TermsDict:
         """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
 
         Args:
@@ -139,10 +140,7 @@ class ImplCollectForModel(BaseModel):
             )
         return used_names_set
 
-    def collect_unknowns(
-        self,
-        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
-    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+    def collect_unknowns(self, unks_dict: UnksDict) -> UnksDict:
         """collects unknown parameters.
 
         Retruns:
@@ -400,7 +398,7 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
             # check duplication of names after adding prefix/suffix
             if prefix != "" and suffix != "":
                 new_names_dict_list = [
-                    {new_name: None for _, new_name in _repmap.items()}
+                    {new_name: (ItemType.ITEM, -1) for _, new_name in _repmap.items()}
                 ]
                 check_duplication_between_new_and_old(
                     new_names_dict_list, existing_names_dict
@@ -558,9 +556,7 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
                 break
         return ans
 
-    def set_yp_index(
-        self, names_dict: Dict[str, Tuple[ItemType, int]]
-    ) -> Dict[str, Tuple[ItemType, int]]:
+    def set_yp_index(self, names_dict: NamesDict) -> NamesDict:
         y_index = 0
         p_index = 0
         for name, (itemtype, _) in names_dict.items():
@@ -574,11 +570,7 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
                 continue
         return names_dict
 
-    def set_x_index(
-        self,
-        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
-        names_dict: Dict[str, Tuple[ItemType, int]],
-    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+    def set_x_index(self, unks_dict: UnksDict, names_dict: NamesDict) -> UnksDict:
         """
         unks_dict: OrderedDict[name, (value, p_index, (lb, ub))]
         """
@@ -601,9 +593,7 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
         return ynames
 
 
-def check_duplication_within_new(
-    new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]]
-):
+def check_duplication_within_new(new_names_dict_list: List[NamesDict]):
     """checks if there is any duplication of names inside new_items.
 
     Args:
@@ -620,8 +610,8 @@ def check_duplication_within_new(
 
 
 def check_duplication_between_new_and_old(
-    new_names_dict_list,
-    existing_names_dict: Dict[str, Tuple[ItemType, int]],
+    new_names_dict_list: List[NamesDict],
+    existing_names_dict: NamesDict,
 ):
     """checks if the new_items have the name that has already existed.
 
@@ -641,8 +631,8 @@ def check_duplication_between_new_and_old(
 
 def check_unregistration(
     used_names_set: Set[str],
-    existing_names_dict: Dict[str, Tuple[ItemType, int]],
-    new_names_dict_list: List[Dict[str, Tuple[ItemType, int]]],
+    existing_names_dict: NamesDict,
+    new_names_dict_list: List[NamesDict],
 ):
     union: Set[str] = set()
     for new in new_names_dict_list:

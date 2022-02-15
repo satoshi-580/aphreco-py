@@ -233,111 +233,53 @@ class OptFormatter(SimFormatter):
             return "".join(lines)
 
     def format_optimizer_info(self, lines, optimizer):
+        """
+        optimizer: Optimizer
+            .options: Dict[str, value]
+        """
+        lines["optimizer"] = optimizer.method.name
+
+        if optimizer.method.is_default:
+            str_opt_options = "default"
+        else:
+            options = list()
+            for key, value in optimizer.method.options.items():
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                options.append(key + ": " + str(value) + ",\n")
+            str_opt_options = "".join(options)
+        lines["optimizer_options"] = str_opt_options
+
         return lines
 
-    def format_obs_info(self, lines, obs):
+    def format_obs_info(self, lines, data):
+        """formats observation data."""
+        obs_lines = list()
+        yname = ""
+        max_datalen = 0
+        for i, record in enumerate(data.table):
+            if yname != record[0]:
+                obs_lines.append(f"// {record[0]}\n")
+                yname = record[0]
+
+            obs_line = (
+                "("
+                + str(record[5])
+                + ", "
+                + str(record[1])
+                + ", "
+                + str(record[2])
+                + ", "
+                + str(record[3])
+                + ", "
+                + str(record[4])
+                + ")"
+            )
+            obs_lines.append(obs_line + ",***space***// d[" + str(i) + "]\n")
+            datalen = len(obs_line)
+            max_datalen = datalen if max_datalen < datalen else max_datalen
+
+        obs_lines = _replace_space(obs_lines, "),", max_datalen)
+
+        lines["obs"] = "".join(obs_lines)
         return lines
-
-
-# class OptCollector(SimCollector):
-#     @classmethod
-#     def _common_with_inherited(
-#         cls,
-#         source: Source,
-#         model: BaseModel,
-#         symbols: Symbols,
-#         simulator: Simulator,
-#         optimizer: Optional[Optimizer] = None,
-#     ):
-#         source, _, val_dicts = super()._common_with_inherited(
-#             source, model, symbols, simulator, optimizer
-#         )
-#         source.lines["x_index"] = cls.arrange_x_index(val_dicts["x"], symbols)
-#         source.lines["x_bounds"] = cls.arrange_x_bounds(val_dicts["x"], symbols)
-
-#         if optimizer is None:
-#             raise ValueError("None found in optimizer")
-
-#         lst_optimizer, lst_optimizer_options = cls.collect_optimizer(optimizer)
-#         source.lines["optimizer"] = lst_optimizer
-#         source.lines["optimizer_options"] = lst_optimizer_options
-
-#         return source
-
-
-#     @classmethod
-#     def collect_optimizer(cls, optimizer: Optimizer):
-#         """
-#         optimizer: Optimizer or List[Optimizer]
-#             .options: Dict[str, value] or List[Dict[str, value]]
-#         """
-#         if not isinstance(optimizer, Optimizer):
-#             raise TypeError(f"invalid type: {type(optimizer)}")
-#         if optimizer.methods is None:
-#             raise ValueError("designate optimization method")
-
-#         optmethods = list()
-#         optmethods_options = list()
-
-#         for method in optimizer.methods:
-#             optmethods.append(method.name)
-#             if method.is_default:
-#                 optmethods_options.append("default")
-#             else:
-#                 options = list()
-#                 for key, value in method.options.items():
-#                     if isinstance(value, bool):
-#                         value = str(value).lower()
-#                     options.append(key + ": " + str(value) + ",\n")
-#                 optmethods_options.append("".join(options))
-#         return optmethods, optmethods_options
-
-#     @classmethod
-#     def collect_obs(cls, obs: Obs):
-#         if obs.data is None:
-#             raise ValueError
-
-#         obs_lines = list()
-#         yname = ""
-#         max_datalen = 0
-#         for i, data in enumerate(obs.data):
-#             if yname != data[0]:
-#                 obs_lines.append(f"// {data[0]}\n")
-#                 yname = data[0]
-
-#             obs_line = (
-#                 "("
-#                 + str(data[5])
-#                 + ", "
-#                 + str(data[1])
-#                 + ", "
-#                 + str(data[2])
-#                 + ", "
-#                 + str(data[3])
-#                 + ", "
-#                 + str(data[4])
-#                 + ")"
-#             )
-#             obs_lines.append(obs_line + ",***space***// d[" + str(i) + "]\n")
-#             datalen = len(obs_line)
-#             max_datalen = datalen if max_datalen < datalen else max_datalen
-
-#         obs_lines = replace_space(obs_lines, "),", max_datalen)
-
-#         return "".join(obs_lines)
-
-#     @classmethod
-#     def run(
-#         cls,
-#         model: BaseModel,
-#         symbols: Symbols,
-#         simulator: Simulator,
-#         optimizer: Optimizer,
-#         data: Obs,
-#     ):
-#         source = Source()
-#         source = cls._common_with_inherited(
-#             source, model, symbols, simulator, optimizer
-#         )
-#         source.lines["obs"] = cls.collect_obs(data)
-#         return source

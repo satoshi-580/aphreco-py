@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, Tuple
+from typing import Dict, Tuple
 
 from aphreco.enums import ItemType
 
@@ -61,9 +61,6 @@ class BaseSolver(abc.ABC):
         repmap = self.replacer.create_repmap(names_dict)
         rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
         return rep_lines
-
-    def _export_codes(self, codes: str):
-        self.exporter.create_main(codes)
 
     def _execute(self, release):
         if release:

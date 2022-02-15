@@ -42,13 +42,13 @@ class Exporter:
         self._mkdir_if_not_exists("src")
         self._mkdir_if_not_exists("res")
 
-    def create_main(self, codes):
+    def create_main(self, code):
         # save the source code as main.rs
         path_main = self.path / "src" / "main.rs"
-        _save_content_as(path_main, codes)
+        _save_content_as(path_main, code)
 
-    def mkdir_new_res(self):
-        str_now = "Sim_" + datetime.now().strftime("%y%m%d-%H%M%S")
+    def mkdir_new_res(self, prefix: str):
+        str_now = prefix + datetime.now().strftime("%y%m%d-%H%M%S")
         path_new_res = self.path / "res" / str_now
         if not path_new_res.exists():
             path_new_res.mkdir()
