@@ -3,10 +3,12 @@ from collections import OrderedDict
 from aphreco.core import Data, Model
 
 from .base import BaseSolver
+from .command import Command
 from .export import Exporter
 from .fmin.base import BaseFminAlgorithm
 from .fmin.serial import NelderMead
 from .format import OptFormatter
+from .read import OptResReader
 from .replace import Replacer
 from .simulator import Simulator
 from .write import OptWriter
@@ -34,8 +36,8 @@ class Optimizer(BaseSolver):
         self.replacer = Replacer()
         self.exporter = Exporter()
         self.writer = OptWriter()
-        # self.command = Command()
-        # self.reader = SimResReader()
+        self.command = Command()
+        self.reader = OptResReader()
 
     def run(
         self,
@@ -77,22 +79,23 @@ class Optimizer(BaseSolver):
 
         # ====================
         # format lines
-        # generate lines with t/y/p/ode/rec/cond/beat/cre and /x_index/x_bounds.
+        # generate lines with t/y/p/ode/rec/cond/beat/cre and /x_index/x_bounds,
+        # and lines of solver settings.
         lines = self.formatter.format_model_info(
             (names_dict, vals_dict, terms_dict, unks_dict)
         )
-        # lines of solver settings
         lines = self.formatter.format_simulator_info(lines, self.simulator)
         lines = self.formatter.format_optimizer_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
-        #     lines["data"]: observation data
+        #     lines["obs"]: observation data
         data.set_yindex(names_dict)
         data.sort_by_index()
         lines = self.formatter.format_obs_info(lines, data)
 
         # ====================
         # replace lines
-        rep_lines = self._replace_names(lines, names_dict)
+        repmap = self.replacer.create_repmap(names_dict)
+        rep_lines = self.replacer.replace_names_in_terms(lines, repmap)
 
         # ====================
         # make a directory for export
@@ -100,21 +103,18 @@ class Optimizer(BaseSolver):
         self.exporter.setup_env()
         self.dirpath = self.exporter.mkdir_new_res("Opt_")
 
-        # # ====================
-        # # assemble string parts into one code
+        # ====================
+        # assemble string parts into one code
         code = self.writer.write_code(rep_lines, self.dirpath)
-        print(code)
 
-        # # ====================
-        # # save a code string as main.rs
-        # self.exporter.create_main(code)
+        # ====================
+        # save a code string as main.rs
+        self.exporter.create_main(code)
 
         if now:
-            return True
-        # if now:
-        #     # execute command 'cargo run' or 'cargo run --release'
-        #     self._execute(release)
+            # execute command 'cargo run' or 'cargo run --release'
+            self._execute(release)
 
-        #     # read and return simulated results
-        #     simres = self.read(self.dirpath, model.ynames)
-        #     return simres
+            # read and return optimized results
+            optres = self.reader.read(self.dirpath, unks_dict)
+            return optres

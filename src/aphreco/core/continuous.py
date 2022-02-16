@@ -195,12 +195,3 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
             self._name = self._create_name_from_term(self.term)
 
         return is_empty, self
-
-
-# class EdgeC(BaseEdge):
-#     def _get_symbols(self):
-#         symbols = set()
-#         for k, term in self.term.items():
-#             symbols.add(sympy.sympify(k))
-#             symbols = symbols.union(sympy.sympify(term).atoms(sympy.Symbol))
-#         return symbols

@@ -229,7 +229,7 @@ class OptFormatter(SimFormatter):
         if len(lines) == 0:
             return "None"
         else:
-            lines = _replace_space(lines, ",", max_vallen)
+            lines = _replace_space(lines, "),", max_vallen)
             return "".join(lines)
 
     def format_optimizer_info(self, lines, optimizer):

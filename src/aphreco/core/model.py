@@ -580,6 +580,10 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
             x_index += 1
         return unks_dict
 
+    def set_values(self, vals_dict: ValsDict):
+        for _, item in self.children.items():
+            item.set_values(vals_dict)
+
     @property
     def ynames(self) -> List[str]:
         names_dict = self.set_yp_index(self.collect_names(OrderedDict()))

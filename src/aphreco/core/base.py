@@ -78,6 +78,10 @@ class BaseItem(abc.ABC):
     def _delete_involved(self, name):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def set_values(self, vals_dict):
+        raise NotImplementedError
+
 
 class BaseComponent(BaseItem):
     def _find_path_by_name(self, name: str, dq_path: deque) -> Optional[deque]:
@@ -108,3 +112,6 @@ class BaseEdge(BaseComponent):
     @_is_default_name.setter
     def _is_default_name(self, _is_default_name):
         self.__is_default_name = _is_default_name
+
+    def set_values(self, _):
+        pass
