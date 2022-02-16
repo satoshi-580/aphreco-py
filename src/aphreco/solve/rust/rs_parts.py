@@ -20,7 +20,7 @@ LET_MODEL = """  let model = Model::new();
 LET_STEP_OPTIONS_DEFAULT = """  let step_options = StepOptions::Default;
 """
 LET_STEP_OPTIONS = """  let step_options = StepOptions::***method*** {
-    ***options***  };
+***options***  };
 """
 LET_STEPPER = """  let stepper = Stepper::***method***(step_options);
 """
@@ -32,7 +32,11 @@ def _let_stepper(method: str, options: str):
     else:
         str_options = LET_STEP_OPTIONS
         str_options = str_options.replace("***method***", method)
-        str_options = str_options.replace("***options***", options)
+        indent = " " * 4
+        option_lines = list()
+        for option in options.splitlines():
+            option_lines.append(indent + option + "\n")
+        str_options = str_options.replace("***options***", "".join(option_lines))
 
     str_stepper = LET_STEPPER.replace("***method***", method)
     return [str_options + str_stepper]
@@ -68,7 +72,7 @@ LET_OBJECTIVE = """  let mut objective = Objective::new(simulator, data);
 LET_OPTIMIZER_OPTIONS_DEFAULT = """  let opt_options = OptOptions::Default;
 """
 LET_OPTIMIZER_OPTIONS = """  let opt_options = OptOptions::***method*** {
-    ***options***  };
+***options***  };
 """
 LET_OPTIMIZER = """  let optimizer = Optimizer::***method***(opt_options);
 """
@@ -80,7 +84,11 @@ def _let_optimizer(method: str, options: str):
     else:
         str_options = LET_OPTIMIZER_OPTIONS
         str_options = str_options.replace("***method***", method)
-        str_options = str_options.replace("***options***", options)
+        indent = " " * 4
+        option_lines = list()
+        for option in options.splitlines():
+            option_lines.append(indent + option + "\n")
+        str_options = str_options.replace("***options***", "".join(option_lines))
 
     str_stepper = LET_OPTIMIZER.replace("***method***", method)
     return [str_options + str_stepper]
