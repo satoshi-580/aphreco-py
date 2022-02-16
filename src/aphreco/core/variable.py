@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
+from aphreco.types import ValsDict
 
 from .base import BaseComponent
 from .func.rename import rename_all
@@ -261,6 +262,10 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
                 return True, self
 
         return False, self
+
+    def set_values(self, vals_dict: ValsDict):
+        if self.name in vals_dict.keys():
+            self.value = vals_dict[self.name]
 
 
 class Y:
