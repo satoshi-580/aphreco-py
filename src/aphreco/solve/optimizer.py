@@ -115,6 +115,6 @@ class Optimizer(BaseSolver):
             # execute command 'cargo run' or 'cargo run --release'
             self._execute(release)
 
-            # read and return simulated results
+            # read and return optimized results
             optres = self.reader.read(self.dirpath, unks_dict)
             return optres

@@ -3,6 +3,8 @@ import glob
 from pathlib import Path
 from typing import List, Union
 
+from aphreco.types import UnksDict
+
 no_pandas = False
 try:
     import pandas as pd
@@ -20,8 +22,12 @@ class SimResult:
     def __init__(self, t, y):
         self.t = t
         self.y = y
-        self.log = ""
         self.nfev = {"ode": 0, "rec": 0, "cre": 0}
+
+
+class OptResult:
+    def __init__(self, x):
+        self.x = x
 
 
 class ResReader:
@@ -99,3 +105,41 @@ class SimResReader(ResReader):
 
         simres = SimResult(t, y)
         return simres
+
+
+class OptResReader(ResReader):
+    def __init__(self):
+        pass
+
+    def read(self, dirpath: Union[Path, str], unks_dict: UnksDict):
+        """reads a optimized result.
+
+        Args:
+            dirpath Union[Path, str]: The directory path of the simulated result.
+                Recommend not to rename a file 'Sim_***.csv' (*** is a datetime).
+
+            unks_dict (UnksDict): A dictionary of names of unknown variables in a model.
+                They can be obtained from 'Model.x'.
+        """
+        if not isinstance(dirpath, Path):
+            dirpath = Path(dirpath)
+
+        # to be passed to glob and read an only first file.
+        csv_name = "optres.csv"
+
+        x = dict()
+        # read a file by pandas, numpy, or a standard way.
+        if not no_pandas:
+            # returns SimResult with a Series of t and a DataFrame of y.
+            gb_file = glob.glob(str(dirpath / csv_name))
+            df_x = pd.read_csv(gb_file[0], header=None)
+
+            if len(df_x) != len(unks_dict):
+                raise ValueError(f"different length of unknowns.")
+
+            for xname, (_, p_index, _) in unks_dict.items():
+                value = df_x[df_x[0] == p_index][1].values[0]
+                x[xname] = value
+
+        optres = OptResult(x)
+        return optres
