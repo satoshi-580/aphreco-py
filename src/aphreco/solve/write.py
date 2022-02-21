@@ -2,7 +2,7 @@ import abc
 from pathlib import Path
 from typing import Dict
 
-from .rust import rs_parts
+from .rs import rs_parts
 
 
 class BaseWriter:
