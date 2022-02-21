@@ -19,6 +19,9 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
         rhs = str(sympy.simplify(sympy.sympify(rhs)))
     else:
         rhs = str(sympy.sympify(rhs))
+
+    if rhs == "0":
+        rhs = "0.0"
     return rhs
 
 
