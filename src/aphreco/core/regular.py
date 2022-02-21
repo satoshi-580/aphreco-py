@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from aphreco.enums import ItemType
 
@@ -121,7 +121,7 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
     def __init__(
         self,
         beat: Tuple[str, str, str],
-        term: Dict[str, str],
+        term: Dict[str, Union[str, Dict[str, Tuple[str, str]]]],
         name: str = None,
         _is_default_name: bool = None,
     ):
@@ -195,18 +195,28 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
         copied_beat = (start, stop, step)
 
         # term
-        copied_term: Dict[str, str] = OrderedDict()
-        for yname, str_rhs in self.term.items():
+        copied_term: Dict[str, Union[str, Dict[str, Tuple[str, str]]]] = OrderedDict()
+        for yname, rhs in self.term.items():
             # because lhs is always ItemType.Y,
             # add prefix/suffix to yname unconditionally.
             copied_name = prefix + yname + suffix
 
-            copied_rhs = str_rhs
-            if _repmap is not None:
-                for old, new in _repmap.items():
-                    copied_rhs = copied_rhs.replace(old, new)
-
-            copied_term[copied_name] = copied_rhs
+            if isinstance(rhs, str):
+                copied_rhs = rhs
+                if _repmap is not None:
+                    for old, new in _repmap.items():
+                        copied_rhs = copied_rhs.replace(old, new)
+                copied_term[copied_name] = copied_rhs
+            else:
+                for cond, (truecase, falsecase) in rhs.items():
+                    dict_rhs: Dict[str, Tuple[str, str]] = dict()
+                    if _repmap is not None:
+                        for old, new in _repmap.items():
+                            cond = cond.replace(old, new)
+                            truecase = truecase.replace(old, new)
+                            falsecase = falsecase.replace(old, new)
+                    dict_rhs[cond] = (truecase, falsecase)
+                copied_term[copied_name] = dict_rhs
 
         if self.name != self._create_name_from_term(self.term):
             copied_name = self.name
