@@ -26,6 +26,12 @@ class ItemType(enum.Flag):
     ITEM = COMPONENT | MODEL
 
 
+class FnType(enum.Enum):
+    ODE = enum.auto()
+    REC = enum.auto()
+    CRE = enum.auto()
+
+
 class StepType(enum.Flag):
     Dopri45 = enum.auto()
     Rk4 = enum.auto()
