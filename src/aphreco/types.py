@@ -21,9 +21,9 @@ CreTerm = Union[str, Ternary]
 #   {(start, stop, step): [rhs or {cond: (rhs of truecase, rhs of falsecase)}]},
 #   {yname: [rhs]},
 # )
-OdeTerms = Dict[str, List[str]]
+OdeTerms = Dict[str, List[Union[str, Ternary]]]
 RecTerms = Dict[str, List[Union[str, Ternary]]]
-CreTerms = Dict[str, List[Union[str, Ternary]]]
+CreTerms = Dict[str, Union[str, Ternary]]
 TermsDicts = Tuple[OdeTerms, Dict[Beat, RecTerms], CreTerms]
 
 # {x_name: (x0, p_index, (lb, ub))}

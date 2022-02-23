@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
+from aphreco.types import Beat, CreTerms, OdeTerms, RecTerms, Ternary
 
 
 def _replace_space(lines: List[str], sub: str, max_vallen: int) -> List[str]:
@@ -19,10 +20,29 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
         rhs = str(sympy.simplify(sympy.sympify(rhs)))
     else:
         rhs = str(sympy.sympify(rhs))
-
     if rhs == "0":
         rhs = "0.0"
     return rhs
+
+
+def _connect_str_rhs(rhs_list: List[Union[str, Ternary]], simplify_eq: bool) -> str:
+    str_rhs = ""
+    all_str = True
+    for rhs in rhs_list:
+        if isinstance(rhs, str):
+            str_rhs += _sympify_simplify(rhs, simplify_eq) + " + "
+
+        elif isinstance(rhs, tuple):
+            all_str = False
+            cond, true, false = rhs
+            true = _sympify_simplify(true, simplify_eq)
+            false = _sympify_simplify(false, simplify_eq)
+            str_rhs += f"if {cond} {{ {true} }} else {{ {false} }} + "
+
+    if all_str and simplify_eq:
+        return _sympify_simplify(str_rhs[:-3], simplify_eq)
+
+    return str_rhs[:-3]
 
 
 def range_f2s(start: float, stop: float, step: float):
@@ -58,12 +78,12 @@ class SimFormatter(BaseFormatter):
         lines["y"] = self.line_y(names_dict, vals_dict)
         lines["p"] = self.line_p(names_dict, vals_dict)
 
-        lines["ode"] = self.arrange_ode(terms_dict["ode"])
-        str_rec, str_cond, str_beat = self.arrange_rec(terms_dict["rec"])
+        lines["ode"] = self.arrange_ode(terms_dict[0])
+        str_rec, str_cond, str_beat = self.arrange_rec(terms_dict[1])
         lines["rec"] = str_rec
         lines["cond"] = str_cond
         lines["beat"] = str_beat
-        lines["cre"] = self.arrange_cre(terms_dict["cre"])
+        lines["cre"] = self.arrange_cre(terms_dict[2])
 
         return lines
 
@@ -106,18 +126,15 @@ class SimFormatter(BaseFormatter):
         lines = _replace_space(lines, ",", max_vallen)
         return "".join(lines)
 
-    def arrange_ode(self, ode_dict: Dict[str, str]) -> str:
-        lines = list()
-        for lhs, rhs in ode_dict.items():
-            rhs = _sympify_simplify(rhs, self.simplify_eq)
-            eq = "deriv_" + lhs + " = " + rhs + "\n"
-            lines.append(eq)
-        return "".join(lines)
+    def arrange_ode(self, ode_dict: OdeTerms) -> str:
+        ode_lines = list()
+        for str_lhs, rhs_list in ode_dict.items():
+            str_rhs = _connect_str_rhs(rhs_list, self.simplify_eq)
+            str_ode = "deriv_" + str_lhs + " = " + str_rhs + "\n"
+            ode_lines.append(str_ode)
+        return "".join(ode_lines)
 
-    def arrange_rec(
-        self, rec_dict: Dict[Tuple[str, str, str], Dict[str, str]]
-    ) -> Tuple[str, str, str]:
-
+    def arrange_rec(self, rec_dict: Dict[Beat, RecTerms]) -> Tuple[str, str, str]:
         rec_lines = list()
         cond_lines = list()
         beat_lines = list()
@@ -125,10 +142,11 @@ class SimFormatter(BaseFormatter):
         for i, (beat, rec) in enumerate(rec_dict.items()):
             # rec
             rec_lines.append(f"=== {i}: {beat}\n")
-            for lhs, rhs in rec.items():
-                rhs = _sympify_simplify(rhs, self.simplify_eq)
-                rec_line = "delta_" + lhs + " += " + rhs + "\n"
-                rec_lines.append(rec_line)
+            for str_lhs, rhs_list in rec.items():
+                str_rhs = _connect_str_rhs(rhs_list, self.simplify_eq)
+
+                str_rec = "delta_" + str_lhs + " += " + str_rhs + "\n"
+                rec_lines.append(str_rec)
 
             # condition
             cond_lines.append(
@@ -145,13 +163,13 @@ class SimFormatter(BaseFormatter):
         str_beat = "".join(beat_lines)
         return str_rec, str_cond, str_beat
 
-    def arrange_cre(self, cre_dict: Dict[str, str]) -> str:
-        lines = list()
-        for lhs, rhs in cre_dict.items():
-            rhs = _sympify_simplify(rhs, self.simplify_eq)
-            eq = lhs + " = " + rhs + "\n"
-            lines.append(eq)
-        return "".join(lines)
+    def arrange_cre(self, cre_dict: CreTerms) -> str:
+        cre_lines = list()
+        for str_lhs, rhs in cre_dict.items():
+            str_rhs = _connect_str_rhs([rhs], self.simplify_eq)
+            str_cre = str_lhs + " = " + str_rhs + "\n"
+            cre_lines.append(str_cre)
+        return "".join(cre_lines)
 
     def format_simulator_info(self, lines, simulator):
         """
