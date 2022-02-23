@@ -2,6 +2,12 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from aphreco.enums import ItemType
 
+
+class Inline:
+    def __init__(self, line):
+        self.line = line
+
+
 # {yp_name: (itemtype, yp_index)}
 NamesDict = Dict[str, Tuple[ItemType, int]]
 
@@ -21,9 +27,9 @@ CreTerm = Union[str, Ternary]
 #   {(start, stop, step): [rhs or {cond: (rhs of truecase, rhs of falsecase)}]},
 #   {yname: [rhs]},
 # )
-OdeTerms = Dict[str, List[Union[str, Ternary]]]
-RecTerms = Dict[str, List[Union[str, Ternary]]]
-CreTerms = Dict[str, Union[str, Ternary]]
+OdeTerms = Dict[str, List[Union[str, Ternary, Inline]]]
+RecTerms = Dict[str, List[Union[str, Ternary, Inline]]]
+CreTerms = Dict[str, Union[str, Ternary, Inline]]
 TermsDicts = Tuple[OdeTerms, Dict[Beat, RecTerms], CreTerms]
 
 # {x_name: (x0, p_index, (lb, ub))}

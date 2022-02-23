@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
-from aphreco.types import Beat, CreTerms, OdeTerms, RecTerms, Ternary
+from aphreco.types import Beat, CreTerms, Inline, OdeTerms, RecTerms, Ternary
 
 
 def _replace_space(lines: List[str], sub: str, max_vallen: int) -> List[str]:
@@ -25,11 +25,20 @@ def _sympify_simplify(rhs: str, simplify_eq: bool) -> str:
     return rhs
 
 
-def _connect_str_rhs(rhs_list: List[Union[str, Ternary]], simplify_eq: bool) -> str:
+def _connect_lhs_and_rhs(
+    str_lhs: str,
+    rhs_list: List[Union[str, Ternary, Inline]],
+    eq_prefix: str,
+    relation: str,
+    simplify_eq: bool,
+) -> str:
     str_rhs = ""
     all_str = True
     for rhs in rhs_list:
-        if isinstance(rhs, str):
+        if isinstance(rhs, Inline):
+            return _add_inline(rhs)
+
+        elif isinstance(rhs, str):
             str_rhs += _sympify_simplify(rhs, simplify_eq) + " + "
 
         elif isinstance(rhs, tuple):
@@ -40,9 +49,19 @@ def _connect_str_rhs(rhs_list: List[Union[str, Ternary]], simplify_eq: bool) -> 
             str_rhs += f"if {cond} {{ {true} }} else {{ {false} }} + "
 
     if all_str and simplify_eq:
-        return _sympify_simplify(str_rhs[:-3], simplify_eq)
+        str_rhs = _sympify_simplify(str_rhs[:-3], simplify_eq)
+    else:
+        str_rhs = str_rhs[:-3]
 
-    return str_rhs[:-3]
+    str_eq = f"{eq_prefix}{str_lhs}{relation}{str_rhs}\n"
+    return str_eq
+
+
+def _add_inline(inline: Inline):
+    lines: List[str] = list()
+    for line in inline.line.splitlines():
+        lines.append(f"***inline***{line}\n")
+    return "".join(lines)
 
 
 def range_f2s(start: float, stop: float, step: float):
@@ -129,8 +148,9 @@ class SimFormatter(BaseFormatter):
     def arrange_ode(self, ode_dict: OdeTerms) -> str:
         ode_lines = list()
         for str_lhs, rhs_list in ode_dict.items():
-            str_rhs = _connect_str_rhs(rhs_list, self.simplify_eq)
-            str_ode = "deriv_" + str_lhs + " = " + str_rhs + "\n"
+            str_ode = _connect_lhs_and_rhs(
+                str_lhs, rhs_list, "deriv_", " = ", self.simplify_eq
+            )
             ode_lines.append(str_ode)
         return "".join(ode_lines)
 
@@ -143,9 +163,9 @@ class SimFormatter(BaseFormatter):
             # rec
             rec_lines.append(f"=== {i}: {beat}\n")
             for str_lhs, rhs_list in rec.items():
-                str_rhs = _connect_str_rhs(rhs_list, self.simplify_eq)
-
-                str_rec = "delta_" + str_lhs + " += " + str_rhs + "\n"
+                str_rec = _connect_lhs_and_rhs(
+                    str_lhs, rhs_list, "delta_", " += ", self.simplify_eq
+                )
                 rec_lines.append(str_rec)
 
             # condition
@@ -166,8 +186,7 @@ class SimFormatter(BaseFormatter):
     def arrange_cre(self, cre_dict: CreTerms) -> str:
         cre_lines = list()
         for str_lhs, rhs in cre_dict.items():
-            str_rhs = _connect_str_rhs([rhs], self.simplify_eq)
-            str_cre = str_lhs + " = " + str_rhs + "\n"
+            str_cre = _connect_lhs_and_rhs(str_lhs, [rhs], "", " = ", self.simplify_eq)
             cre_lines.append(str_cre)
         return "".join(cre_lines)
 

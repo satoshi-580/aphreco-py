@@ -1,6 +1,4 @@
 from collections import OrderedDict
-from pathlib import Path
-from typing import Dict
 
 from aphreco.core import Model
 
