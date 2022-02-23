@@ -91,14 +91,6 @@ class BaseComponent(BaseItem):
         else:
             return None
 
-    @property
-    def term(self):
-        return self._term
-
-    @term.setter
-    def term(self, term):
-        self._term = term
-
 
 class BaseEdge(BaseComponent):
     @property
