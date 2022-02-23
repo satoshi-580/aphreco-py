@@ -101,10 +101,6 @@ class BaseComponent(BaseItem):
 
 
 class BaseEdge(BaseComponent):
-    @abc.abstractmethod
-    def _create_name_from_term(self, term):
-        raise NotImplementedError
-
     @property
     def _is_default_name(self):
         return self.__is_default_name

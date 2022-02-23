@@ -59,27 +59,22 @@ class Simulator(BaseSolver):
         # check args
         if not isinstance(model, Model):
             raise TypeError("invalid type: 'model'")
+        self.model = model  # in the case of self.exe()
 
         if simplify:
             self.formatter.simplify_eq = True
 
         # ====================
-        # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).
+        # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dicts).
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
-        terms_dict = model.collect_terms(
-            OrderedDict(
-                ode=OrderedDict(),
-                rec=OrderedDict(),
-                cre=OrderedDict(),
-            )
-        )
+        terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
 
         # ====================
         # format lines
         # generate lines with t/y/p/ode/rec/cond/beat/cre,
         # and lines of solver settings.
-        lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dict))
+        lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dicts))
         lines = self.formatter.format_simulator_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
         #     lines["smptime"]: sampling times
@@ -105,9 +100,12 @@ class Simulator(BaseSolver):
         self.exporter.create_main(code)
 
         if now:
-            # execute command 'cargo run' or 'cargo run --release'
-            self._execute(release)
+            return self.exe(release)
 
-            # read and return simulated results
-            simres = self.reader.read(self.dirpath, model.ynames)
-            return simres
+    def exe(self, release=False):
+        # execute command 'cargo run' or 'cargo run --release'
+        self._execute(release)
+
+        # read and return simulated results
+        simres = self.reader.read(self.dirpath, self.model.ynames)
+        return simres
