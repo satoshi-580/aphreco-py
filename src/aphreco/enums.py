@@ -14,7 +14,8 @@ class ItemType(enum.Flag):
     CON = enum.auto()  # continuous edge
     REG = enum.auto()  # discrete edge with a regular interval
     FLX = enum.auto()  # discrete edge with a flexible interval
-    EDGE = CON | REG | FLX
+    STR = enum.auto()  # inline string for customizing processes
+    EDGE = CON | REG | FLX | STR
 
     COMPONENT = VARIABLE | EDGE
 

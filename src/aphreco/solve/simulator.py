@@ -64,22 +64,34 @@ class Simulator(BaseSolver):
             self.formatter.simplify_eq = True
 
         # ====================
-        # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dict).
+        # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dicts).
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
-        terms_dict = model.collect_terms(
-            OrderedDict(
-                ode=OrderedDict(),
-                rec=OrderedDict(),
-                cre=OrderedDict(),
-            )
-        )
+        terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
+
+        print("===Ode===")
+        ore_dict = terms_dicts[0]
+        for name in ore_dict.keys():
+            print(name, ore_dict[name])
+
+        print("\n===Rec===")
+        for beat, recterms in terms_dicts[1].items():
+            print("beat:", beat)
+            for name, terms in recterms.items():
+                print("  name:", name)
+                for term in terms:
+                    print("  ", term)
+
+        print("\n===Cre===")
+        cre_dict = terms_dicts[2]
+        for name in cre_dict.keys():
+            print(name, cre_dict[name])
 
         # ====================
         # format lines
         # generate lines with t/y/p/ode/rec/cond/beat/cre,
         # and lines of solver settings.
-        lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dict))
+        lines = self.formatter.format_model_info((names_dict, vals_dict, terms_dicts))
         lines = self.formatter.format_simulator_info(lines, self)
         # unique lines: in the case of simulation, add the following keys,
         #     lines["smptime"]: sampling times

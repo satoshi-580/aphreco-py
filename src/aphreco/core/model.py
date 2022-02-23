@@ -1,10 +1,10 @@
 import itertools
 from collections import OrderedDict, deque
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Union
 
 from aphreco.enums import ItemType
 from aphreco.errors import DuplicatedNameError, UnregisteredNameError
-from aphreco.types import NamesDict, TermsDict, UnksDict, ValsDict
+from aphreco.types import NamesDict, TermsDicts, UnksDict, ValsDict
 
 from .base import BaseEdge, BaseItem
 from .utils.colors import PColor
@@ -94,15 +94,14 @@ class ImplCollectForModel(BaseModel):
                 val_dicts = item.collect_values(val_dicts)
         return val_dicts
 
-    def collect_terms(self, terms_dict: TermsDict) -> TermsDict:
+    def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
         """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
 
         Args:
-            terms_dict: Dict[
-                'ode': Dict[yname(str), rhs(str)],
-                'rec': Dict[(start, stop, step), Dict[yname(str), rhs(str)]],
-                'cre': Dict[yname(str), rhs(str)],
-            ]
+            terms_dict (Tuple[Dict, Dict, Dict]): The tuple of dictionaries of Ode, Rec, and Cre.
+                'ode': Dict[yname(str), rhs(str or tuple(str, str, str))]
+                'rec': Dict[(start, stop, step), Dict[yname(str), rhs(str or tuple(str, str, str))]]
+                'cre': Dict[yname(str), rhs(str)]
         """
         for _, item in self.children.items():
             terms_dict = item.collect_terms(terms_dict)

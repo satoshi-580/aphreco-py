@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 import sympy
 from aphreco.enums import ItemType
-from aphreco.types import ValsDict
+from aphreco.types import CreTerm, NamesDict, TermsDicts, UnksDict, ValsDict
 
 from .base import BaseComponent
 from .func.rename import rename_all
@@ -52,34 +52,56 @@ class BaseVariable(BaseComponent):
     def bounds(self, bounds):
         self._bounds: Optional[Tuple[float, float]] = bounds
 
+    @property
+    def term(self):
+        return self._term
+
+    @term.setter
+    def term(self, term: CreTerm):
+        self._term = term
+
 
 class ImplCollectForVariable(BaseVariable):
-    def collect_names(self, names_dict: Dict[str, Tuple[ItemType, int]]):
+    def collect_names(self, names_dict: NamesDict):
         names_dict[self.name] = (self.type, -1)
         return names_dict
 
     def _collect_names_in_terms(self, used_names_set: Set[str]):
         if self.term is None:
             return used_names_set
-        else:
-            used_names: Set[str] = set()
 
-            symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
-            str_symbols_set = {str(symbol) for symbol in symbols_set}
-            used_names = used_names | str_symbols_set
+        str_symbols_set = extract_symset(self.term)
 
-            return used_names_set | used_names
+        # elif isinstance(self.term, str):
+        #     symbols_set = sympy.sympify(self.term).atoms(sympy.Symbol)
+        #     str_symbols_set = {str(symbol) for symbol in symbols_set}
 
-    def collect_values(self, vals_dict: Dict[str, float]) -> Dict[str, float]:
+        # elif isinstance(self.term, tuple):
+        #     # symbols_cond = sympy.sympify(self.term[0]).atoms(sympy.Symbol)
+        #     symbols_true = sympy.sympify(self.term[1]).atoms(sympy.Symbol)
+        #     symbols_false = sympy.sympify(self.term[2]).atoms(sympy.Symbol)
+        #     print(symbols_true, symbols_false)
+        #     # print(symbols_cond, symbols_true, symbols_false)
+        #     symbols_set = symbols_true | symbols_false
+        #     # symbols_set = symbols_cond | symbols_true | symbols_false
+        #     str_symbols_set = {str(symbol) for symbol in symbols_set}
+
+        return used_names_set | str_symbols_set
+
+    def collect_values(self, vals_dict: ValsDict) -> ValsDict:
         vals_dict[self.name] = self.value
         return vals_dict
 
-    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
+    def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
         if self.term is None:
             return terms_dict
 
-        cre = terms_dict["cre"]
+        # CreTerm = Union[str, Ternary]
+        # CreTerms = Dict[str, List[Union[str, Ternary]]]
+        cre = terms_dict[2]
 
+        # register terms in the beat
+        # {"y": rhs or (cond, true-case, false-case)}
         if self.name not in cre.keys():
             cre[self.name] = self.term
         else:
@@ -87,13 +109,9 @@ class ImplCollectForVariable(BaseVariable):
                 f"multiple CREs was found for a single variable '{self.name}'."
             )
 
-        terms_dict["cre"] = cre
-        return terms_dict
+        return (terms_dict[0], terms_dict[1], cre)
 
-    def collect_unknowns(
-        self,
-        unks_dict: Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]],
-    ) -> Dict[str, Tuple[float, int, Optional[Tuple[float, float]]]]:
+    def collect_unknowns(self, unks_dict: UnksDict) -> UnksDict:
         """collects (value, lower bound, upper bound) of Variable X."""
         if self.type == ItemType.X:
             unks_dict[self.name] = (self.value, -1, self.bounds)
@@ -150,7 +168,7 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
         value=0.0,
         type: Union[str, ItemType] = "y",
         bounds=None,
-        term=None,
+        term: CreTerm = None,
         share=True,
     ):
         self._name = name
@@ -167,7 +185,7 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
 
         # term is only for CRE (constant relationship)
         if term is None:
-            self.term = None
+            self.term: Optional[CreTerm] = None
         else:
             if self.type != ItemType.Y:
                 raise ValueError(
@@ -210,8 +228,16 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
 
         if self.term is None:
             str_tree = f"{indent}[ {self.type.name} ] {self}"
-        else:
+
+        elif isinstance(self.term, str):
             str_tree = f"{indent}[ {self.type.name} ] {self} = {self.term}"
+
+        elif isinstance(self.term, tuple):
+            cond = self.term[0]
+            true = self.term[1]
+            false = self.term[2]
+            ternary = f"if {cond} {{{true}}} else {{{false}}}"
+            str_tree = f"{indent}[ {self.type.name} ] {self} = " + ternary
 
         structure.append(str_tree)
         return structure
@@ -273,7 +299,7 @@ class Y:
         cls,
         name: str,
         value: float = 0.0,
-        term: Optional[str] = None,
+        term: Optional[CreTerm] = None,
     ):
         """Y class is for defining a dependent variable.
 

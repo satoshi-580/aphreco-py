@@ -1,11 +1,14 @@
 from collections import OrderedDict
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set
 
 from aphreco.enums import ItemType
+from aphreco.types import Beat, RecTerm, TermsDicts
 
 from .base import BaseEdge
-from .func.rename import rename_all
+from .func.rename import create_name_from_term, rename_all
 from .func.symbolize import extract_symset, str_symbol_name
+
+REC_PREFIX = "delta_"
 
 
 class BaseReg(BaseEdge):
@@ -24,6 +27,14 @@ class BaseReg(BaseEdge):
     @beat.setter
     def beat(self, beat):
         self._beat = beat
+
+    @property
+    def term(self):
+        return self._term
+
+    @term.setter
+    def term(self, term: RecTerm):
+        self._term = term
 
 
 class ImplCollectForReg(BaseReg):
@@ -49,20 +60,23 @@ class ImplCollectForReg(BaseReg):
     def collect_values(self):
         pass
 
-    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
-        rec = terms_dict["rec"]
+    def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
+        rec = terms_dict[1]
 
+        # register self.beat if it is encountered for the first time
         if self.beat not in rec.keys():
             rec[self.beat] = OrderedDict()
 
+        # register terms in the beat
+        # {"y": [rhs, (cond, true-case, false-case), ...]}
         for yname, rhs in self.term.items():
             if yname not in rec[self.beat].keys():
-                rec[self.beat][yname] = rhs
-            else:
-                rec[self.beat][yname] += f" + {rhs}"
+                rec[self.beat][yname] = [rhs]
 
-        terms_dict["rec"] = rec
-        return terms_dict
+            else:
+                rec[self.beat][yname].append(rhs)
+
+        return (terms_dict[0], rec, terms_dict[2])
 
 
 class ImplRenameForReg(BaseReg):
@@ -95,7 +109,7 @@ class ImplRenameForReg(BaseReg):
         self.term = renamed_term
 
         if self._is_default_name:
-            self._name = self._create_name_from_term(self.term)
+            self._name = create_name_from_term(self.term, REC_PREFIX)
         return self
 
 
@@ -106,7 +120,7 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
         beat (str, str, str): The tuple of three parameter names (start, stop, step),
             which defines discrete time points the edge term is calculated.
 
-        term Dict[str, str]: The lhs and rhs of a recursive (difference) equation in a model.
+        term (Dict[str, Union[str, Dict[str, Tuple[str, str]]]]): The lhs and rhs of a recursive equation in a model.
             The key and value of the dictionary indicate a name of dependent variable (y) and
             a difference occuring at a discrete point (delta_y), respectively.
 
@@ -120,18 +134,18 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
 
     def __init__(
         self,
-        beat: Tuple[str, str, str],
-        term: Dict[str, Union[str, Dict[str, Tuple[str, str]]]],
+        beat: Beat,
+        term: RecTerm,
         name: str = None,
         _is_default_name: bool = None,
     ):
-        self.beat = beat
-        self.term = term
+        self.beat: Beat = beat
+        self.term: RecTerm = term
         self._type = ItemType.REG
         self.parent = None
 
         if name is None:
-            self._name = self._create_name_from_term(term)
+            self._name = create_name_from_term(self.term, REC_PREFIX)
             if _is_default_name is None:
                 _is_default_name = True
         else:
@@ -140,18 +154,6 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
                 _is_default_name = False
 
         self._is_default_name = _is_default_name
-
-    def _create_name_from_term(self, term):
-        str_from = ""
-        str_to = ""
-        for name, term in term.items():
-            if term.lstrip()[0] == "-":
-                str_from += "delta_" + name + "+=" + term + ","
-            else:
-                str_to += "delta_" + name + "+=" + term + ","
-        name = f"{str_from[:-1]} -> {str_to[:-1]}"
-        name = name.strip()
-        return name
 
     def _add_or_skip(self, parent, is_done):
         edge = Reg(
@@ -195,7 +197,7 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
         copied_beat = (start, stop, step)
 
         # term
-        copied_term: Dict[str, Union[str, Dict[str, Tuple[str, str]]]] = OrderedDict()
+        copied_term: RecTerm = OrderedDict()
         for yname, rhs in self.term.items():
             # because lhs is always ItemType.Y,
             # add prefix/suffix to yname unconditionally.
@@ -207,18 +209,17 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
                     for old, new in _repmap.items():
                         copied_rhs = copied_rhs.replace(old, new)
                 copied_term[copied_name] = copied_rhs
-            else:
-                for cond, (truecase, falsecase) in rhs.items():
-                    dict_rhs: Dict[str, Tuple[str, str]] = dict()
-                    if _repmap is not None:
-                        for old, new in _repmap.items():
-                            cond = cond.replace(old, new)
-                            truecase = truecase.replace(old, new)
-                            falsecase = falsecase.replace(old, new)
-                    dict_rhs[cond] = (truecase, falsecase)
-                copied_term[copied_name] = dict_rhs
 
-        if self.name != self._create_name_from_term(self.term):
+            else:
+                cond, truecase, falsecase = rhs
+                if _repmap is not None:
+                    for old, new in _repmap.items():
+                        cond = cond.replace(old, new)
+                        truecase = truecase.replace(old, new)
+                        falsecase = falsecase.replace(old, new)
+                copied_term[copied_name] = (cond, truecase, falsecase)
+
+        if self.name != create_name_from_term(self.term, REC_PREFIX):
             copied_name = self.name
         else:
             copied_name = None
@@ -261,6 +262,6 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
             is_empty = True
 
         if self._is_default_name and (not is_empty):
-            self._name = self._create_name_from_term(self.term)
+            self._name = create_name_from_term(self.term, REC_PREFIX)
 
         return is_empty, self

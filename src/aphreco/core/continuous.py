@@ -2,10 +2,13 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Set
 
 from aphreco.enums import ItemType
+from aphreco.types import OdeTerm, TermsDicts
 
 from .base import BaseEdge
-from .func.rename import rename_all
+from .func.rename import create_name_from_term, rename_all
 from .func.symbolize import extract_symset, str_symbol_name
+
+ODE_PREFIX = "deriv_"
 
 
 class BaseCon(BaseEdge):
@@ -16,6 +19,14 @@ class BaseCon(BaseEdge):
     @type.setter
     def type(self, type):
         self._type = type
+
+    @property
+    def term(self):
+        return self._term
+
+    @term.setter
+    def term(self, term: OdeTerm):
+        self._term = term
 
 
 class ImplCollectForCon(BaseCon):
@@ -40,17 +51,16 @@ class ImplCollectForCon(BaseCon):
     def collect_values(self, vals_dict):
         return vals_dict
 
-    def collect_terms(self, terms_dict: Dict[str, Dict]) -> Dict[str, Dict]:
-        ode = terms_dict["ode"]
+    def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
+        ode = terms_dict[0]
 
         for yname, rhs in self.term.items():
             if yname not in ode.keys():
-                ode[yname] = rhs
+                ode[yname] = [rhs]
             else:
-                ode[yname] += f" + {rhs}"
+                ode[yname].append(rhs)
 
-        terms_dict["ode"] = ode
-        return terms_dict
+        return (ode, terms_dict[1], terms_dict[2])
 
 
 class ImplRenameForCon(BaseCon):
@@ -80,7 +90,7 @@ class ImplRenameForCon(BaseCon):
         self.term = renamed_term
 
         if self._is_default_name:
-            self._name = self._create_name_from_term(self.term)
+            self._name = create_name_from_term(self.term, ODE_PREFIX)
 
         return self
 
@@ -88,7 +98,7 @@ class ImplRenameForCon(BaseCon):
 class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
     def __init__(
         self,
-        term: Dict[str, str],
+        term: OdeTerm,
         name: str = None,
         _is_default_name: bool = None,
     ):
@@ -97,7 +107,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
         self.parent = None
 
         if name is None:
-            self._name = self._create_name_from_term(term)
+            self._name = create_name_from_term(self.term, ODE_PREFIX)
             if _is_default_name is None:
                 _is_default_name = True
         else:
@@ -106,18 +116,6 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
                 _is_default_name = False
 
         self._is_default_name = _is_default_name
-
-    def _create_name_from_term(self, term):
-        str_from = ""
-        str_to = ""
-        for name, term in term.items():
-            if term.lstrip()[0] == "-":
-                str_from += "deriv_" + name + "=" + term + ","
-            else:
-                str_to += "deriv_" + name + "=" + term + ","
-        name = f"{str_from[:-1]} -> {str_to[:-1]}"
-        name = name.strip()
-        return name
 
     def _add_or_skip(self, parent, is_done):
         edge = Con(
@@ -148,7 +146,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
         _repmap: Dict[str, str] = None,
         _is_top: bool = False,
     ):
-        copied_term: Dict[str, str] = OrderedDict()
+        copied_term: OdeTerm = OrderedDict()
         for yname, str_rhs in self.term.items():
             # because lhs is always ItemType.Y,
             # add prefix/suffix to yname unconditionally.
@@ -161,7 +159,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
 
             copied_term[copied_name] = copied_rhs
 
-        if self.name != self._create_name_from_term(self.term):
+        if self.name != create_name_from_term(self.term, ODE_PREFIX):
             copied_name = self.name
         else:
             copied_name = None
@@ -192,6 +190,6 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
             is_empty = True
 
         if self._is_default_name and (not is_empty):
-            self._name = self._create_name_from_term(self.term)
+            self._name = create_name_from_term(self.term, ODE_PREFIX)
 
         return is_empty, self
