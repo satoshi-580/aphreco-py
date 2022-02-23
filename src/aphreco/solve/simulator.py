@@ -59,6 +59,7 @@ class Simulator(BaseSolver):
         # check args
         if not isinstance(model, Model):
             raise TypeError("invalid type: 'model'")
+        self.model = model  # in the case of self.exe()
 
         if simplify:
             self.formatter.simplify_eq = True
@@ -99,9 +100,12 @@ class Simulator(BaseSolver):
         self.exporter.create_main(code)
 
         if now:
-            # execute command 'cargo run' or 'cargo run --release'
-            self._execute(release)
+            return self.exe(release)
 
-            # read and return simulated results
-            simres = self.reader.read(self.dirpath, model.ynames)
-            return simres
+    def exe(self, release=False):
+        # execute command 'cargo run' or 'cargo run --release'
+        self._execute(release)
+
+        # read and return simulated results
+        simres = self.reader.read(self.dirpath, self.model.ynames)
+        return simres
