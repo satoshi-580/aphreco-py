@@ -195,7 +195,10 @@ def _fn_ode(lines: str):
     indent = " " * 4
     body = ""
     for line in lines.splitlines():
-        body += indent + line + ";\n"
+        if line.startswith("***inline***"):
+            body += line.replace("***inline***", indent) + "\n"
+        else:
+            body += indent + line + ";\n"
     footer = CLOSE_ODE
     return header + body + footer
 
@@ -221,6 +224,10 @@ def _fn_rec(lines: str):
                 body += act_indent + "}\n"
             body += act_indent + "if act[" + str(beat_id) + "] {\n"
             beat_id += 1
+
+        elif line.startswith("***inline***"):
+            body += line.replace("***inline***", delta_indent) + "\n"
+
         else:
             body += delta_indent + line + ";\n"
     body += act_indent + "}\n"
@@ -287,7 +294,10 @@ def _fn_cre(lines: str):
     indent = " " * 4
     body = ""
     for line in lines.splitlines():
-        body += indent + line + ";\n"
+        if line.startswith("***inline***"):
+            body += line.replace("***inline***", indent) + "\n"
+        else:
+            body += indent + line + ";\n"
     footer = CLOSE_CRE
     return header + body + footer
 
