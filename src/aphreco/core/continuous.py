@@ -9,6 +9,7 @@ from .func.rename import create_name_from_term, rename_all
 from .func.symbolize import extract_symset, str_symbol_name
 
 ODE_PREFIX = "deriv_"
+ODE_RELATION = "="
 
 
 class BaseCon(BaseEdge):
@@ -90,7 +91,7 @@ class ImplRenameForCon(BaseCon):
         self.term = renamed_term
 
         if self._is_default_name:
-            self._name = create_name_from_term(self.term, ODE_PREFIX)
+            self._name = create_name_from_term(self.term, ODE_PREFIX, ODE_RELATION)
 
         return self
 
@@ -107,7 +108,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
         self.parent = None
 
         if name is None:
-            self._name = create_name_from_term(self.term, ODE_PREFIX)
+            self._name = create_name_from_term(self.term, ODE_PREFIX, ODE_RELATION)
             if _is_default_name is None:
                 _is_default_name = True
         else:
@@ -159,7 +160,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
 
             copied_term[copied_name] = copied_rhs
 
-        if self.name != create_name_from_term(self.term, ODE_PREFIX):
+        if self.name != create_name_from_term(self.term, ODE_PREFIX, ODE_RELATION):
             copied_name = self.name
         else:
             copied_name = None
@@ -190,6 +191,6 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
             is_empty = True
 
         if self._is_default_name and (not is_empty):
-            self._name = create_name_from_term(self.term, ODE_PREFIX)
+            self._name = create_name_from_term(self.term, ODE_PREFIX, ODE_RELATION)
 
         return is_empty, self

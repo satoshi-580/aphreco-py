@@ -9,6 +9,7 @@ from .func.rename import create_name_from_term, rename_all
 from .func.symbolize import extract_symset, str_symbol_name
 
 REC_PREFIX = "delta_"
+REC_RELATION = "+="
 
 
 class BaseReg(BaseEdge):
@@ -109,7 +110,7 @@ class ImplRenameForReg(BaseReg):
         self.term = renamed_term
 
         if self._is_default_name:
-            self._name = create_name_from_term(self.term, REC_PREFIX)
+            self._name = create_name_from_term(self.term, REC_PREFIX, REC_RELATION)
         return self
 
 
@@ -145,7 +146,7 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
         self.parent = None
 
         if name is None:
-            self._name = create_name_from_term(self.term, REC_PREFIX)
+            self._name = create_name_from_term(self.term, REC_PREFIX, REC_RELATION)
             if _is_default_name is None:
                 _is_default_name = True
         else:
@@ -211,15 +212,15 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
                 copied_term[copied_name] = copied_rhs
 
             else:
-                cond, truecase, falsecase = rhs
+                cond, true, false = rhs
                 if _repmap is not None:
                     for old, new in _repmap.items():
                         cond = cond.replace(old, new)
-                        truecase = truecase.replace(old, new)
-                        falsecase = falsecase.replace(old, new)
-                copied_term[copied_name] = (cond, truecase, falsecase)
+                        true = true.replace(old, new)
+                        false = false.replace(old, new)
+                copied_term[copied_name] = (cond, true, false)
 
-        if self.name != create_name_from_term(self.term, REC_PREFIX):
+        if self.name != create_name_from_term(self.term, REC_PREFIX, REC_RELATION):
             copied_name = self.name
         else:
             copied_name = None
@@ -262,6 +263,6 @@ class Reg(ImplCollectForReg, ImplRenameForReg, BaseEdge):
             is_empty = True
 
         if self._is_default_name and (not is_empty):
-            self._name = create_name_from_term(self.term, REC_PREFIX)
+            self._name = create_name_from_term(self.term, REC_PREFIX, REC_RELATION)
 
         return is_empty, self

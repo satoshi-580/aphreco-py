@@ -41,7 +41,7 @@ def _replace_all_by_positions(
     return new.join([term[s:e] for s, e in pos_list])
 
 
-def create_name_from_term(term, prefix):
+def create_name_from_term(term, prefix, relation):
     str_from = ""
     str_to = ""
     for name, term in term.items():
@@ -49,17 +49,17 @@ def create_name_from_term(term, prefix):
             cond = term[0]
             true = term[1]
             false = term[2]
-            str_term = f"{prefix}{name}+=if {cond} {{{true}}} else {{{false}}}"
+            str_term = f"{prefix}{name}{relation}if {cond} {{{true}}} else {{{false}}},"
             starts_with_minus = true.lstrip()[0] == "-"
 
         elif isinstance(term, str):
-            str_term = prefix + name + "+=" + term + ","
+            str_term = f"{prefix}{name}{relation}{term},"
             starts_with_minus = term.lstrip()[0] == "-"
 
         if starts_with_minus:
-            str_from += str_term + ","
+            str_from += str_term
         else:
-            str_to += str_term + ","
+            str_to += str_term
 
     name = f"{str_from[:-1]} -> {str_to[:-1]}"
     name = name.strip()
