@@ -233,9 +233,7 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
             str_tree = f"{indent}[ {self.type.name} ] {self} = {self.term}"
 
         elif isinstance(self.term, tuple):
-            cond = self.term[0]
-            true = self.term[1]
-            false = self.term[2]
+            cond, true, false = self.term
             ternary = f"if {cond} {{{true}}} else {{{false}}}"
             str_tree = f"{indent}[ {self.type.name} ] {self} = " + ternary
 
