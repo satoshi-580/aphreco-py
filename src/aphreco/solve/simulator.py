@@ -69,24 +69,6 @@ class Simulator(BaseSolver):
         vals_dict = model.collect_values(OrderedDict())
         terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
 
-        print("===Ode===")
-        ore_dict = terms_dicts[0]
-        for name in ore_dict.keys():
-            print(name, ore_dict[name])
-
-        print("\n===Rec===")
-        for beat, recterms in terms_dicts[1].items():
-            print("beat:", beat)
-            for name, terms in recterms.items():
-                print("  name:", name)
-                for term in terms:
-                    print("  ", term)
-
-        print("\n===Cre===")
-        cre_dict = terms_dicts[2]
-        for name in cre_dict.keys():
-            print(name, cre_dict[name])
-
         # ====================
         # format lines
         # generate lines with t/y/p/ode/rec/cond/beat/cre,
