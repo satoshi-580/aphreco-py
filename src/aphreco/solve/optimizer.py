@@ -68,13 +68,7 @@ class Optimizer(BaseSolver):
         #     unks_dict : x names, p_index, bounds
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
-        terms_dict = model.collect_terms(
-            OrderedDict(
-                ode=OrderedDict(),
-                rec=OrderedDict(),
-                cre=OrderedDict(),
-            )
-        )
+        terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
         unks_dict = model.set_x_index(model.collect_unknowns(OrderedDict()), names_dict)
 
         # ====================
@@ -82,7 +76,7 @@ class Optimizer(BaseSolver):
         # generate lines with t/y/p/ode/rec/cond/beat/cre and /x_index/x_bounds,
         # and lines of solver settings.
         lines = self.formatter.format_model_info(
-            (names_dict, vals_dict, terms_dict, unks_dict)
+            (names_dict, vals_dict, terms_dicts, unks_dict)
         )
         lines = self.formatter.format_simulator_info(lines, self.simulator)
         lines = self.formatter.format_optimizer_info(lines, self)
