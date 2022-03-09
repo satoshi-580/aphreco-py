@@ -355,6 +355,8 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
                 tree.append(node.replace("[CON]", PColor.B + "[CON]" + PColor.RESET))
             elif "[REG]" in node:
                 tree.append(node.replace("[REG]", PColor.B + "[REG]" + PColor.RESET))
+            elif "[STR]" in node:
+                tree.append(node.replace("[STR]", PColor.B + "[STR]" + PColor.RESET))
             else:
                 tree.append(node)
         return "\n".join(tree)
