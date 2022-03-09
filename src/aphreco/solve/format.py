@@ -59,7 +59,7 @@ def _connect_lhs_and_rhs(
 
 def _add_inline(inline: Inline):
     lines: List[str] = list()
-    for line in inline.line.splitlines():
+    for line in inline.code.splitlines():
         lines.append(f"***inline***{line}\n")
     return "".join(lines)
 
