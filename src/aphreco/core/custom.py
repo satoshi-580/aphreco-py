@@ -1,31 +1,31 @@
 from collections import OrderedDict
 from typing import Dict, List, Optional, Set, Union
 
-from aphreco.enums import FnType, ItemType
+from aphreco.enums import EqType, ItemType
 from aphreco.types import Beat, Inline, TermsDicts
 
 from .base import BaseEdge
 
-FNTYPE = {
-    "ode": FnType.ODE,
-    "rec": FnType.REC,
-    "cre": FnType.CRE,
+EQTYPE = {
+    "ode": EqType.ODE,
+    "rec": EqType.REC,
+    "cre": EqType.CRE,
 }
 
 
 class BaseStr(BaseEdge):
     @property
-    def fntype(self):
-        return self._fntype
+    def eqtype(self):
+        return self._eqtype
 
-    @fntype.setter
-    def fntype(self, fntype: Union[str, FnType]):
-        if isinstance(fntype, FnType):
-            self._fntype = fntype
+    @eqtype.setter
+    def eqtype(self, eqtype: Union[str, EqType]):
+        if isinstance(eqtype, EqType):
+            self._eqtype = eqtype
         else:
-            if fntype not in FNTYPE.keys():
-                raise KeyError(f"invlaid fntype: '{fntype}'")
-            self._fntype = FNTYPE[fntype]
+            if eqtype not in EQTYPE.keys():
+                raise KeyError(f"invlaid eqtype: '{eqtype}'")
+            self._eqtype = EQTYPE[eqtype]
 
     @property
     def type(self):
@@ -86,7 +86,7 @@ class ImplCollectForStr(BaseStr):
         pass
 
     def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
-        if self.fntype == FnType.ODE:
+        if self.eqtype == EqType.ODE:
             ode = terms_dict[0]
             if self.name not in ode.keys():
                 ode[self.name] = [Inline(self.line)]
@@ -94,7 +94,7 @@ class ImplCollectForStr(BaseStr):
                 ode[self.name].append(self.line)
             return (ode, terms_dict[1], terms_dict[2])
 
-        elif self.fntype == FnType.REC:
+        elif self.eqtype == EqType.REC:
             rec = terms_dict[1]
             # register self.beat if it is encountered for the first time
             if self.beat not in rec.keys():
@@ -107,7 +107,7 @@ class ImplCollectForStr(BaseStr):
                 raise NameError(f"not a unique name '{self.name}'")
             return (terms_dict[0], rec, terms_dict[2])
 
-        elif self.fntype == FnType.CRE:
+        elif self.eqtype == EqType.CRE:
             cre = terms_dict[2]
             if self.name not in cre.keys():
                 cre[self.name] = Inline(self.line)
@@ -144,13 +144,13 @@ class ImplRenameForStr(BaseStr):
 class Str(ImplCollectForStr, ImplRenameForStr, BaseStr):
     def __init__(
         self,
-        fntype: str,
+        eqtype: str,
         name: str,
         line: str,
         involve: List[str] = None,
         beat: Beat = None,
     ):
-        self.fntype = fntype
+        self.eqtype = eqtype
         self.type = ItemType.STR
         self.parent = None
 
@@ -160,16 +160,16 @@ class Str(ImplCollectForStr, ImplRenameForStr, BaseStr):
         self.involve = involve
         self.line = line
 
-        if self.fntype == FnType.REC:
+        if self.eqtype == EqType.REC:
             if beat is None:
                 raise ValueError("argument 'beat' is needed for FuncType.REC")
             self.beat = beat
-        elif beat is not None:
-            raise ValueError(f"argument 'beat' is incompatible with {self.fntype}")
+        else:
+            self.beat = None
 
     def _add_or_skip(self, parent, is_done):
         edge = Str(
-            fntype=self.fntype,
+            eqtype=self.eqtype,
             name=self.name,
             line=self.line,
             involve=self.involve,

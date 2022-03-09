@@ -4,8 +4,16 @@ from aphreco.enums import ItemType
 
 
 class Inline:
-    def __init__(self, line):
-        self.line = line
+    @property
+    def code(self):
+        return self._code
+
+    @code.setter
+    def code(self, code):
+        self._code = code
+
+    def __init__(self, code):
+        self.code = code
 
 
 # {yp_name: (itemtype, yp_index)}
@@ -24,7 +32,7 @@ CreTerm = Union[str, Ternary]
 # In collecting, ...
 # (
 #   {yname: [rhs]},
-#   {(start, stop, step): [rhs or {cond: (rhs of truecase, rhs of falsecase)}]},
+#   {(start, stop, step): [rhs or (cond, true-rhs, false-rhs)]},
 #   {yname: [rhs]},
 # )
 OdeTerms = Dict[str, List[Union[str, Ternary, Inline]]]

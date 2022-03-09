@@ -218,19 +218,22 @@ def _fn_rec(lines: str):
     delta_indent = " " * 6
     body = ""
     beat_id = 0
-    for line in lines.splitlines():
-        if line.startswith("==="):
-            if beat_id > 0:
-                body += act_indent + "}\n"
-            body += act_indent + "if act[" + str(beat_id) + "] {\n"
-            beat_id += 1
 
-        elif line.startswith("***inline***"):
-            body += line.replace("***inline***", delta_indent) + "\n"
+    if lines != "":
+        for line in lines.splitlines():
+            if line.startswith("==="):
+                if beat_id > 0:
+                    body += act_indent + "}\n"
+                body += act_indent + "if act[" + str(beat_id) + "] {\n"
+                beat_id += 1
 
-        else:
-            body += delta_indent + line + ";\n"
-    body += act_indent + "}\n"
+            elif line.startswith("***inline***"):
+                body += line.replace("***inline***", delta_indent) + "\n"
+
+            else:
+                body += delta_indent + line + ";\n"
+        body += act_indent + "}\n"
+
     footer = CLOSE_REC
     return header + body + footer
 

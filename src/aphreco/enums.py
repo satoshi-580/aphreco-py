@@ -3,13 +3,14 @@ import enum
 
 class ItemType(enum.Flag):
     # Component
-    Y = enum.auto()  # a dependent variable
     P = enum.auto()  # a constant model parameter
-    X = enum.auto()  # an unknown parameter in optimization
-    E = enum.auto()  # a provisional effect
-    A = enum.auto()  # an alias (or a placeholder) of a term to be replaced
+    Y = enum.auto()  # a dependent variable
     R = enum.auto()  # a reference to another variable (proxy, shortcut to P)
-    VARIABLE = Y | P | X | R | E | A
+    E = enum.auto()  # a provisional effect
+    X = enum.auto()  # an unknown parameter in optimization
+    I = enum.auto()  # an yp_index being set in coding
+    A = enum.auto()  # a term alias to be replaced by a term
+    VARIABLE = P | Y | R | E | X | I | A
 
     CON = enum.auto()  # continuous edge
     REG = enum.auto()  # discrete edge with a regular interval
@@ -26,7 +27,7 @@ class ItemType(enum.Flag):
     ITEM = COMPONENT | MODEL
 
 
-class FnType(enum.Enum):
+class EqType(enum.Enum):
     ODE = enum.auto()
     REC = enum.auto()
     CRE = enum.auto()
