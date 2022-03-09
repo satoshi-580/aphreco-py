@@ -131,7 +131,17 @@ def read_data(csvpath: Union[Path, str], header=None) -> Data:
 
     # read a file by pandas or a standard way.
     if not no_pandas:
-        df_table = pd.read_csv(csvpath, header=header)
+        df_table = pd.read_csv(
+            csvpath,
+            header=header,
+            dtype={
+                "yname": "object",
+                "t": "float",
+                "y": "float",
+                "terr": "float",
+                "yerr": "float",
+            },
+        )
         return Data.from_df(df_table)
 
     else:
