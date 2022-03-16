@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 from typing import Dict, List, Optional, Set, Union
 
@@ -5,6 +6,7 @@ from aphreco.enums import EqType, ItemType
 from aphreco.types import Beat, Inline, TermsDicts
 
 from .base import BaseEdge
+from .func.rename import rename_all
 
 EQTYPE = {
     "ode": EqType.ODE,
@@ -135,7 +137,7 @@ class ImplRenameForStr(BaseStr):
             if yname in repmap.keys():
                 new_yname = repmap[yname]
                 renamed_involve[i] = new_yname
-                self.line = self.line.replace(yname, new_yname)
+                self.line = rename_all(self.line, yname, new_yname)
 
         self.involve = renamed_involve
         return self
@@ -198,10 +200,47 @@ class Str(ImplCollectForStr, ImplRenameForStr, BaseStr):
         _repmap: Dict[str, str] = None,
         _is_top: bool = False,
     ):
+        # name
+        copied_name = prefix + self.name + suffix
+
         if _repmap is not None:
-            if self.name in _repmap.keys():
-                self._name = _repmap[self.name]
-        return self
+            # involve
+            copied_involve = copy.deepcopy(self.involve)
+            if copied_involve is not None:
+                for i, name in enumerate(self.involve):
+                    if name in _repmap.keys():
+                        copied_involve[i] = _repmap[name]
+
+            # line
+            copied_line = self.line
+            if copied_involve is not None:
+                for i, old in enumerate(self.involve):
+                    if old in _repmap.keys():
+                        new = _repmap[old]
+                        copied_line = rename_all(copied_line, old, new)
+
+            # beat
+            copied_beat = self.beat
+            if copied_beat is not None:
+                start, stop, step = copied_beat
+                if _repmap is not None:
+                    if start in _repmap.keys():
+                        start = _repmap[start]
+                    if stop in _repmap.keys():
+                        stop = _repmap[stop]
+                    if step in _repmap.keys():
+                        step = _repmap[step]
+                copied_beat = (start, stop, step)
+
+        copied_str = Str(
+            eqtype=self.eqtype,
+            name=copied_name,
+            line=copied_line,
+            involve=copied_involve,
+            beat=self.beat,
+        )
+
+        return copied_str
 
     def _delete_involved(self, name: str):
         """deletes an involved components in beat or term.
