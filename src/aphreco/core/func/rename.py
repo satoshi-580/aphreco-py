@@ -9,15 +9,27 @@ def rename_all(term: str, old: str, new: str):
 
 
 def _find_all_with_isidentifier_check(term: str, old: str) -> List[Tuple[int, int]]:
+    # positions have tuples of (start, end)
     positions = list()
+
     for m in re.finditer(old, term):
         s = m.start()
         e = m.end()
+
         # check prefix
+        # catch variable without prefix or suffix
         if not term[s - 1 : e].isidentifier():
             # check suffix
             if e == len(term) or not term[s : e + 1].isidentifier():
                 positions.append((s, e))
+
+        # also catch delta_ and deriv_
+        elif (term[s - 6 : s] == "delta_" or term[s - 6 : s] == "deriv_") and (
+            not term[s - 7 : s].isidentifier()
+        ):
+            if e == len(term) or not term[s : e + 1].isidentifier():
+                positions.append((s, e))
+
     return positions
 
 

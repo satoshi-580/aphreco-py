@@ -19,15 +19,15 @@ class Command:
             while True:
                 line = p.stdout.readline()
                 print(line, end="")
-                if "panic:" in line:
+                if "thread 'main' panicked" in line:
                     x = line.find("Error:")
-                    print(line[:x])
                     success = False
+
                 if (not line) and (p.poll() is not None):
                     break
 
         if not success:
-            raise RustError("rust compilation/execution failed.")
+            raise RustError("rust execution failed.")
 
     def compile(self):
         self.exe("cargo run")
