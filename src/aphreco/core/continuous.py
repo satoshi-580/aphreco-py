@@ -156,7 +156,7 @@ class Con(ImplCollectForCon, ImplRenameForCon, BaseEdge):
             copied_rhs = str_rhs
             if _repmap is not None:
                 for old, new in _repmap.items():
-                    copied_rhs = copied_rhs.replace(old, new)
+                    copied_rhs = rename_all(copied_rhs, old, new)
 
             copied_term[copied_name] = copied_rhs
 
