@@ -12,6 +12,8 @@ VTYPES = {
     "y": ItemType.Y,  # dependent variable
     "p": ItemType.P,  # model parameter (independent and constant)
     "x": ItemType.X,  # unknown parameter (independent and optimized)
+    "i": ItemType.I,  # yp index in coding ('I' object itself is used as a 'P' object)
+    # ===== not implemented =====
     "e": ItemType.E,  # provisional effect
     "a": ItemType.A,  # an alias (or a placeholder) of a term to be replaced
     "r": ItemType.R,  # reference to another variable (generated in skipping copy)
@@ -93,7 +95,7 @@ class ImplCollectForVariable(BaseVariable):
         return vals_dict
 
     def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
-        if self.term is None:
+        if self.term is None or self.type == ItemType.I:
             return terms_dict
 
         # CreTerm = Union[str, Ternary]
@@ -187,7 +189,7 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
         if term is None:
             self.term: Optional[CreTerm] = None
         else:
-            if self.type != ItemType.Y:
+            if self.type == ItemType.Y | ItemType.I:
                 raise ValueError(
                     f"variable type must be 'y' when cre term is used: {self.type}"
                 )
@@ -230,7 +232,14 @@ class Variable(ImplCollectForVariable, ImplRenameForVariable, BaseVariable):
             str_tree = f"{indent}[ {self.type.name} ] {self}"
 
         elif isinstance(self.term, str):
-            str_tree = f"{indent}[ {self.type.name} ] {self} = {self.term}"
+            if self.type == ItemType.Y:
+                relation = "="
+            elif self.type == ItemType.I:
+                relation = "->"
+            else:
+                relation = ""
+
+            str_tree = f"{indent}[ {self.type.name} ] {self} {relation} {self.term}"
 
         elif isinstance(self.term, tuple):
             cond, true, false = self.term
@@ -349,6 +358,28 @@ class X(BaseComponent):
             Variable: The variable object with its type set to ItemType.X.
         """
         return Variable(name=name, value=value, type="x", term=None, bounds=bounds)
+
+
+class I:
+    def __new__(
+        cls,
+        name: str,
+        term: str,
+        share: bool = True,
+    ):
+        """I class is for defining an index for Variable object.
+
+        The 'term' should indicate a target name of a variable, which can be used in Str.line.
+        Because an index value is defined as a float, please cast a type when using the index:
+            In Str.line (Rust-lang), ...
+            >>> let i = index_name as usize;
+            >>> deriv_y[i] = -y[i];
+            >>> delta_y[i] += y[i + 1];
+
+        Returns:
+            Variable: The variable object with its type set to ItemType.A.
+        """
+        return Variable(name=name, type="i", term=term, share=share)
 
 
 class A:

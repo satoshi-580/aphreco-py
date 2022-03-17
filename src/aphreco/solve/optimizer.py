@@ -68,6 +68,7 @@ class Optimizer(BaseSolver):
         #     unks_dict : x names, p_index, bounds
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
+        vals_dict = model.collect_var_indices(vals_dict, names_dict)
         terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
         unks_dict = model.set_x_index(model.collect_unknowns(OrderedDict()), names_dict)
 

@@ -4,4 +4,4 @@ from .custom import Str
 from .data import Data
 from .model import Model
 from .regular import Reg
-from .variable import A, P, Variable, X, Y
+from .variable import A, I, P, Variable, X, Y
