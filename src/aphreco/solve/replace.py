@@ -20,7 +20,7 @@ class Replacer:
         for name, (vartype, index) in sorted_names.items():
             if vartype == ItemType.Y:
                 repmap[name] = "y[" + str(index) + "]"
-            if vartype in (ItemType.P | ItemType.X):
+            if vartype in (ItemType.P | ItemType.X | ItemType.I):
                 repmap[name] = "self.p[" + str(index) + "]"
 
         return repmap

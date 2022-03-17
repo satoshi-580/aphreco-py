@@ -66,6 +66,7 @@ class Simulator(BaseSolver):
         # dicts is a tuple of dictionaries (names_dict, vals_dict, terms_dicts).
         names_dict = model.set_yp_index(model.collect_names(OrderedDict()))
         vals_dict = model.collect_values(OrderedDict())
+        vals_dict = model.collect_var_indices(vals_dict, names_dict)
         terms_dicts = model.collect_terms((OrderedDict(), OrderedDict(), OrderedDict()))
 
         # ====================

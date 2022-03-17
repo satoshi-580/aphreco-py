@@ -124,7 +124,9 @@ class SimFormatter(BaseFormatter):
         names_dict: Dict[str, Tuple[ItemType, int]],
         vals_dict: Dict[str, float],
     ) -> str:
-        return self._line_yp(names_dict, vals_dict, (ItemType.P | ItemType.X))
+        return self._line_yp(
+            names_dict, vals_dict, (ItemType.P | ItemType.X | ItemType.I)
+        )
 
     def _line_yp(
         self,
@@ -132,7 +134,11 @@ class SimFormatter(BaseFormatter):
         vals_dict: Dict[str, float],
         cur_type: ItemType,
     ):
-        yp = "y" if cur_type == ItemType.Y else "p"
+        if cur_type == ItemType.Y:
+            yp = "y"
+        elif cur_type == (ItemType.P | ItemType.X | ItemType.I):
+            yp = "p"
+
         lines = list()
         max_vallen = 0
         for name, (itemtype, index) in names_dict.items():

@@ -80,19 +80,41 @@ class ImplCollectForModel(BaseModel):
         else:
             return self.collect_names(OrderedDict())
 
-    def collect_values(self, val_dicts: ValsDict) -> ValsDict:
+    def collect_values(self, val_dict: ValsDict) -> ValsDict:
         """collects values of Variables in a model.
 
         Args:
             val_dicts ValsDict: The dictionary of a name (key) and a value (value) of Variables.
-                values Dict[str, value]: {"value", "lb", "ub"}
         """
         for _, item in self.children.items():
             if isinstance(item, BaseEdge):
                 continue
             else:
-                val_dicts = item.collect_values(val_dicts)
-        return val_dicts
+                val_dict = item.collect_values(val_dict)
+        return val_dict
+
+    def collect_var_indices(
+        self,
+        vals_dict: ValsDict,
+        names_dict: NamesDict,
+    ) -> ValsDict:
+        """collect indices of ItemType.I and assign the indices to corresponding values in vals_dict.
+
+        Args:
+            val_dicts ValsDict: The dictionary of a name (key) and a value (value) of Variables.
+        """
+
+        for _, item in self.children.items():
+            if item.type == ItemType.MODEL:
+                vals_dict = item.collect_var_indices(vals_dict, names_dict)
+
+            elif item.type == ItemType.I:
+                if item.name not in names_dict.keys():
+                    raise KeyError(f"not found: '{item.name}'")
+
+                vals_dict[item.name] = float(names_dict[item.term][1])
+
+        return vals_dict
 
     def collect_terms(self, terms_dict: TermsDicts) -> TermsDicts:
         """Collect terms of Edge objects or cre in Y objects by Depth-First Search.
@@ -564,7 +586,7 @@ class Model(ImplCollectForModel, ImplRenameForModel, BaseModel):
             if itemtype == ItemType.Y:
                 names_dict[name] = (itemtype, y_index)
                 y_index += 1
-            elif itemtype in (ItemType.P | ItemType.X):
+            elif itemtype in (ItemType.P | ItemType.X | ItemType.I):
                 names_dict[name] = (itemtype, p_index)
                 p_index += 1
             else:
