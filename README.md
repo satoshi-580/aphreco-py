@@ -4,7 +4,7 @@
 ## Installation
 ```
 git clone https://github.com/satoshi-580/aphreco-py.git
-pip install ./aphreco/
+pip install ./aphreco-py/
 ```
 
 ## How to Use
