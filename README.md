@@ -3,11 +3,16 @@
 
 ## Installation
 ```
-git clone https://github.com/satoshi-580/aphreco-py.git
-pip install ./aphreco-py/
+$ git clone https://github.com/satoshi-580/aphreco-py.git
+$ pip install ./aphreco-py/
 ```
 
-## How to Use
+Make cargo comand possible by installing [Rust](https://rust-lang.org/).
+```
+$ cargo --version
+```
+
+## Example
 Jupyter Notebook:
 
 ```
