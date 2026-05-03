@@ -43,8 +43,8 @@ simres = simulator.run(cmpt2, out_time)
 
 ```
 fig, ax = plt.subplots(1, 1, figsize=(4, 4))
-ax.plot(simres.t, simres.y[:, 0], "k", label="X1")
-ax.plot(simres.t, simres.y[:, 1], "r", label="X2")
+ax.plot(simres.t, simres.y.iloc[:, 0], "k", label="X1")
+ax.plot(simres.t, simres.y.iloc[:, 1], "r", label="X2")
 plt.legend()
 plt.show()
 ```
