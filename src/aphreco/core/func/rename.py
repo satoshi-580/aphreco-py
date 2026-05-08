@@ -10,8 +10,12 @@ def rename_all(term: str, old: str, new: str):
 
 def _find_all_with_isidentifier_check(term: str, old: str) -> List[Tuple[int, int]]:
     # positions have tuples of (start, end)
-    positions = list()
+    # case: term has only one symbol.
+    if term == old:
+        return [(0, len(old))]
 
+    # case: others
+    positions = list()
     for m in re.finditer(old, term):
         s = m.start()
         e = m.end()
